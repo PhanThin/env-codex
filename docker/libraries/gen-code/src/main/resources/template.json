@@ -1,0 +1,16 @@
+{
+  "className": "Products",
+  "desc": "Lớp thao tác danh sach nhan vien",
+  "listMethod": [
+    {
+      "type": "put",
+      "name": "updateProducts",
+      "value": "/v1/products/{productId}",
+      "sql": "insert into products_tbl(PRODUCT_ID) values(:productId) ",
+      "params":["productName"],
+      "desc": "Lay du thong tin nhan vien",
+      "count": 1,
+      "jpa": true
+    }
+  ]
+}

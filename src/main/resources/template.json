@@ -1,0 +1,16 @@
+{
+  "className": "GravityMagneticSurvey",
+  "desc": "Lớp thao tác bảng Gravity_Magnetic_Survey",
+  "listMethod": [
+    {
+      "type": "get",
+      "name": "getGravityMagneticSurvey",
+      "value": "/v1/gravity-magnetic-surveys",
+      "sql": "select * from Gravity_Magnetic_Survey a where (a.name = :name or :name is null) and (a.FIELD_ID = :fieldId or :fieldId is null)",
+      "params":["name", "fieldId"],
+      "desc": "Lay du thong tin Gravity_Magnetic_Survey",
+      "count": 1,
+      "jpa": true
+    }
+  ]
+}
