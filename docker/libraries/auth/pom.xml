@@ -75,5 +75,28 @@
             <version>${minio.version}</version>
         </dependency>
     </dependencies>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.10.1</version> <!-- Or newer -->
+                <configuration>
+                    <source>21</source> <!-- Or your desired Java version -->
+                    <target>21</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                    <!-- Optional: Explicitly list processors if you have many, or remove this entire <annotationProcessors> tag -->
+                    <!-- <annotationProcessors>
+                      <processor>org.projectlombok.core.AnnotationProcessor</processor>
+                    </annotationProcessors> -->
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
