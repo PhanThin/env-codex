@@ -24,6 +24,7 @@
             <groupId>vn.com.viettel.core</groupId>
             <artifactId>dto</artifactId>
             <version>${backend-dto}</version>
+            <systemPath>${project.basedir}/docker/libraries/backend-core-3.0.0-RELEASE.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

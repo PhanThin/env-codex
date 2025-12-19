@@ -1,0 +1,61 @@
+package vn.com.viettel.entities;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+
+import java.time.Instant;
+
+@Getter
+@Setter
+@Entity
+@Table(name = "CAT_RECOMMENDATION_SOURCE")
+public class CatRecommendationSource {
+    @Id
+    @Column(name = "SOURCE_ID", nullable = false)
+    private Long id;
+
+    @Size(max = 50)
+    @NotNull
+    @Column(name = "SOURCE_CODE", nullable = false, length = 50)
+    private String sourceCode;
+
+    @Size(max = 250)
+    @NotNull
+    @Column(name = "SOURCE_NAME", nullable = false, length = 250)
+    private String sourceName;
+
+    @Size(max = 500)
+    @Column(name = "DESCRIPTION", length = 500)
+    private String description;
+
+    @NotNull
+    @ColumnDefault("'Y'")
+    @Column(name = "IS_ACTIVE", nullable = false)
+    private Boolean isActive;
+
+    @NotNull
+    @ColumnDefault("SYSTIMESTAMP")
+    @Column(name = "CREATED_AT", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "UPDATED_BY")
+    private Long updatedBy;
+
+    @Column(name = "UPDATED_AT")
+    private Instant updatedAt;
+
+    @Column(name = "CREATED_BY")
+    private Long createdBy;
+
+    @Column(name = "IS_DELETED")
+    private Boolean isDeleted;
+
+
+}

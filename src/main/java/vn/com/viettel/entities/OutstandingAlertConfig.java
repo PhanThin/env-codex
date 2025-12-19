@@ -1,0 +1,62 @@
+package vn.com.viettel.entities;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+@Getter
+@Setter
+@Entity
+@Table(name = "OUTSTANDING_ALERT_CONFIG")
+public class OutstandingAlertConfig {
+    @Id
+    @Column(name = "CONFIG_ID", nullable = false)
+    private Long id;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
+    @JoinColumn(name = "OUTSTANDING_ID", nullable = false)
+    private OutstandingItem outstanding;
+
+    @NotNull
+    @Column(name = "LEVEL_NO", nullable = false)
+    private Integer levelNo;
+
+    @NotNull
+    @Column(name = "PERCENT_TIME", nullable = false, precision = 5, scale = 2)
+    private BigDecimal percentTime;
+
+    @NotNull
+    @ColumnDefault("'Y'")
+    @Column(name = "IS_ACTIVE", nullable = false)
+    private Boolean isActive;
+
+    @NotNull
+    @ColumnDefault("SYSTIMESTAMP")
+    @Column(name = "CREATED_AT", nullable = false)
+    private Instant createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.RESTRICT)
+    @JoinColumn(name = "CREATED_BY")
+    private SysUser createdBy;
+
+    @Column(name = "UPDATED_BY")
+    private Long updatedBy;
+
+    @Column(name = "UPDATED_AT")
+    private Instant updatedAt;
+
+    @Column(name = "IS_DELETED")
+    private Boolean isDeleted;
+
+
+}
