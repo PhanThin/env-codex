@@ -8,4 +8,6 @@ public class Constants {
     public static final String VERSION_API_V1 = "/v1";
     public static final String LOCALE_VN = "vi_VN";
     public static final String TIMEZONE_VN = "Asia/Ho_Chi_Minh";
+
+    public static final Long DEFAULT_USER_ID = 1L;
 }

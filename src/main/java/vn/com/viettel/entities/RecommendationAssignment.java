@@ -20,21 +20,15 @@ public class RecommendationAssignment {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "RECOMMENDATION_ID", nullable = false)
-    private Recommendation recommendation;
+    @Column(name = "RECOMMENDATION_ID", nullable = false)
+    private Long recommendationId;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "USER_ID", nullable = false)
-    private SysUser user;
+    @Column(name = "USER_ID", nullable = false)
+    private Long userId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "ORG_ID")
-    private SysOrg org;
+    @Column(name = "ORG_ID")
+    private Long org;
 
     @NotNull
     @ColumnDefault("'N'")

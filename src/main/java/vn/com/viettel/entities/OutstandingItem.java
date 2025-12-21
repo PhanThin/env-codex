@@ -6,8 +6,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -27,21 +25,11 @@ public class OutstandingItem {
     private String outstandingCode;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
     @JoinColumn(name = "PROJECT_ID", nullable = false)
-    private Project project;
+    private Long projectId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "ITEM_ID")
-    private ProjectItem item;
-
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "WORK_ITEM_ID", nullable = false)
-    private WorkItem workItem;
+    @JoinColumn(name = "ITEM_ID") //FK table ProjectItem
+    private Long itemId;
 
     @Size(max = 50)
     @Column(name = "ACCEPTANCE_TYPE", length = 50)
@@ -60,10 +48,8 @@ public class OutstandingItem {
     private String outstandingTitle;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "OUTSTANDING_TYPE_ID", nullable = false)
-    private CatOutstandingType outstandingType;
+    @Column(name = "OUTSTANDING_TYPE_ID", nullable = false) // FK table CatOutstandingType
+    private Long outstandingTypeId;
 
     @Size(max = 20)
     @NotNull
@@ -71,15 +57,11 @@ public class OutstandingItem {
     private String priority;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "CREATED_BY", nullable = false)
-    private SysUser createdBy;
+    @Column(name = "CREATED_BY", nullable = false)
+    private Long createdBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "CREATED_ORG_ID")
-    private SysOrg createdOrg;
+    @Column(name = "CREATED_ORG_ID")
+    private Long createdOrgId;
 
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")
@@ -87,16 +69,12 @@ public class OutstandingItem {
     private Instant createdAt;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "ASSIGNED_USER_ID", nullable = false)
-    private SysUser assignedUser;
+    @Column(name = "ASSIGNED_USER_ID", nullable = false)
+    private Long assignedUserId;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "ASSIGNED_ORG_ID", nullable = false)
-    private SysOrg assignedOrg;
+    @Column(name = "ASSIGNED_ORG_ID", nullable = false)
+    private Long assignedOrgId;
 
     @NotNull
     @Column(name = "DEADLINE", nullable = false)

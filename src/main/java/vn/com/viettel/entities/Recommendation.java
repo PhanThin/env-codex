@@ -6,18 +6,22 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "RECOMMENDATION")
+@SequenceGenerator(
+        name = "recommendation_seq_gen",
+        sequenceName = "SEQ_KN_KIEN_NGHI",
+        allocationSize = 1
+)
 public class Recommendation {
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recommendation_seq_gen")
     @Column(name = "RECOMMENDATION_ID", nullable = false)
     private Long id;
 
@@ -27,7 +31,7 @@ public class Recommendation {
 
     @Size(max = 250)
     @NotNull
-    @Column(name = "RECOMMENDATION_TITLE", nullable = false, length = 250)
+    @Column(name = "RECOMMENDATION_TITLE", nullable = false, length = 250, unique = true)
     private String recommendationTitle;
 
     @Size(max = 500)
@@ -35,31 +39,20 @@ public class Recommendation {
     @Column(name = "CONTENT", nullable = false, length = 500)
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "PROJECT_ID")
-    private Project project;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "ITEM_ID")
-    private ProjectItem item;
+    @Column(name = "PROJECT_ID")
+    private Long projectId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "PHASE_ID")
-    private CatProjectPhase phase;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "WORK_ITEM_ID")
-    private WorkItem workItem;
+    @Column(name = "ITEM_ID")
+    private Long itemId;
+
+    @Column(name = "PHASE_ID")
+    private Long phaseId;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "RECOMMENDATION_TYPE_ID", nullable = false)
-    private CatRecommendationType recommendationType;
+    @Column(name = "RECOMMENDATION_TYPE_ID", nullable = false)
+    private Long recommendationTypeId;
 
     @Size(max = 20)
     @NotNull
@@ -76,28 +69,22 @@ public class Recommendation {
     private String status;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "CREATED_BY", nullable = false)
-    private SysUser createdBy;
+    @Column(name = "CREATED_BY")
+    private Long createdById;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "CREATED_ORG_ID")
-    private SysOrg createdOrg;
+    @Column(name = "CREATED_ORG_ID")
+    private Long createdOrgId;
 
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")
     @Column(name = "CREATED_AT", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "CLOSED_AT")
-    private Instant closedAt;
+    private LocalDateTime closedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "CLOSED_BY")
-    private SysUser closedBy;
+    @Column(name = "CLOSED_BY")
+    private Long closedById;
 
     @NotNull
     @ColumnDefault("'N'")
@@ -105,15 +92,13 @@ public class Recommendation {
     private Boolean isDeleted;
 
     @Column(name = "DELETED_AT")
-    private Instant deletedAt;
+    private LocalDateTime deletedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "DELETED_BY")
-    private SysUser deletedBy;
+    @Column(name = "DELETED_BY")
+    private Long deletedById;
 
     @Column(name = "LAST_UPDATE")
-    private Instant lastUpdate;
+    private LocalDateTime lastUpdate;
 
     @Column(name = "LAST_UPDATE_BY")
     private Long lastUpdateBy;

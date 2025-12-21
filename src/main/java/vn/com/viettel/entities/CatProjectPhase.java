@@ -21,10 +21,8 @@ public class CatProjectPhase {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "PROJECT_ID", nullable = false)
-    private Project project;
+    @Column(name = "PROJECT_ID", nullable = false)
+    private Long projectId;
 
     @Size(max = 50)
     @NotNull

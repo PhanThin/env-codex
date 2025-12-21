@@ -20,10 +20,8 @@ public class WorkItem {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "ITEM_ID", nullable = false)
-    private ProjectItem item;
+    @Column(name = "ITEM_ID", nullable = false)
+    private Long itemId;
 
     @Size(max = 250)
     @NotNull

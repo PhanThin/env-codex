@@ -20,6 +20,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -78,29 +79,59 @@ public class RedisConfiguration {
 
     @Bean
     LettuceConnectionFactory redisConnectionFactory() {
-        RedisClusterConfiguration redisClusterConfiguration = new RedisClusterConfiguration(clusterProperties.getNodes());
-        redisClusterConfiguration.setPassword(password);
-        redisClusterConfiguration.setMaxRedirects(maxRedirects);
-        final SocketOptions socketOptions = SocketOptions.builder().connectTimeout(socketTimeout).build();
-        final ClusterTopologyRefreshOptions clusterTopologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
-                .enablePeriodicRefresh(true)
-                .enablePeriodicRefresh(periodicRefresh)
-                .enableAllAdaptiveRefreshTriggers()
-                .build();
-        final ClientOptions clientOptions =
-                ClusterClientOptions.builder()
-                        .topologyRefreshOptions(clusterTopologyRefreshOptions)
-                        .socketOptions(socketOptions)
-                        .build();
-        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-                .commandTimeout(redisCommandTimeout)
-                .clientOptions(clientOptions)
-                .build();
+        LettuceClientConfiguration clientConfig;
 
-        final LettuceConnectionFactory lettuceConnectionFactory = new LettuceConnectionFactory(redisClusterConfiguration,
-                clientConfig);
-        lettuceConnectionFactory.setValidateConnection(true);
-        return lettuceConnectionFactory;
+        // Kiểm tra xem có cấu hình nodes cho cluster không
+        if (clusterProperties.getNodes() != null && !clusterProperties.getNodes().isEmpty()
+                && clusterProperties.getNodes().size() > 1) {
+
+            RedisClusterConfiguration redisClusterConfiguration = new RedisClusterConfiguration(clusterProperties.getNodes());
+            redisClusterConfiguration.setPassword(password);
+            redisClusterConfiguration.setMaxRedirects(maxRedirects);
+
+            final SocketOptions socketOptions = SocketOptions.builder().connectTimeout(socketTimeout).build();
+            final ClusterTopologyRefreshOptions clusterTopologyRefreshOptions = ClusterTopologyRefreshOptions.builder()
+                    .enablePeriodicRefresh(true)
+                    .enablePeriodicRefresh(periodicRefresh)
+                    .enableAllAdaptiveRefreshTriggers()
+                    .build();
+
+            final ClientOptions clientOptions = ClusterClientOptions.builder()
+                    .topologyRefreshOptions(clusterTopologyRefreshOptions)
+                    .socketOptions(socketOptions)
+                    .build();
+
+            clientConfig = LettuceClientConfiguration.builder()
+                    .commandTimeout(redisCommandTimeout)
+                    .clientOptions(clientOptions)
+                    .build();
+
+            return new LettuceConnectionFactory(redisClusterConfiguration, clientConfig);
+        } else {
+            // Chế độ Standalone cho Local
+            String host = "localhost";
+            int port = 6379;
+
+            if (clusterProperties.getNodes() != null && !clusterProperties.getNodes().isEmpty()) {
+                String firstNode = clusterProperties.getNodes().get(0);
+                if (firstNode.contains(":")) {
+                    String[] parts = firstNode.split(":");
+                    host = parts[0];
+                    port = Integer.parseInt(parts[1]);
+                } else {
+                    host = firstNode;
+                }
+            }
+
+            RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration(host, port);
+            standaloneConfig.setPassword(password);
+
+            clientConfig = LettuceClientConfiguration.builder()
+                    .commandTimeout(redisCommandTimeout)
+                    .build();
+
+            return new LettuceConnectionFactory(standaloneConfig, clientConfig);
+        }
     }
 
     @Bean

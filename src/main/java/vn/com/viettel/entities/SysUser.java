@@ -1,12 +1,13 @@
 package vn.com.viettel.entities;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
@@ -21,7 +22,7 @@ public class SysUser {
 
     @Size(max = 100)
     @NotNull
-    @Column(name = "USERNAME", nullable = false, length = 100)
+    @Column(name = "USERNAME", nullable = false, length = 100, unique = true)
     private String username;
 
     @Size(max = 250)
@@ -33,10 +34,8 @@ public class SysUser {
     @Column(name = "TITLE", length = 250)
     private String title;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "ORG_ID")
-    private SysOrg org;
+    @Column(name = "ORG_ID")
+    private Long orgId;
 
     @Column(name = "UPDATED_BY")
     private Long updatedBy;

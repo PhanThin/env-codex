@@ -21,10 +21,8 @@ public class OutstandingAlertConfig {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "OUTSTANDING_ID", nullable = false)
-    private OutstandingItem outstanding;
+    @Column(name = "OUTSTANDING_ID", nullable = false)
+    private Long outstandingId;
 
     @NotNull
     @Column(name = "LEVEL_NO", nullable = false)

@@ -1,0 +1,106 @@
+package vn.com.viettel.dto;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * DTO for {@link vn.com.viettel.entities.Recommendation}
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+public class RecommendationDto implements Serializable {
+    Long id;
+    @Size(max = 50)
+    String recommendationCode;
+    @NotNull(message = "Tên kiến nghị là bắt buộc")
+    @Size(max = 250)
+    @Schema(
+            requiredMode = Schema.RequiredMode.REQUIRED,
+            description = "Tên kiến nghị"
+    )
+    String recommendationTitle;
+    @NotNull(message = "Nội dung kiến nghị là bắt buộc")
+    @Size(max = 500)
+    @Schema(
+            requiredMode = Schema.RequiredMode.REQUIRED,
+            description = "Nội dung kiến nghị"
+    )
+    String content;
+    @Schema(
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            description = "Dự án"
+    )
+    ProjectDto project; // dự án
+    @Schema(
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            description = "Hạng mục dự án"
+    )
+    ProjectItemDto item; // hạng mục dự án
+    @Schema(
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            description = "Giai đoạn dự án"
+    )
+    CatProjectPhaseDto phase; // giai đoạn dự án
+
+    @NotNull(message = "Loại kiến nghị là bắt buộc")
+    @Schema(
+            requiredMode = Schema.RequiredMode.REQUIRED,
+            description = "Loại kiến nghị"
+    )
+    CatRecommendationTypeDto recommendationType;
+
+    @NotNull(message = "Mức độ quan trọng là bắt buộc")
+    @Size(max = 20)
+    @Schema(
+            requiredMode = Schema.RequiredMode.REQUIRED,
+            description = "Mức độ quan trọng"
+    )
+    String priority;
+
+    @NotNull(message = "Hạn xử lý là bắt buộc")
+    @Schema(
+            requiredMode = Schema.RequiredMode.REQUIRED,
+            description = "Hạn xử lý"
+    )
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    LocalDate deadline;
+
+    @Size(max = 20)
+    String status;
+    UserDto createdByUser;
+    OrgDto createdOrg;
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
+    LocalDateTime createdAt;
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
+    LocalDateTime closedAt;
+    UserDto closedByUser;
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
+    LocalDateTime lastUpdate;
+    UserDto lastUpdateByUser;
+
+    @Schema(
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            description = "Công việc"
+    )
+    List<WorkItemDto> workItems;
+}

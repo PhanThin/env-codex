@@ -16,6 +16,12 @@ public class CustomException extends RuntimeException {
     public CustomException(int code, String mess) {
         super(mess);
         codeError = code;
+        try {
+            this.errorApp = ErrorApp.getErrorApp(code);
+        } catch (Exception ignore) {
+            // Nếu không map được (không tìm thấy code), giữ nguyên errorApp = null
+            // để handler fallback sang message
+        }
     }
 
     public CustomException(String mess) {

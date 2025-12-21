@@ -1,13 +1,14 @@
 package vn.com.viettel.entities;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
@@ -21,10 +22,8 @@ public class OutstandingProcessLog {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "OUTSTANDING_ID", nullable = false)
-    private OutstandingItem outstanding;
+    @Column(name = "OUTSTANDING_ID", nullable = false)
+    private Long outstandingId;
 
     @Size(max = 30)
     @NotNull
@@ -37,10 +36,8 @@ public class OutstandingProcessLog {
     private String processContent;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "ASSIGNED_USER_ID", nullable = false)
-    private SysUser assignedUser;
+    @Column(name = "ASSIGNED_USER_ID", nullable = false)
+    private Long assignedUserId;
 
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")

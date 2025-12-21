@@ -21,21 +21,15 @@ public class RecommendationResponse {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "RECOMMENDATION_ID", nullable = false)
-    private Recommendation recommendation;
+    @Column(name = "RECOMMENDATION_ID", nullable = false)
+    private Long recommendationId;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "RESPONDED_BY", nullable = false)
-    private SysUser respondedBy;
+    @Column(name = "RESPONDED_BY", nullable = false)
+    private Long respondedBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "RESPONDED_ORG_ID")
-    private SysOrg respondedOrg;
+    @Column(name = "RESPONDED_ORG_ID")
+    private Long respondedOrgId;
 
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")

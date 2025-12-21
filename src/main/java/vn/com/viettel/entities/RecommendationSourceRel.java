@@ -1,11 +1,12 @@
 package vn.com.viettel.entities;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 @Getter
 @Setter
@@ -17,16 +18,12 @@ public class RecommendationSourceRel {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "RECOMMENDATION_ID", nullable = false)
-    private Recommendation recommendation;
+    @Column(name = "RECOMMENDATION_ID", nullable = false)
+    private Long recommendationId;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "SOURCE_ID", nullable = false)
-    private CatRecommendationSource source;
+    @Column(name = "SOURCE_ID", nullable = false)
+    private Long sourceId;
 
 
 }

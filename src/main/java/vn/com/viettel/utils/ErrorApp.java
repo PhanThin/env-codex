@@ -23,4 +23,13 @@ public enum ErrorApp {
     public int getCode() {
         return code;
     }
+
+    public static ErrorApp getErrorApp(int code){
+    	for(ErrorApp error : ErrorApp.values()){
+    		if(error.getCode() == code){
+    			return error;
+    		}
+    	}
+    	return null;
+    }
 }

@@ -21,10 +21,8 @@ public class OutstandingAcceptance {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "OUTSTANDING_ID", nullable = false)
-    private OutstandingItem outstanding;
+    @Column(name = "OUTSTANDING_ID", nullable = false)
+    private Long outstandingId;
 
     @Size(max = 20)
     @NotNull
@@ -37,10 +35,8 @@ public class OutstandingAcceptance {
     private String acceptanceNote;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.RESTRICT)
-    @JoinColumn(name = "ACCEPTED_BY", nullable = false)
-    private SysUser acceptedBy;
+    @Column(name = "ACCEPTED_BY", nullable = false)
+    private Long acceptedBy;
 
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")
