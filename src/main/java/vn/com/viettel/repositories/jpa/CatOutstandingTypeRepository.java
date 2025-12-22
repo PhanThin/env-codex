@@ -1,10 +1,14 @@
 package vn.com.viettel.repositories.jpa;
+import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import vn.com.viettel.entities.CatOutstandingType;
 
-import java.util.List;
-
+@Repository
 public interface CatOutstandingTypeRepository extends JpaRepository<CatOutstandingType, Long> {
-    List<CatOutstandingType> findAllByIdInAndIsDeletedFalse(List<Long> ids);
+    Optional<CatOutstandingType> findByIdAndIsDeletedFalse(Long id);
+
+    List<CatOutstandingType> findAllByIsDeletedFalse();
 }

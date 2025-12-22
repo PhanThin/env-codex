@@ -1,0 +1,64 @@
+package vn.com.viettel.controllers;
+
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
+import vn.com.viettel.dto.ProjectItemDto;
+import vn.com.viettel.services.ProjectItemService;
+
+/**
+ * REST controller for PROJECT_ITEM CRUD APIs under a Project.
+ */
+@RestController
+@RequestMapping("/api/v1/projects/{projectId}/items")
+@RequiredArgsConstructor
+public class ProjectItemController {
+
+    private final ProjectItemService service;
+
+    @Operation(summary = "Create project item under a project")
+    @PostMapping
+    public ResponseEntity<ProjectItemDto> create(
+            @PathVariable Long projectId,
+            @Valid @RequestBody ProjectItemDto request) {
+        return ResponseEntity.ok(service.create(projectId, request));
+    }
+
+    @Operation(summary = "Update project item under a project")
+    @PutMapping("/{itemId}")
+    public ResponseEntity<ProjectItemDto> update(
+            @PathVariable Long projectId,
+            @PathVariable Long itemId,
+            @Valid @RequestBody ProjectItemDto request) {
+        return ResponseEntity.ok(service.update(projectId, itemId, request));
+    }
+
+    @Operation(summary = "Get project item by id under a project")
+    @GetMapping("/{itemId}")
+    public ResponseEntity<ProjectItemDto> getById(
+            @PathVariable Long projectId,
+            @PathVariable Long itemId) {
+        return ResponseEntity.ok(service.getById(projectId, itemId));
+    }
+
+    @Operation(summary = "Get all items under a project")
+    @GetMapping
+    public ResponseEntity<List<ProjectItemDto>> getAll(@PathVariable Long projectId) {
+        return ResponseEntity.ok(service.getAll(projectId));
+    }
+
+    @Operation(summary = "Soft delete project item under a project")
+    @DeleteMapping("/{itemId}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long projectId,
+            @PathVariable Long itemId) {
+        service.delete(projectId, itemId);
+        return ResponseEntity.noContent().build();
+    }
+}
