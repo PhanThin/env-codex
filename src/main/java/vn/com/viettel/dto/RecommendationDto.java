@@ -19,6 +19,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@Schema(name = "Recommendation", description = "Thông tin kiến nghị")
 public class RecommendationDto implements Serializable {
     Long id;
     @Size(max = 50)
@@ -46,7 +47,7 @@ public class RecommendationDto implements Serializable {
             requiredMode = Schema.RequiredMode.NOT_REQUIRED,
             description = "Hạng mục dự án"
     )
-    ProjectItemDto item; // hạng mục dự án
+    ProjectItemDto projectItem; // hạng mục dự án
     @Schema(
             requiredMode = Schema.RequiredMode.NOT_REQUIRED,
             description = "Giai đoạn dự án"
@@ -67,7 +68,7 @@ public class RecommendationDto implements Serializable {
             description = "Mức độ quan trọng",
             allowableValues = {"HIGH_PRIORITY", "PRIORITY", "LOW_PRIORITY"}, example = "LOW_PRIORITY"
     )
-    String priority;
+    PriorityDto priority;
 
     @NotNull(message = "Hạn xử lý là bắt buộc")
     @Schema(
@@ -81,7 +82,7 @@ public class RecommendationDto implements Serializable {
             accessMode = Schema.AccessMode.READ_ONLY,
             description = "Trạng thái kiến nghị"
     )
-    String status;
+    StatusDto status;
     @Schema(
             accessMode = Schema.AccessMode.READ_ONLY,
             description = "Thông tin người tạo"
@@ -142,4 +143,10 @@ public class RecommendationDto implements Serializable {
             description = "Danh sách người được giao xử lý"
     )
     List<UserDto> assignedUsers;
+
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Danh sách file đính kèm"
+    )
+    List<AttachmentDto> attachments;
 }

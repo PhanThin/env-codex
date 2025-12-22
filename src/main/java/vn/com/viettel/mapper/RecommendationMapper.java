@@ -1,5 +1,6 @@
 package vn.com.viettel.mapper;
 
+import jakarta.annotation.PostConstruct;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 public class RecommendationMapper {
@@ -38,10 +38,31 @@ public class RecommendationMapper {
     private RecommendationWorkItemRepository recommendationWorkItemRepo;
     @Autowired
     private RecommendationAssignmentRepository recommendationAssignmentRepo;
+    @Autowired
+    private AttachmentRepository attachmentRepo;
+
+    @PostConstruct
+    private void configure() {
+        if (modelMapper.getTypeMap(RecommendationDto.class, Recommendation.class) == null) {
+            modelMapper.typeMap(RecommendationDto.class, Recommendation.class)
+                    .addMappings(mapper -> {
+                        mapper.skip(Recommendation::setStatus);
+                        mapper.skip(Recommendation::setPriority);
+                    });
+        }
+        if (modelMapper.getTypeMap(Recommendation.class, RecommendationDto.class) == null) {
+            modelMapper.typeMap(Recommendation.class, RecommendationDto.class)
+                    .addMappings(mapper -> {
+                        mapper.skip(RecommendationDto::setStatus);
+                        mapper.skip(RecommendationDto::setPriority);
+                    });
+        }
+    }
+
 
     public List<RecommendationDto> mapToRecommendationWorkItem(List<Recommendation> recommendations) {
         if (recommendations == null || recommendations.isEmpty()) return new ArrayList<>();
-        List<Long> recommendationIds = recommendations.stream().map(Recommendation::getId).toList();
+        List<Long> recommendationIds = recommendations.stream().map(Recommendation::getId).distinct().toList();
         List<Long> projectIds = recommendations.stream().map(Recommendation::getProjectId).distinct().filter(Objects::nonNull).toList();
         List<Long> itemIds = recommendations.stream().map(Recommendation::getItemId).distinct().filter(Objects::nonNull).toList();
         List<Long> phaseIds = recommendations.stream().map(Recommendation::getPhaseId).distinct().filter(Objects::nonNull).toList();
@@ -68,22 +89,43 @@ public class RecommendationMapper {
 
 
         Map<Long, SysUser> sysUserMap = sysUserRepo.findAllByIsDeletedFalse().stream().collect(Collectors.toMap(SysUser::getId, Function.identity()));
-                //!userIds.isEmpty() ? sysUserRepo.findAllByIdInAndIsDeletedFalse(userIds).stream().collect(Collectors.toMap(SysUser::getId, Function.identity())) : null;
+        //!userIds.isEmpty() ? sysUserRepo.findAllByIdInAndIsDeletedFalse(userIds).stream().collect(Collectors.toMap(SysUser::getId, Function.identity())) : null;
 
         Map<Long, List<RecommendationAssignment>> recommendationAssignmentMap = !recommendationIds.isEmpty() ? recommendationAssignmentRepo.findAllByRecommendationIdInAndIsDeletedFalse(recommendationIds).stream().collect(Collectors.groupingBy(RecommendationAssignment::getRecommendationId)) : null;
 
+        Map<Long, List<AttachmentDto>> attachmentMap;
+        if (recommendations.size() == 1) { // chỉ lấy attachment khi chỉ có 1 recommendation để tối ưu
+            List<Attachment> attachments = attachmentRepo.findAllByReferenceIdAndReferenceTypeAndIsDeletedFalse(recommendations.get(0).getId(), Constants.RECOMMENDATION_REFERENCE_TYPE);
+            attachmentMap = attachments.stream().map((element) -> modelMapper.map(element, AttachmentDto.class)).collect(Collectors.groupingBy(AttachmentDto::getReferenceId));
+        } else {
+            attachmentMap = null;
+        }
+
         return recommendations.stream()
-                .map(recommendation -> toDto(recommendation, projectMap, recommendationTypeMap, phaseMap, workItemMap, recommendationWorkItemMap, projectItemMap, sysUserMap, recommendationAssignmentMap))
+                .map(recommendation -> toDto(recommendation, projectMap, recommendationTypeMap, phaseMap, workItemMap, recommendationWorkItemMap, projectItemMap, sysUserMap, recommendationAssignmentMap, attachmentMap))
                 .toList();
     }
 
     public RecommendationDto toDto(Recommendation recommendation, Map<Long, Project> projectMap,
                                    Map<Long, CatRecommendationType> recommendationTypeMap, Map<Long, CatProjectPhase> phaseMap,
                                    Map<Long, WorkItem> workItemMap, Map<Long, List<RecommendationWorkItem>> recommendationWorkItemMap,
-                                   Map<Long, ProjectItem> projectItemMap, Map<Long, SysUser> sysUserMap, Map<Long, List<RecommendationAssignment>> recommendationAssignmentMap) {
+                                   Map<Long, ProjectItem> projectItemMap, Map<Long, SysUser> sysUserMap,
+                                   Map<Long, List<RecommendationAssignment>> recommendationAssignmentMap, Map<Long, List<AttachmentDto>> attachmentMap) {
         if (recommendation == null) return null;
 
         RecommendationDto dto = modelMapper.map(recommendation, RecommendationDto.class);
+        if (recommendation.getPriority() != null) {
+            PriorityDto priorityDto = new PriorityDto();
+            priorityDto.setCode(recommendation.getPriority());
+            priorityDto.setName(PriorityEnum.valueOf(recommendation.getPriority()).getVietnameseName());
+            dto.setPriority(priorityDto);
+        }
+        if (recommendation.getStatus() != null) {
+            StatusDto statusDto = new StatusDto();
+            statusDto.setCode(recommendation.getStatus());
+            statusDto.setName(RecommendationStatusEnum.valueOf(recommendation.getStatus()).getVietnameseName());
+            dto.setStatus(statusDto);
+        }
         if (projectMap != null && recommendation.getProjectId() != null && projectMap.containsKey(recommendation.getProjectId())) {
             dto.setProject(modelMapper.map(projectMap.get(recommendation.getProjectId()), ProjectDto.class));
         }
@@ -118,7 +160,7 @@ public class RecommendationMapper {
             }
         }
         if (projectItemMap != null && recommendation.getItemId() != null && projectItemMap.containsKey(recommendation.getItemId())) {
-            dto.setItem(modelMapper.map(projectItemMap.get(recommendation.getItemId()), ProjectItemDto.class));
+            dto.setProjectItem(modelMapper.map(projectItemMap.get(recommendation.getItemId()), ProjectItemDto.class));
         }
         if (sysUserMap != null) {
             if (recommendation.getCreatedById() != null && sysUserMap.containsKey(recommendation.getCreatedById())) {
@@ -129,6 +171,12 @@ public class RecommendationMapper {
             }
             if (recommendation.getLastUpdateBy() != null && sysUserMap.containsKey(recommendation.getLastUpdateBy())) {
                 dto.setLastUpdateByUser(modelMapper.map(sysUserMap.get(recommendation.getLastUpdateBy()), UserDto.class));
+            }
+        }
+        if (attachmentMap != null) {
+            List<AttachmentDto> attachments = attachmentMap.get(recommendation.getId());
+            if (attachments != null) {
+                dto.setAttachments(attachments);
             }
         }
         return dto;
@@ -144,19 +192,22 @@ public class RecommendationMapper {
         entity.setCreatedAt(LocalDateTime.now());
         entity.setCreatedById(user != null ? user.getId() : Constants.DEFAULT_USER_ID);
         entity.setCreatedOrgId(user != null ? user.getOrgId() : Constants.DEFAULT_USER_ID);
-        entity.setStatus(RecommendationStatusEnum.NEW.getValue());
+        entity.setStatus(RecommendationStatusEnum.NEW.name());
         return entity;
     }
 
     private void setSelectFields(RecommendationDto dto, Recommendation entity) {
+        if (dto.getPriority() != null) {
+            entity.setPriority(dto.getPriority().getCode());
+        }
         if (dto.getProject() != null) {
             entity.setProjectId(dto.getProject().getId());
         } else {
             entity.setProjectId(null);
         }
 
-        if (dto.getItem() != null) {
-            entity.setItemId(dto.getItem().getId());
+        if (dto.getProjectItem() != null) {
+            entity.setItemId(dto.getProjectItem().getId());
         } else {
             entity.setItemId(null);
         }

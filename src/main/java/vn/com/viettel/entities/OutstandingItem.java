@@ -23,7 +23,7 @@ public class OutstandingItem {
 
     @Size(max = 50)
     @NotNull
-    @Column(name = "OUTSTANDING_CODE", nullable = false, length = 50)
+    @Column(name = "OUTSTANDING_CODE", length = 50)
     private String outstandingCode;
 
     @NotNull

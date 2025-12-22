@@ -33,7 +33,7 @@ public class Recommendation {
 
     @Size(max = 250)
     @NotNull
-    @Column(name = "RECOMMENDATION_TITLE", nullable = false, length = 250, unique = true)
+    @Column(name = "RECOMMENDATION_TITLE", nullable = false, length = 250)
     private String recommendationTitle;
 
     @Size(max = 500)
