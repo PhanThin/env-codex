@@ -174,7 +174,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         } else {
             Optional<Recommendation> recommendation = recommendationRepository.findByRecommendationTitle(dto.getRecommendationTitle());
             if (recommendation.isPresent()) {
-                throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.title.duplicate", dto.getRecommendationTitle()));
+                throw new CustomException(HttpStatus.CONFLICT.value(), msg("recommendation.title.duplicate", dto.getRecommendationTitle()));
             }
         }
 
@@ -185,7 +185,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
         Long recTypeId = dto.getRecommendationType() == null ? null : dto.getRecommendationType().getId();
         if (recTypeId == null || !recommendationTypeRepo.existsById(recTypeId)) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.type.notfound"));
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.type.notfound"));
         }
         if (StringUtils.isBlank(dto.getPriority())) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.priority.required"));
@@ -202,7 +202,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         Long projectId = dto.getProject() == null ? null : dto.getProject().getId();
         if (projectId != null) {
             if (!projectRepo.existsById(projectId)) {
-                throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.project.notfound", projectId));
+                throw new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.project.notfound", projectId));
             }
 
             Long itemId = dto.getItem() == null ? null : dto.getItem().getId();
@@ -210,14 +210,14 @@ public class RecommendationServiceImpl implements RecommendationService {
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.item.required"));
             }
 
-            ProjectItem item = projectItemRepo.findById(itemId).orElseThrow(() -> new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.item.notfound", itemId)));
+            ProjectItem item = projectItemRepo.findById(itemId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.item.notfound", itemId)));
             if (!Objects.equals(item.getProjectId(), projectId)) {
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.item.not_belong_to_project", itemId, projectId));
             }
 
             Long phaseId = dto.getPhase() == null ? null : dto.getPhase().getId();
             if (phaseId != null) {
-                CatProjectPhase phase = phaseRepo.findById(phaseId).orElseThrow(() -> new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.phase.notfound", phaseId)));
+                CatProjectPhase phase = phaseRepo.findById(phaseId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.phase.notfound", phaseId)));
                 if (!Objects.equals(phase.getProjectId(), projectId)) {
                     throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.phase.not_belong_to_project", phaseId, projectId));
                 }
@@ -229,7 +229,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                     if (wiId == null) {
                         throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.workitem.id_required"));
                     }
-                    WorkItem wi = workItemRepo.findById(wiId).orElseThrow(() -> new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.workitem.notfound", wiId)));
+                    WorkItem wi = workItemRepo.findById(wiId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.workitem.notfound", wiId)));
                     if (!Objects.equals(wi.getItemId(), itemId)) {
                         throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.workitem.not_belong_to_item", wiId, itemId));
                     }
