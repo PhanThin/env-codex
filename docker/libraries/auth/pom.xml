@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.4.3</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <groupId>vn.com.viettel.auth</groupId>
     <artifactId>backend-auth</artifactId>
@@ -24,7 +24,7 @@
             <groupId>vn.com.viettel.core</groupId>
             <artifactId>dto</artifactId>
             <version>${backend-dto}</version>
-            <systemPath>${project.basedir}/docker/libraries/backend-core-3.0.0-RELEASE.jar</systemPath>
+<!--            <systemPath>${project.basedir}/docker/libraries/backend-core-3.0.0-RELEASE.jar</systemPath>-->
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

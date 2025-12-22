@@ -58,10 +58,10 @@ public class GlobalSecurityConfiguration {
     MinioClient minioClient;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(requests -> requests.requestMatchers(resource).permitAll())
-                .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()))
-                .addFilterAfter(createPolicyEnforcerFilter(), BearerTokenAuthenticationFilter.class);
+//        http
+//                .authorizeHttpRequests(requests -> requests.requestMatchers(resource).permitAll())
+//                .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()))
+//                .addFilterAfter(createPolicyEnforcerFilter(), BearerTokenAuthenticationFilter.class);
 
         // Cau hinh restricted IP via URL
         String strUrlIpRestricted = ipRestrictedUrl;
@@ -141,19 +141,19 @@ public class GlobalSecurityConfiguration {
         return http.build();
     }
 
-    private ServletPolicyEnforcerFilter createPolicyEnforcerFilter() {
-        if (!cache.containsKey(applicationName)) {
-            String clientObject = String.format("%s.json", applicationName);
-            LOGGER.info("Cache miss, load keycloak adapter config from minio/{}/{}", MINIO_BUCKET, clientObject);
-            try (InputStream is = minioClient.getObject(GetObjectArgs.builder().bucket(MINIO_BUCKET).object(clientObject).build())) {
-                PolicyEnforcerConfig config = JsonSerialization.readValue(is, PolicyEnforcerConfig.class);
-                cache.put(applicationName, new ServletPolicyEnforcerFilter(request -> config));
-            } catch (Exception e) {
-                throw new IllegalStateException(String.format("Unable to load: %s/%s", MINIO_BUCKET, clientObject), e);
-            }
-        }
-        return cache.get(applicationName);
-    }
+//    private ServletPolicyEnforcerFilter createPolicyEnforcerFilter() {
+//        if (!cache.containsKey(applicationName)) {
+//            String clientObject = String.format("%s.json", applicationName);
+//            LOGGER.info("Cache miss, load keycloak adapter config from minio/{}/{}", MINIO_BUCKET, clientObject);
+//            try (InputStream is = minioClient.getObject(GetObjectArgs.builder().bucket(MINIO_BUCKET).object(clientObject).build())) {
+//                PolicyEnforcerConfig config = JsonSerialization.readValue(is, PolicyEnforcerConfig.class);
+//                cache.put(applicationName, new ServletPolicyEnforcerFilter(request -> config));
+//            } catch (Exception e) {
+//                throw new IllegalStateException(String.format("Unable to load: %s/%s", MINIO_BUCKET, clientObject), e);
+//            }
+//        }
+//        return cache.get(applicationName);
+//    }
 
     @Bean
     JwtDecoder jwtDecoder() {
