@@ -5,8 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -21,6 +19,7 @@ import vn.com.viettel.minio.services.FileService;
 import vn.com.viettel.repositories.jpa.*;
 import vn.com.viettel.services.RecommendationService;
 import vn.com.viettel.utils.Constants;
+import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.time.LocalDateTime;
@@ -52,7 +51,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Autowired
     private SysUserRepository userRepository;
     @Autowired
-    private MessageSource messageSource;
+    private Translator translator;
     @Autowired
     private RecommendationWorkItemRepository recommendationWorkItemRepository;
     @Autowired
@@ -104,11 +103,11 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public RecommendationDto updateRecommendation(Long id, RecommendationDto dto, MultipartFile[] files) throws CustomException {
         if (id == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.id.null"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
         }
         dto.setId(id);
         Recommendation entity = recommendationRepository.findById(id)
-                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.notFound", id)));
+                .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
 
         SysUser currentUser = getCurrentUser();
         Long currentUserId = currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID;
@@ -224,10 +223,10 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public void deleteRecommendation(Long id) throws CustomException {
         if (id == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.id.null"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
         }
         SysUser currentUser = getCurrentUser();
-        Recommendation entity = recommendationRepository.findById(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.notFound", id)));
+        Recommendation entity = recommendationRepository.findById(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
         entity.setIsDeleted(true);
         entity.setDeletedAt(LocalDateTime.now());
         entity.setDeletedById(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
@@ -317,82 +316,77 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public RecommendationDto getRecommendationById(Long id) {
         if (id == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.id.null"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
         }
         Recommendation recommendation = recommendationRepository.findById(id).orElse(null);
         if (recommendation == null) {
-            throw new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.notFound", id));
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id));
         }
         return recommendationMapper.mapToRecommendationWorkItem(List.of(recommendation)).getFirst();
     }
 
-    private String msg(String code, Object... args) {
-        Locale locale = LocaleContextHolder.getLocale();
-        return messageSource.getMessage(code, args, locale);
-    }
-
     public void validate(RecommendationDto dto, boolean isUpdate) throws CustomException {
         if (dto == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.payload.null"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.payload.null"));
         }
         if (StringUtils.isBlank(dto.getRecommendationTitle())) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.title.required"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.title.required"));
         } else if (dto.getRecommendationTitle().length() > 250) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.title.length"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.title.length"));
         } else {
             Optional<Recommendation> recommendation = recommendationRepository.findByRecommendationTitle(dto.getRecommendationTitle());
             if (recommendation.isPresent()) {
                 if (isUpdate && !recommendation.get().getId().equals(dto.getId())) {
-                    throw new CustomException(HttpStatus.CONFLICT.value(), msg("recommendation.title.duplicate", dto.getRecommendationTitle()));
+                    throw new CustomException(HttpStatus.CONFLICT.value(), translator.getMessage("recommendation.title.duplicate", dto.getRecommendationTitle()));
                 }
                 if (!isUpdate) {
-                    throw new CustomException(HttpStatus.CONFLICT.value(), msg("recommendation.title.duplicate", dto.getRecommendationTitle()));
+                    throw new CustomException(HttpStatus.CONFLICT.value(), translator.getMessage("recommendation.title.duplicate", dto.getRecommendationTitle()));
                 }
             }
         }
 
         if (StringUtils.isBlank(dto.getContent())) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.content.required"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.content.required"));
         } else if (dto.getContent().length() > 500) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.content.length"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.content.length"));
         }
         Long recTypeId = dto.getRecommendationType() == null ? null : dto.getRecommendationType().getId();
         if (recTypeId == null || !recommendationTypeRepo.existsById(recTypeId)) {
-            throw new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.type.notfound"));
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.type.notfound"));
         }
         if (StringUtils.isBlank(dto.getPriority())) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.priority.required"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.priority.required"));
         } else {
             try {
                 // Nếu muốn case-insensitive thì có thể dùng toUpperCase() trước
                 RecommendationPriorityEnum.valueOf(dto.getPriority().toUpperCase());
             } catch (IllegalArgumentException ex) {
                 // Không khớp với bất kỳ giá trị nào trong PriorityEnum
-                throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.priority.invalid"));
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.priority.invalid"));
             }
         }
 
         Long projectId = dto.getProject() == null ? null : dto.getProject().getId();
         if (projectId != null) {
             if (!projectRepo.existsById(projectId)) {
-                throw new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.project.notfound", projectId));
+                throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.project.notfound", projectId));
             }
 
             Long itemId = dto.getItem() == null ? null : dto.getItem().getId();
             if (itemId == null) {
-                throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.item.required"));
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.item.required"));
             }
 
-            ProjectItem item = projectItemRepo.findById(itemId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.item.notfound", itemId)));
+            ProjectItem item = projectItemRepo.findById(itemId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.item.notfound", itemId)));
             if (!Objects.equals(item.getProjectId(), projectId)) {
-                throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.item.not_belong_to_project", itemId, projectId));
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.item.not_belong_to_project", itemId, projectId));
             }
 
             Long phaseId = dto.getPhase() == null ? null : dto.getPhase().getId();
             if (phaseId != null) {
-                CatProjectPhase phase = phaseRepo.findById(phaseId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.phase.notfound", phaseId)));
+                CatProjectPhase phase = phaseRepo.findById(phaseId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.phase.notfound", phaseId)));
                 if (!Objects.equals(phase.getProjectId(), projectId)) {
-                    throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.phase.not_belong_to_project", phaseId, projectId));
+                    throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.phase.not_belong_to_project", phaseId, projectId));
                 }
             }
 
@@ -400,11 +394,11 @@ public class RecommendationServiceImpl implements RecommendationService {
                 for (WorkItemDto wiDto : dto.getWorkItems()) {
                     Long wiId = wiDto == null ? null : wiDto.getId();
                     if (wiId == null) {
-                        throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.workitem.id_required"));
+                        throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.workitem.id_required"));
                     }
-                    WorkItem wi = workItemRepo.findById(wiId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("recommendation.workitem.notfound", wiId)));
+                    WorkItem wi = workItemRepo.findById(wiId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.workitem.notfound", wiId)));
                     if (!Objects.equals(wi.getItemId(), itemId)) {
-                        throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("recommendation.workitem.not_belong_to_item", wiId, itemId));
+                        throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.workitem.not_belong_to_item", wiId, itemId));
                     }
                 }
             }
