@@ -144,7 +144,7 @@ public class RecommendationMapper {
         entity.setCreatedAt(LocalDateTime.now());
         entity.setCreatedById(user != null ? user.getId() : Constants.DEFAULT_USER_ID);
         entity.setCreatedOrgId(user != null ? user.getOrgId() : Constants.DEFAULT_USER_ID);
-        entity.setStatus(RecommendationStatusEnum.UN_PROCESS.getValue());
+        entity.setStatus(RecommendationStatusEnum.NEW.getValue());
         return entity;
     }
 

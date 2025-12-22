@@ -64,7 +64,8 @@ public class RecommendationDto implements Serializable {
     @Size(max = 20)
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
-            description = "Mức độ quan trọng"
+            description = "Mức độ quan trọng",
+            allowableValues = {"HIGH_PRIORITY", "PRIORITY", "LOW_PRIORITY"}, example = "LOW_PRIORITY"
     )
     String priority;
 
@@ -76,33 +77,69 @@ public class RecommendationDto implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd")
     LocalDate deadline;
 
-    @Size(max = 20)
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Trạng thái kiến nghị"
+    )
     String status;
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Thông tin người tạo"
+    )
     UserDto createdByUser;
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Thông tin đơn vị tạo"
+    )
     OrgDto createdOrg;
     @JsonFormat(
             shape = JsonFormat.Shape.STRING,
             pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
     )
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Thời gian tạo kiến nghị"
+    )
     LocalDateTime createdAt;
+
     @JsonFormat(
             shape = JsonFormat.Shape.STRING,
             pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
     )
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Thời gian đóng kiến nghị"
+    )
     LocalDateTime closedAt;
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Thông tin người đóng kiến nghị"
+    )
     UserDto closedByUser;
     @JsonFormat(
             shape = JsonFormat.Shape.STRING,
             pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
     )
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Thời gian cập nhật kiến nghị"
+    )
     LocalDateTime lastUpdate;
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Thông tin người cập nhật"
+    )
     UserDto lastUpdateByUser;
 
     @Schema(
             requiredMode = Schema.RequiredMode.NOT_REQUIRED,
-            description = "Công việc"
+            description = "Danh sách công việc"
     )
     List<WorkItemDto> workItems;
 
+    @Schema(
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            description = "Danh sách người được giao xử lý"
+    )
     List<UserDto> assignedUsers;
 }

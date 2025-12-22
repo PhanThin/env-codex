@@ -1,6 +1,7 @@
 package vn.com.viettel.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,56 +10,65 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
+@Schema(description = "Đối tượng chứa điều kiện tìm kiếm kiến nghị")
 public class RecommendationSearchRequestDto {
 
-    // Từ khóa - tìm theo tên kiến nghị
+    @Schema(description = "Từ khóa tìm kiếm (theo tên kiến nghị)", example = "Kiến nghị về tiến độ")
     private String keyword;
 
-    // Dự án (Toàn bộ nếu null)
+    @Schema(description = "ID của dự án. Null nếu tìm kiếm toàn bộ")
     private Long projectId;
 
-    // Hạng mục (Toàn bộ nếu null)
+    @Schema(description = "ID của hạng mục. Null nếu tìm kiếm toàn bộ")
     private Long itemId;
 
-    // Công việc (Toàn bộ nếu null)
+    @Schema(description = "ID của công việc. Null nếu tìm kiếm toàn bộ")
     private Long workItemId;
 
-    // Loại kiến nghị (Toàn bộ nếu null)
+    @Schema(description = "ID của loại kiến nghị. Null nếu tìm kiếm toàn bộ")
     private Long recommendationTypeId;
 
-    // Mức độ quan trọng: VERY_IMPORTANT, IMPORTANT, NORMAL, hoặc ALL/null = Toàn bộ
+    @Schema(description = "Mức độ quan trọng. Null nếu tìm kiếm toàn bộ", allowableValues = {"HIGH_PRIORITY", "PRIORITY", "LOW_PRIORITY"}, example = "LOW_PRIORITY")
     private String priority;
 
-    // Trạng thái: NEW, IN_PROGRESS, DONE, hoặc ALL/null = Toàn bộ
+    @Schema(description = "Trạng thái kiến nghị. Null nếu tìm kiếm toàn bộ", allowableValues = {"NEW", "IN_PROGRESS", "DONE"}, example = "NEW")
     private String status;
 
-    // Đơn vị (map với createdOrgId) - Toàn bộ nếu null
+    @Schema(description = "ID đơn vị tạo. Null nếu tìm kiếm toàn bộ")
     private Long orgId;
 
-    // Người tạo - Toàn bộ nếu null
+    @Schema(description = "ID người tạo. Null nếu tìm kiếm toàn bộ")
     private Long createdById;
 
-    // Người xử lý - Toàn bộ nếu null
+    @Schema(description = "ID người đóng kiến nghị. Null nếu tìm kiếm toàn bộ")
     private Long closedById;
 
-    // Thời gian tạo (lọc theo createdAt)
-    @JsonFormat(pattern = "ddMMyyyy")
+    @Schema(description = "Tìm từ ngày tạo (dd-MM-yyyy)", example = "20-12-2023")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate createdFrom;
 
-    @JsonFormat(pattern = "ddMMyyyy")
+    @Schema(description = "Tìm đến ngày tạo (dd-MM-yyyy)", example = "22-12-2023")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate createdTo;
 
-    // Hạn xử lý (lọc theo deadline)
-    @JsonFormat(pattern = "ddMMyyyy")
+    @Schema(description = "Tìm từ ngày hết hạn (dd-MM-yyyy)", example = "20-12-2023")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate deadlineFrom;
 
-    @JsonFormat(pattern = "ddMMyyyy")
+    @Schema(description = "Tìm đến ngày hết hạn (dd-MM-yyyy)", example = "20-12-2023")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate deadlineTo;
 
-    // Phân trang
-    private Integer page = 0;      // mặc định trang 0
-    private Integer size = 20;     // mặc định 20 bản ghi
+    @Schema(description = "Số thứ tự trang (bắt đầu từ 0)", example = "0")
+    private Integer page = 0;
+
+    @Schema(description = "Số bản ghi trên mỗi trang", example = "20")
+    private Integer size = 20;
+
+    @Schema(description = "Trường dùng để sắp xếp", example = "createdAt")
     private String sortBy = "createdAt";
+
+    @Schema(description = "Hướng sắp xếp", allowableValues = {"ASC", "DESC"}, example = "DESC")
     @Pattern(
             regexp = "(?i)ASC|DESC",
             message = "sortDirection chỉ được phép là ASC hoặc DESC"

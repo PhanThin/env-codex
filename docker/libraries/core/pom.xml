@@ -19,7 +19,7 @@
         <spring-cloud.version>2023.0.1</spring-cloud.version>
         <resilience4j.version>3.0.0</resilience4j.version>
         <jasypt.version>3.0.5</jasypt.version>
-        <openapi.version>2.5.0</openapi.version>
+        <openapi.version>2.7.0</openapi.version>
         <modelmapper.version>3.2.0</modelmapper.version>
         <janino.version>3.1.12</janino.version>
     </properties>

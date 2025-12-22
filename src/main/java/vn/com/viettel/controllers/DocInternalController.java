@@ -1,5 +1,6 @@
 package vn.com.viettel.controllers;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+@Hidden
 @RestController
 @RequestMapping("/api/v1/doc-internal")
 @FieldDefaults(level = AccessLevel.PRIVATE)

@@ -1,11 +1,13 @@
 package vn.com.viettel.dto;
 
+import lombok.Getter;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.util.Optional;
 
+@Getter
 public enum RecommendationStatusEnum {
-    UN_PROCESS("CHUA_XU_LY"), PROCESSING("DANG_XU_LY"), FINISHED("HOAN_THANH");
+    NEW("CHUA_XU_LY"), IN_PROGRESS("DANG_XU_LY"), DONE("HOAN_THANH");
 
     private final String value;
 
@@ -24,7 +26,4 @@ public enum RecommendationStatusEnum {
         return Optional.empty();
     }
 
-    public String getValue() {
-        return value;
-    }
 }

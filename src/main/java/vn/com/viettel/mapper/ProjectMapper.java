@@ -3,9 +3,7 @@ package vn.com.viettel.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import vn.com.viettel.dto.ProjectCreateRequest;
 import vn.com.viettel.dto.ProjectDto;
-import vn.com.viettel.dto.ProjectUpdateRequest;
 import vn.com.viettel.entities.Project;
 
 /**
