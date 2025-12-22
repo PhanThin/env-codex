@@ -6,10 +6,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.YesNoConverter;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -41,8 +41,10 @@ public class OutstandingAcceptance {
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")
     @Column(name = "ACCEPTED_AT", nullable = false)
-    private Instant acceptedAt;
+    private LocalDateTime acceptedAt;
 
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 
@@ -50,7 +52,7 @@ public class OutstandingAcceptance {
     private Long updatedBy;
 
     @Column(name = "UPDATED_AT")
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
 
 }

@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.YesNoConverter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -87,6 +89,8 @@ public class Recommendation {
     private Long closedById;
 
     @NotNull
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @ColumnDefault("'N'")
     @Column(name = "IS_DELETED", nullable = false)
     private Boolean isDeleted;

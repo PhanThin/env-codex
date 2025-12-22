@@ -5,11 +5,13 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.type.YesNoConverter;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -33,6 +35,7 @@ public class OutstandingAlertConfig {
     private BigDecimal percentTime;
 
     @NotNull
+    @JdbcTypeCode(java.sql.Types.CHAR)
     @ColumnDefault("'Y'")
     @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive;
@@ -40,7 +43,7 @@ public class OutstandingAlertConfig {
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")
     @Column(name = "CREATED_AT", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.RESTRICT)
@@ -51,8 +54,10 @@ public class OutstandingAlertConfig {
     private Long updatedBy;
 
     @Column(name = "UPDATED_AT")
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 

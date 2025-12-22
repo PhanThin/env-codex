@@ -1,16 +1,15 @@
 package vn.com.viettel.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.YesNoConverter;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -36,6 +35,8 @@ public class CatRecommendationSource {
     private String description;
 
     @NotNull
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @ColumnDefault("'Y'")
     @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive;
@@ -43,17 +44,19 @@ public class CatRecommendationSource {
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")
     @Column(name = "CREATED_AT", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "UPDATED_BY")
     private Long updatedBy;
 
     @Column(name = "UPDATED_AT")
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
     @Column(name = "CREATED_BY")
     private Long createdBy;
 
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 

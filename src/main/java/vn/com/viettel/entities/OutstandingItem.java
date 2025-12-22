@@ -6,9 +6,11 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.YesNoConverter;
 
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -66,7 +68,7 @@ public class OutstandingItem {
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")
     @Column(name = "CREATED_AT", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @NotNull
     @Column(name = "ASSIGNED_USER_ID", nullable = false)
@@ -86,16 +88,20 @@ public class OutstandingItem {
     private String status;
 
     @NotNull
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @ColumnDefault("'N'")
     @Column(name = "IS_LOCKED", nullable = false)
     private Boolean isLocked;
 
     @Column(name = "LAST_UPDATE")
-    private Instant lastUpdate;
+    private LocalDateTime lastUpdate;
 
     @Column(name = "LAST_UPDATE_BY")
     private Long lastUpdateBy;
 
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 

@@ -6,10 +6,13 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.type.YesNoConverter;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -34,7 +37,7 @@ public class RecommendationResponse {
     @NotNull
     @ColumnDefault("SYSTIMESTAMP")
     @Column(name = "RESPONDED_AT", nullable = false)
-    private Instant respondedAt;
+    private LocalDateTime respondedAt;
 
     @Size(max = 2000)
     @NotNull
@@ -45,8 +48,10 @@ public class RecommendationResponse {
     private Long updatedBy;
 
     @Column(name = "UPDATED_AT")
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 

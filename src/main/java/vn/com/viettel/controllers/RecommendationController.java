@@ -5,12 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.RecommendationDto;
 import vn.com.viettel.dto.RecommendationSearchRequestDto;
 import vn.com.viettel.services.RecommendationService;
@@ -24,15 +23,14 @@ public class RecommendationController {
     private RecommendationService recommendService;
 
 
-    @PostMapping
-    public ResponseEntity<RecommendationDto> createRecommendation(@RequestBody RecommendationDto dto) {
-        RecommendationDto message = recommendService.createRecommendation(dto);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RecommendationDto> createRecommendation(@RequestPart(value = "dto") RecommendationDto dto, @RequestPart(value = "files", required = false) MultipartFile[] files) {
+        RecommendationDto message = recommendService.createRecommendation(dto, files);
         return ResponseEntity.status(HttpStatus.OK).body(message);
     }
 
     @PostMapping("/search")
-    public ResponseEntity<Page<RecommendationDto>> searchRecommendations(
-            @RequestBody @Validated RecommendationSearchRequestDto request) {
+    public ResponseEntity<Page<RecommendationDto>> searchRecommendations(@RequestBody @Validated RecommendationSearchRequestDto request) {
         Page<RecommendationDto> pageResult = recommendService.searchRecommendations(request);
         return ResponseEntity.ok(pageResult);
     }
