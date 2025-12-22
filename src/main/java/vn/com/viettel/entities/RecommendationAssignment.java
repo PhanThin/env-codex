@@ -17,9 +17,15 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "RECOMMENDATION_ASSIGNMENT")
+@SequenceGenerator(
+        name = "recommendation_assignment_seq_gen",
+        sequenceName = "SEQ_RECOMMENDATION_ASSIGNMENT",
+        allocationSize = 1
+)
 public class RecommendationAssignment {
     @Id
     @Column(name = "ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recommendation_assignment_seq_gen")
     private Long id;
 
     @NotNull

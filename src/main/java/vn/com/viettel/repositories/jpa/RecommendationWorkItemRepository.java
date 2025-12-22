@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface RecommendationWorkItemRepository extends JpaRepository<RecommendationWorkItem, Long> {
     List<RecommendationWorkItem> findAllByRecommendationIdInAndIsDeletedFalse(List<Long> recommendationIds);
+
+    List<RecommendationWorkItem> findAllByRecommendationIdAndIsDeletedFalse(Long recommendationId);
 }

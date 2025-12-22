@@ -10,4 +10,6 @@ public interface SysUserRepository extends JpaRepository<SysUser, Long> {
     Optional<SysUser> findByUsername(String username);
 
     List<SysUser> findAllByIdInAndIsDeletedFalse(List<Long> ids);
+
+    List<SysUser> findAllByIsDeletedFalse();
 }

@@ -103,4 +103,6 @@ public class RecommendationDto implements Serializable {
             description = "Công việc"
     )
     List<WorkItemDto> workItems;
+
+    List<UserDto> assignedUsers;
 }

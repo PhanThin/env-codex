@@ -34,4 +34,21 @@ public class RecommendationController {
         Page<RecommendationDto> pageResult = recommendService.searchRecommendations(request);
         return ResponseEntity.ok(pageResult);
     }
+
+    @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, path = "/{id}")
+    public ResponseEntity<RecommendationDto> updateRecommendation(@PathVariable Long id, @RequestPart(value = "dto") RecommendationDto dto, @RequestPart(value = "files", required = false) MultipartFile[] files) {
+        RecommendationDto message = recommendService.updateRecommendation(id, dto, files);
+        return ResponseEntity.status(HttpStatus.OK).body(message);
+    }
+
+    @DeleteMapping(path = "/{id}")
+    public ResponseEntity<?> deleteRecommendation(@PathVariable Long id) {
+        recommendService.deleteRecommendation(id);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @GetMapping(path = "/{id}")
+    public ResponseEntity<RecommendationDto> getRecommendation(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(recommendService.getRecommendationById(id));
+    }
 }
