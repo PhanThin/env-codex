@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
     List<Attachment> findAllByReferenceIdAndReferenceTypeAndIsDeletedFalse(Long referenceId, String referenceType);
+
+    List<Attachment> findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(List<Long> referenceIds, String referenceType);
 }

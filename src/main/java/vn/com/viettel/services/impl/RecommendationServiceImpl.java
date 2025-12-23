@@ -60,6 +60,8 @@ public class RecommendationServiceImpl implements RecommendationService {
     private RecommendationAssignmentRepository recommendationAssignmentRepository;
     @Autowired
     private FileService fileService;
+    @Autowired
+    private RecommendationResponseRepository recommendationResponseRepository;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "createdAt",
@@ -91,7 +93,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
             for (ObjectFileDTO file : objectFileDTOList) {
                 // Lưu thông tin file vào bảng Attachment (tùy thuộc vào cấu trúc entity của bạn)
-                Attachment attachment = getAttachment(file, entity);
+                Attachment attachment = getAttachment(file, entity.getId(), Constants.RECOMMENDATION_REFERENCE_TYPE, currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
                 attachmentRepository.save(attachment);
             }
         }
@@ -130,7 +132,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (files != null && files.length > 0) {
             List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, Constants.RECOMMENDATION_REFERENCE_TYPE, files);
             for (ObjectFileDTO file : objectFileDTOList) {
-                Attachment attachment = getAttachment(file, entity);
+                Attachment attachment = getAttachment(file, entity.getId(), Constants.RECOMMENDATION_REFERENCE_TYPE, currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
                 attachmentRepository.save(attachment);
             }
         }
@@ -221,26 +223,43 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     @Transactional
     @Override
-    public void deleteRecommendation(Long id) throws CustomException {
-        if (id == null) {
+    public void deleteRecommendations(List<Long> id) throws CustomException {
+        if (id == null || id.isEmpty()) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
         }
+        List<Recommendation> entities = recommendationRepository.findAllByIdInAndIsDeletedFalse(id);
+        if (entities == null || entities.isEmpty()) {
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id));
+        }
+        if (entities.size() != id.size()) {
+            List<Long> notFoundIds = id.stream().filter(i -> entities.stream().noneMatch(e -> e.getId().equals(i))).toList();
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", notFoundIds));
+        }
         SysUser currentUser = getCurrentUser();
-        Recommendation entity = recommendationRepository.findById(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
-        entity.setIsDeleted(true);
-        entity.setDeletedAt(LocalDateTime.now());
-        entity.setDeletedById(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
-        recommendationRepository.save(entity);
+        entities.forEach(entity -> {
+            entity.setIsDeleted(true);
+            entity.setDeletedAt(LocalDateTime.now());
+            entity.setDeletedById(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
+        });
+        recommendationRepository.saveAll(entities);
 
-        List<RecommendationWorkItem> recommendationWorkItemList = recommendationWorkItemRepository.findAllByRecommendationIdInAndIsDeletedFalse(List.of(id));
+        List<RecommendationWorkItem> recommendationWorkItemList = recommendationWorkItemRepository.findAllByRecommendationIdInAndIsDeletedFalse(id);
         if (recommendationWorkItemList != null && !recommendationWorkItemList.isEmpty()) {
-            recommendationWorkItemList.forEach(wi -> wi.setIsDeleted(true));
+            recommendationWorkItemList.forEach(wi -> {
+                wi.setIsDeleted(true);
+                wi.setUpdatedBy(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
+                wi.setUpdatedAt(LocalDateTime.now());
+            });
             recommendationWorkItemRepository.saveAll(recommendationWorkItemList);
         }
 
-        List<Attachment> recommendationFileList = attachmentRepository.findAllByReferenceIdAndReferenceTypeAndIsDeletedFalse(id, Constants.RECOMMENDATION_REFERENCE_TYPE);
+        List<Attachment> recommendationFileList = attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(id, Constants.RECOMMENDATION_REFERENCE_TYPE);
         if (recommendationFileList != null && !recommendationFileList.isEmpty()) {
-            recommendationFileList.forEach(file -> file.setIsDeleted(true));
+            recommendationFileList.forEach(file -> {
+                file.setIsDeleted(true);
+                file.setUpdatedBy(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
+                file.setUpdatedAt(LocalDateTime.now());
+            });
             attachmentRepository.saveAll(recommendationFileList);
         }
     }
@@ -258,16 +277,16 @@ public class RecommendationServiceImpl implements RecommendationService {
     }
 
     @NotNull
-    private static Attachment getAttachment(ObjectFileDTO file, Recommendation entity) {
+    private static Attachment getAttachment(ObjectFileDTO file, Long entityId, String referenceType, Long userId) {
         Attachment attachment = new Attachment();
         attachment.setFileName(file.getFileName());
         attachment.setFileSize(file.getFileSize());
         attachment.setFilePath(file.getFilePath());
         attachment.setFileUrl(file.getLinkUrlPublic()); // Đường dẫn/tên file trên MinIO
-        attachment.setReferenceId(entity.getId());
-        attachment.setReferenceType(Constants.RECOMMENDATION_REFERENCE_TYPE);
+        attachment.setReferenceId(entityId);
+        attachment.setReferenceType(referenceType);
         attachment.setUploadedAt(LocalDateTime.now());
-        attachment.setUploadedBy(Constants.DEFAULT_USER_ID);
+        attachment.setUploadedBy(userId);
         return attachment;
     }
 
@@ -318,14 +337,73 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (id == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
         }
-        Recommendation recommendation = recommendationRepository.findById(id).orElse(null);
-        if (recommendation == null) {
-            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id));
-        }
+        Recommendation recommendation = recommendationRepository.findById(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
         return recommendationMapper.mapToRecommendationWorkItem(List.of(recommendation)).getFirst();
     }
 
-    public void validate(RecommendationDto dto, boolean isUpdate) throws CustomException {
+    @Override
+    public RecommendationDto closeRecommendation(Long id) {
+        if (id == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
+        }
+        Recommendation recommendation = recommendationRepository.findById(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
+        if (RecommendationStatusEnum.DONE.name().equals(recommendation.getStatus())) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.already_done"));
+        }
+        SysUser currentUser = getCurrentUser();
+        recommendation.setClosedById(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
+        recommendation.setClosedAt(LocalDateTime.now());
+        recommendation.setStatus(RecommendationStatusEnum.DONE.name());
+        recommendationRepository.save(recommendation);
+        return recommendationMapper.mapToRecommendationWorkItem(List.of(recommendation)).getFirst();
+    }
+
+    @Override
+    public RecommendationResponseDto addRecommendationResponse(Long recommendationId, RecommendationResponseDto dto, MultipartFile[] files) {
+        if (recommendationId == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
+        }
+        if (dto == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.payload.null"));
+        }
+        Recommendation recommendation = recommendationRepository.findById(recommendationId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", recommendationId)));
+        if (RecommendationStatusEnum.DONE.name().equals(recommendation.getStatus())) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.already_done"));
+        }
+        if (dto == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.payload.null"));
+        }
+        if (StringUtils.isBlank(dto.getResponseContent())) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.response.content.required"));
+        }
+        if (dto.getResponseContent().trim().length() > 500) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.response.content.length"));
+        }
+        SysUser currentUser = getCurrentUser();
+        RecommendationResponse recommendationResponse = recommendationMapper.mapToRecommendationResponse(dto, recommendationId, currentUser);
+        recommendationResponseRepository.save(recommendationResponse);
+        List<Attachment> attachments = new ArrayList<>();
+        if (files != null && files.length > 0) {
+            String channel = Constants.RECOMMENDATION_REFERENCE_TYPE + "/" + recommendationResponse.getId() + "/" + Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE;
+            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, channel, files);
+            for (ObjectFileDTO file : objectFileDTOList) {
+                attachments.add(getAttachment(file, recommendationResponse.getId(), Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE, currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID));
+            }
+            attachmentRepository.saveAll(attachments);
+        }
+        return recommendationMapper.mapToRecommendationResponseDto(recommendationResponse, currentUser, attachments);
+    }
+
+    @Override
+    public List<RecommendationResponseDto> getRecommendationResponses(Long recommendationId) {
+        if (recommendationId == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
+        }
+        recommendationRepository.findById(recommendationId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", recommendationId)));
+        return recommendationMapper.mapToRecommendationResponseDto(recommendationResponseRepository.findAllByRecommendationIdAndIsDeletedFalse(recommendationId));
+    }
+
+    protected void validate(RecommendationDto dto, boolean isUpdate) throws CustomException {
         if (dto == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.payload.null"));
         }

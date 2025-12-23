@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum RecommendationStatusEnum {
-    NEW("Chưa xử lý"), IN_PROGRESS("Đang xử lý"), DONE("Hoàn thành");
+    NEW("Chưa xử lý"), DONE("Đã xử lý");
 
     private final String vietnameseName;
 

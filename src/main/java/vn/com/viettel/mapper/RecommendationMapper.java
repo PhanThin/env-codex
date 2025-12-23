@@ -272,4 +272,38 @@ public class RecommendationMapper {
             return recommendationWorkItem;
         }).collect(Collectors.toList());
     }
+
+    public RecommendationResponse mapToRecommendationResponse(RecommendationResponseDto dto, Long recommendationId, SysUser user) {
+        RecommendationResponse response = new RecommendationResponse();
+        response.setResponseContent(dto.getResponseContent());
+        response.setRespondedBy(user != null ? user.getId() : Constants.DEFAULT_USER_ID);
+        response.setRespondedOrgId(user != null ? user.getOrgId() : Constants.DEFAULT_ORG_ID);
+        response.setRespondedAt(LocalDateTime.now());
+        response.setRecommendationId(recommendationId);
+        return response;
+    }
+
+    public List<RecommendationResponseDto> mapToRecommendationResponseDto(List<RecommendationResponse> responses) {
+        if (responses == null || responses.isEmpty()) return new ArrayList<>();
+        List<Long> responseUserId = responses.stream().map(RecommendationResponse::getRespondedBy).distinct().toList();
+        Map<Long, SysUser> sysUserMap = sysUserRepo.findAllByIdInAndIsDeletedFalse(responseUserId).stream().collect(Collectors.toMap(SysUser::getId, Function.identity()));
+        List<Attachment> attachments = attachmentRepo.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(responses.stream().map(RecommendationResponse::getId).distinct().toList(), Constants.RECOMMENDATION_REFERENCE_TYPE);
+        Map<Long, List<Attachment>> attachmentMap = attachments.stream().collect(Collectors.groupingBy(Attachment::getReferenceId));
+        return responses.stream().map(response -> mapToRecommendationResponseDto(response, sysUserMap.get(response.getRespondedBy()), attachmentMap.get(response.getId()))).toList();
+
+    }
+
+    public RecommendationResponseDto mapToRecommendationResponseDto(RecommendationResponse response, SysUser responseUser, List<Attachment> attachments) {
+        RecommendationResponseDto dto = modelMapper.map(response, RecommendationResponseDto.class);
+        dto.setRespondedByUser(responseUser != null ? modelMapper.map(responseUser, UserDto.class) : null);
+        if (attachments != null) {
+            List<AttachmentDto> attachmentDtos = attachments.stream()
+                    .map(attachment -> modelMapper.map(attachment, AttachmentDto.class))
+                    .toList();
+            dto.setAttachments(attachmentDtos);
+        }
+        dto.setRespondedAt(response.getRespondedAt());
+        dto.setRecommendationId(response.getRecommendationId());
+        return dto;
+    }
 }

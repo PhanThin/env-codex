@@ -149,4 +149,5 @@ public class RecommendationDto implements Serializable {
             description = "Danh sách file đính kèm"
     )
     List<AttachmentDto> attachments;
+
 }

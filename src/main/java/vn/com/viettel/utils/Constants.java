@@ -10,7 +10,9 @@ public class Constants {
     public static final String TIMEZONE_VN = "Asia/Ho_Chi_Minh";
 
     public static final Long DEFAULT_USER_ID = 1L;
+    public static final Long DEFAULT_ORG_ID = 1L;
 
     public static final String RECOMMENDATION_REFERENCE_TYPE = "RECOMMENDATION";
+    public static final String RECOMMENDATION_RESPONSE_REFERENCE_TYPE = "RECOMMENDATION_RESPONSE";
     public static final String OUTSTANDING_REFERENCE_TYPE = "OUTSTANDING";
 }
