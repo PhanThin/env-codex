@@ -1,0 +1,65 @@
+package vn.com.viettel.controllers;
+
+
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
+import vn.com.viettel.dto.OutstandingProcessLogDto;
+import vn.com.viettel.services.OutstandingProcessLogService;
+
+/**
+ * REST controller for OUTSTANDING_PROCESS_LOG under an outstandingId.
+ */
+@RestController
+@RequestMapping("/api/v1/outstandings-process-logs/{outstandingId}")
+@RequiredArgsConstructor
+public class OutstandingProcessLogController {
+
+    private final OutstandingProcessLogService service;
+
+    @Operation(summary = "Create outstanding process log")
+    @PostMapping
+    public ResponseEntity<OutstandingProcessLogDto> create(
+            @PathVariable Long outstandingId,
+            @Valid @RequestBody OutstandingProcessLogDto request) {
+        return ResponseEntity.ok(service.create(outstandingId, request));
+    }
+
+    @Operation(summary = "Update outstanding process log")
+    @PutMapping("/{processId}")
+    public ResponseEntity<OutstandingProcessLogDto> update(
+            @PathVariable Long outstandingId,
+            @PathVariable Long processId,
+            @Valid @RequestBody OutstandingProcessLogDto request) {
+        return ResponseEntity.ok(service.update(outstandingId, processId, request));
+    }
+
+    @Operation(summary = "Get outstanding process log by id")
+    @GetMapping("/{processId}")
+    public ResponseEntity<OutstandingProcessLogDto> getById(
+            @PathVariable Long outstandingId,
+            @PathVariable Long processId) {
+        return ResponseEntity.ok(service.getById(outstandingId, processId));
+    }
+
+    @Operation(summary = "Get all outstanding process logs")
+    @GetMapping
+    public ResponseEntity<List<OutstandingProcessLogDto>> getAll(@PathVariable Long outstandingId) {
+        return ResponseEntity.ok(service.getAll(outstandingId));
+    }
+
+    @Operation(summary = "Soft delete outstanding process log")
+    @DeleteMapping("/{processId}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long outstandingId,
+            @PathVariable Long processId) {
+        service.delete(outstandingId, processId);
+        return ResponseEntity.noContent().build();
+    }
+}

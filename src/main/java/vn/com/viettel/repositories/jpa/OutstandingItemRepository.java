@@ -12,4 +12,7 @@ public interface OutstandingItemRepository extends JpaRepository<OutstandingItem
     Optional<OutstandingItem> findByOutstandingTitleAndIsDeletedFalse(String title);
 
     List<OutstandingItem> findAllByIdInAndIsDeletedFalse(List<Long> outstandingIds);
+    boolean existsByIdAndIsDeletedFalse(Long outstandingId);
+
+
 }
