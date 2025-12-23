@@ -11,5 +11,6 @@ public class Constants {
 
     public static final Long DEFAULT_USER_ID = 1L;
 
-    public static final String DEFAULT_REFERENCE_TYPE = "RECOMMENDATION";
+    public static final String RECOMMENDATION_REFERENCE_TYPE = "RECOMMENDATION";
+    public static final String OUTSTANDING_REFERENCE_TYPE = "OUTSTANDING";
 }

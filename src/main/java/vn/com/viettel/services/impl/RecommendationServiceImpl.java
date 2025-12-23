@@ -87,7 +87,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
 
         if (files != null) {
-            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, Constants.DEFAULT_REFERENCE_TYPE, files);
+            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, Constants.RECOMMENDATION_REFERENCE_TYPE, files);
 
             for (ObjectFileDTO file : objectFileDTOList) {
                 // Lưu thông tin file vào bảng Attachment (tùy thuộc vào cấu trúc entity của bạn)
@@ -128,7 +128,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         // 7. Xử lý file đính kèm mới (nếu có)
         if (files != null && files.length > 0) {
-            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, Constants.DEFAULT_REFERENCE_TYPE, files);
+            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, Constants.RECOMMENDATION_REFERENCE_TYPE, files);
             for (ObjectFileDTO file : objectFileDTOList) {
                 Attachment attachment = getAttachment(file, entity);
                 attachmentRepository.save(attachment);
@@ -238,7 +238,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             recommendationWorkItemRepository.saveAll(recommendationWorkItemList);
         }
 
-        List<Attachment> recommendationFileList = attachmentRepository.findAllByReferenceIdAndReferenceTypeAndIsDeletedFalse(id, Constants.DEFAULT_REFERENCE_TYPE);
+        List<Attachment> recommendationFileList = attachmentRepository.findAllByReferenceIdAndReferenceTypeAndIsDeletedFalse(id, Constants.RECOMMENDATION_REFERENCE_TYPE);
         if (recommendationFileList != null && !recommendationFileList.isEmpty()) {
             recommendationFileList.forEach(file -> file.setIsDeleted(true));
             attachmentRepository.saveAll(recommendationFileList);
@@ -265,7 +265,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         attachment.setFilePath(file.getFilePath());
         attachment.setFileUrl(file.getLinkUrlPublic()); // Đường dẫn/tên file trên MinIO
         attachment.setReferenceId(entity.getId());
-        attachment.setReferenceType(Constants.DEFAULT_REFERENCE_TYPE);
+        attachment.setReferenceType(Constants.RECOMMENDATION_REFERENCE_TYPE);
         attachment.setUploadedAt(LocalDateTime.now());
         attachment.setUploadedBy(Constants.DEFAULT_USER_ID);
         return attachment;
@@ -354,12 +354,12 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (recTypeId == null || !recommendationTypeRepo.existsById(recTypeId)) {
             throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.type.notfound"));
         }
-        if (StringUtils.isBlank(dto.getPriority())) {
+        if (dto.getPriority() == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.priority.required"));
         } else {
             try {
                 // Nếu muốn case-insensitive thì có thể dùng toUpperCase() trước
-                RecommendationPriorityEnum.valueOf(dto.getPriority().toUpperCase());
+                PriorityEnum.valueOf(dto.getPriority().getCode().toUpperCase());
             } catch (IllegalArgumentException ex) {
                 // Không khớp với bất kỳ giá trị nào trong PriorityEnum
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.priority.invalid"));
@@ -372,7 +372,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.project.notfound", projectId));
             }
 
-            Long itemId = dto.getItem() == null ? null : dto.getItem().getId();
+            Long itemId = dto.getProjectItem() == null ? null : dto.getProjectItem().getId();
             if (itemId == null) {
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.item.required"));
             }

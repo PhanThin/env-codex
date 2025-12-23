@@ -4,6 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Value;
+import vn.com.viettel.entities.Attachment;
+
+import java.io.Serializable;
 
 import java.time.LocalDateTime;
 
@@ -11,15 +17,25 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AttachmentDto {
-    private Long id;
-    private Long referenceId;
-    private String referenceType;
-    private String fileName;
-    private String fileExt;
-    private Long fileSize;
-    private String fileUrl;
-    private String filePath;
-    private LocalDateTime uploadedAt;
-    private Long uploadedBy;
+public class AttachmentDto implements Serializable {
+    Long id;
+    @NotNull
+    Long referenceId;
+    @NotNull
+    @Size(max = 50)
+    String referenceType;
+    @NotNull
+    @Size(max = 255)
+    String fileName;
+    @Size(max = 20)
+    String fileExt;
+    Long fileSize;
+    @NotNull
+    @Size(max = 1000)
+    String fileUrl;
+    @NotNull
+    @Size(max = 500)
+    String filePath;
+    LocalDateTime uploadedAt;
+    Long uploadedBy;
 }
