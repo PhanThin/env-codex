@@ -1,5 +1,9 @@
 package vn.com.viettel.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Value;
@@ -7,10 +11,12 @@ import vn.com.viettel.entities.Attachment;
 
 import java.io.Serializable;
 
-/**
- * DTO for {@link Attachment}
- */
-@Value
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AttachmentDto implements Serializable {
     Long id;
     @NotNull
@@ -30,4 +36,6 @@ public class AttachmentDto implements Serializable {
     @NotNull
     @Size(max = 500)
     String filePath;
+    LocalDateTime uploadedAt;
+    Long uploadedBy;
 }
