@@ -48,11 +48,18 @@ public class OutstandingItemMapper {
                         mapper.skip(OutstandingItem::setOutstandingTypeId);
                         mapper.skip(OutstandingItem::setPriority);
                         mapper.skip(OutstandingItem::setCreatedBy);
+                        mapper.skip(OutstandingItem::setCreatedById);
                         mapper.skip(OutstandingItem::setCreatedOrgId);
                         mapper.skip(OutstandingItem::setAssignedUserId);
                         mapper.skip(OutstandingItem::setAssignedOrgId);
+                        mapper.skip(OutstandingItem::setAssignedUser);
+                        mapper.skip(OutstandingItem::setAssignedOrg);
                         mapper.skip(OutstandingItem::setStatus);
                         mapper.skip(OutstandingItem::setLastUpdateBy);
+                        mapper.skip(OutstandingItem::setProject);
+                        mapper.skip(OutstandingItem::setProjectItem);
+                        mapper.skip(OutstandingItem::setPhase);
+                        mapper.skip(OutstandingItem::setWorkItem);
                     });
         }
 
@@ -70,6 +77,10 @@ public class OutstandingItemMapper {
                         mapper.skip(OutstandingItemDto::setAssignedOrg);
                         mapper.skip(OutstandingItemDto::setStatus);
                         mapper.skip(OutstandingItemDto::setLastUpdateBy);
+                        mapper.skip(OutstandingItemDto::setProject);
+                        mapper.skip(OutstandingItemDto::setProjectItem);
+                        mapper.skip(OutstandingItemDto::setPhase);
+                        mapper.skip(OutstandingItemDto::setWorkItem);
                     });
         }
     }
@@ -128,7 +139,7 @@ public class OutstandingItemMapper {
         if (entity.getAcceptanceType() != null) {
             AcceptanceTypeDto acceptanceTypeDto = new AcceptanceTypeDto();
             acceptanceTypeDto.setCode(entity.getAcceptanceType());
-            acceptanceTypeDto.setName(OutstandingAcceptianceTypeEnum.valueOf(entity.getAcceptanceType()).getVietnameseName());
+            acceptanceTypeDto.setName(OutstandingAcceptanceTypeEnum.valueOf(entity.getAcceptanceType()).getVietnameseName());
             dto.setAcceptanceType(acceptanceTypeDto);
         }
         // status: String code -> StatusDto
@@ -202,7 +213,7 @@ public class OutstandingItemMapper {
         entity.setCreatedAt(LocalDateTime.now());
         entity.setIsLocked(Boolean.FALSE);
         entity.setIsDeleted(Boolean.FALSE);
-        entity.setCreatedBy(user != null ? user.getId() : Constants.DEFAULT_USER_ID);
+        entity.setCreatedById(user != null ? user.getId() : Constants.DEFAULT_USER_ID);
         entity.setCreatedOrgId(user != null ? user.getOrgId() : Constants.DEFAULT_USER_ID);
         entity.setStatus(RecommendationStatusEnum.NEW.name());
         return entity;
@@ -236,7 +247,7 @@ public class OutstandingItemMapper {
 
         // createdByUser
         if (dto.getCreatedByUser() != null) {
-            entity.setCreatedBy(dto.getCreatedByUser().getId());
+            entity.setCreatedById(dto.getCreatedByUser().getId());
         }
 
         // createdOrg
@@ -270,7 +281,7 @@ public class OutstandingItemMapper {
 
         // Lưu lại các giá trị không được phép thay đổi
         LocalDateTime originalCreatedAt = entity.getCreatedAt();
-        Long originalCreatedBy = entity.getCreatedBy();
+        Long originalCreatedBy = entity.getCreatedById();
         Long originalCreatedOrgId = entity.getCreatedOrgId();
         String originalCode = entity.getOutstandingCode();
         Long originalProjectId = entity.getProjectId();
@@ -281,7 +292,7 @@ public class OutstandingItemMapper {
 
         // Khôi phục lại các giá trị không được phép đổi
         entity.setCreatedAt(originalCreatedAt);
-        entity.setCreatedBy(originalCreatedBy);
+        entity.setCreatedById(originalCreatedBy);
         entity.setCreatedOrgId(originalCreatedOrgId);
         entity.setOutstandingCode(originalCode);
         entity.setProjectId(originalProjectId);
