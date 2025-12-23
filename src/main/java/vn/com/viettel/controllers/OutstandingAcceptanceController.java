@@ -15,7 +15,7 @@ import vn.com.viettel.services.OutstandingAcceptanceService;
  * REST controller for OUTSTANDING_ACCEPTANCE.
  */
 @RestController
-@RequestMapping("/api/outstandings-acceptance/{outstandingId}")
+@RequestMapping("/api/v1/outstandings-acceptance/{outstandingId}")
 @RequiredArgsConstructor
 public class OutstandingAcceptanceController {
 
