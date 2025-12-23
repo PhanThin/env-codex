@@ -1,6 +1,7 @@
 package vn.com.viettel.services.impl;
 
 import org.apache.commons.lang3.StringUtils;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,9 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
 
     @Autowired
     private Translator translator;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     /**
      * Validate dữ liệu khi tạo / cập nhật OutstandingItem
@@ -233,5 +237,18 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
                     translator.getMessage("outstanding.acceptance.refid.length")
             );
         }
+    }
+
+    @Override
+    public OutstandingItemDto getOutstandingItemById(Long id) {
+        if (id == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("outstandingitem.id.null"));
+        }
+        OutstandingItem outstandingItem = outstandingItemRepository.findById(id).orElse(null);
+        if (outstandingItem == null) {
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", id));
+        }
+        // TODO mapper out standing
+        return modelMapper.map(outstandingItem, OutstandingItemDto.class);
     }
 }

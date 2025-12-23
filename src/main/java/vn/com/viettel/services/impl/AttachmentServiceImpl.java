@@ -18,6 +18,8 @@ import vn.com.viettel.minio.dto.ObjectFileDTO;
 import vn.com.viettel.repositories.jpa.AttachmentRepository;
 import vn.com.viettel.repositories.jpa.SysUserRepository;
 import vn.com.viettel.services.AttachmentService;
+import vn.com.viettel.services.OutstandingItemService;
+import vn.com.viettel.services.RecommendationService;
 import vn.com.viettel.services.StorageService;
 import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
@@ -36,6 +38,8 @@ public class AttachmentServiceImpl implements AttachmentService {
     private final StorageService storageService;
     private final Translator translator;
     private final AttachmentMapper attachmentMapper;
+    private final RecommendationService recommendationService;
+    private final OutstandingItemService outstandingItemService;
 
     @Value("${minio.bucketName:evn}")
     private String bucketName;
@@ -54,6 +58,8 @@ public class AttachmentServiceImpl implements AttachmentService {
         if (StringUtils.isBlank(referenceType)) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.required"));
         }
+
+        validateReferenceExist(referenceId, referenceType);
 
         List<ObjectFileDTO> uploadedFiles = storageService.uploadFiles(bucketName, ATTACHMENT_CHANNEL, new MultipartFile[]{file});
 
@@ -109,6 +115,12 @@ public class AttachmentServiceImpl implements AttachmentService {
         if (referenceId == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceId.null"));
         }
+        if (StringUtils.isBlank(referenceType)) {
+             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.required"));
+        }
+
+        validateReferenceExist(referenceId, referenceType);
+
         List<Attachment> list = attachmentRepository.findAllByReferenceIdAndReferenceTypeAndIsDeletedFalse(referenceId, referenceType);
         return attachmentMapper.mapToDtos(list);
     }
@@ -148,7 +160,23 @@ public class AttachmentServiceImpl implements AttachmentService {
         return findById(attachmentId).getFileName();
     }
 
-    // --- Helpers ---
+    // ================= PRIVATE HELPERS =================
+
+    private void validateReferenceExist(Long referenceId, String referenceType) {
+        String type = referenceType != null ? referenceType.toUpperCase() : "";
+        switch (type) {
+            case Constants.RECOMMENDATION_REFERENCE_TYPE:
+                recommendationService.getRecommendationById(referenceId);
+                break;
+
+            case Constants.OUTSTANDING_REFERENCE_TYPE:
+                outstandingItemService.getOutstandingItemById(referenceId);
+                break;
+
+            default:
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.invalid", referenceType));
+        }
+    }
 
     private Attachment findById(Long id) {
         if (id == null) {
