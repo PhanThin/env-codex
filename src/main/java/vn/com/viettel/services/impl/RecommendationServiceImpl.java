@@ -287,6 +287,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         attachment.setReferenceType(referenceType);
         attachment.setUploadedAt(LocalDateTime.now());
         attachment.setUploadedBy(userId);
+        attachment.setIsDeleted(false);
         return attachment;
     }
 

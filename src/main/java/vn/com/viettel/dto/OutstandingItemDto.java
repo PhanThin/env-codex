@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.Value;
+import vn.com.viettel.entities.OutstandingAlertConfigDto;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -65,9 +65,9 @@ public class OutstandingItemDto implements Serializable {
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
-            description = "Danh sách công việc"
+            description = "Công việc"
     )
-    List<WorkItemDto> workItems;
+    WorkItemDto workItem;
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
@@ -140,4 +140,10 @@ public class OutstandingItemDto implements Serializable {
             description = "Danh sách file đính kèm"
     )
     List<AttachmentDto> attachments;
+
+    @Schema(
+            accessMode = Schema.AccessMode.READ_ONLY,
+            description = "Danh sách cấu hình cảnh báo"
+    )
+    List<OutstandingAlertConfigDto> outstandingAlertConfigs;
 }

@@ -33,11 +33,15 @@ public class OutstandingItem {
     private String outstandingCode;
 
     @NotNull
-    @JoinColumn(name = "PROJECT_ID", nullable = false)
+    @Column(name = "PROJECT_ID", nullable = false)
     private Long projectId;
 
-    @JoinColumn(name = "ITEM_ID") //FK table ProjectItem
+    @Column(name = "ITEM_ID") //FK table ProjectItem
     private Long itemId;
+
+    @NotNull
+    @Column(name = "WORK_ITEM_ID", nullable = false) //FK table WorkItem
+    private Long workItemId;
 
     @Size(max = 50)
     @Column(name = "ACCEPTANCE_TYPE", length = 50)
@@ -101,7 +105,7 @@ public class OutstandingItem {
     private Boolean isLocked;
 
     @Column(name = "LAST_UPDATE")
-    private LocalDateTime lastUpdate;
+    private LocalDateTime lastUpdateAt;
 
     @Column(name = "LAST_UPDATE_BY")
     private Long lastUpdateBy;

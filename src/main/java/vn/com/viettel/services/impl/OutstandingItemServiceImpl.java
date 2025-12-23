@@ -1,31 +1,35 @@
 package vn.com.viettel.services.impl;
 
 import org.apache.commons.lang3.StringUtils;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.com.viettel.dto.OutstandingItemDto;
+import vn.com.viettel.dto.OutstandingStatusEnum;
 import vn.com.viettel.dto.PriorityEnum;
-import vn.com.viettel.dto.WorkItemDto;
-import vn.com.viettel.entities.OutstandingItem;
-import vn.com.viettel.entities.ProjectItem;
-import vn.com.viettel.entities.WorkItem;
+import vn.com.viettel.entities.*;
+import vn.com.viettel.mapper.OutstandingItemMapper;
 import vn.com.viettel.repositories.jpa.*;
 import vn.com.viettel.services.OutstandingItemService;
+import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class OutstandingItemServiceImpl implements OutstandingItemService {
 
     @Autowired
     private OutstandingItemRepository outstandingItemRepository;
+    @Autowired
+    private OutstandingAlertConfigRepository outstandingAlertConfigRepository;
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -40,10 +44,22 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
     private CatOutstandingTypeRepository outstandingTypeRepository;
 
     @Autowired
+    private SysUserRepository userRepository;
+
+    @Autowired
+    private AttachmentRepository attachmentRepository;
+
+    @Autowired
+    private OutstandingAcceptanceRepository acceptanceRepository;
+
+    @Autowired
+    private OutstandingProcessLogRepository processLogRepository;
+
+    @Autowired
     private Translator translator;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private OutstandingItemMapper outstandingItemMapper;
 
     /**
      * Validate dữ liệu khi tạo / cập nhật OutstandingItem
@@ -161,35 +177,22 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
         }
 
         // 5. Validate danh sách công việc
-        List<WorkItemDto> workItems = dto.getWorkItems();
-        if (workItems == null || workItems.isEmpty()) {
+        if (dto.getWorkItem() == null || dto.getWorkItem().getId() == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("outstanding.workitem.required")
             );
         }
-
-        for (WorkItemDto wiDto : workItems) {
-            Long wiId = wiDto == null ? null : wiDto.getId();
-            if (wiId == null) {
-                throw new CustomException(
-                        HttpStatus.BAD_REQUEST.value(),
-                        translator.getMessage("outstanding.workitem.id_required")
-                );
-            }
-
-            WorkItem wi = workItemRepository.findById(wiId)
-                    .orElseThrow(() -> new CustomException(
-                            HttpStatus.NOT_FOUND.value(),
-                            translator.getMessage("outstanding.workitem.notfound", wiId)
-                    ));
-
-            if (!Objects.equals(wi.getItemId(), itemId)) {
-                throw new CustomException(
-                        HttpStatus.BAD_REQUEST.value(),
-                        translator.getMessage("outstanding.workitem.not_belong_to_item", wiId, itemId)
-                );
-            }
+        WorkItem wi = workItemRepository.findById(dto.getWorkItem().getId())
+                .orElseThrow(() -> new CustomException(
+                        HttpStatus.NOT_FOUND.value(),
+                        translator.getMessage("outstanding.workitem.notfound", dto.getWorkItem().getId())
+                ));
+        if (!Objects.equals(wi.getItemId(), itemId)) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("outstanding.workitem.not_belong_to_item", dto.getWorkItem().getId(), itemId)
+            );
         }
 
         // 6. Validate người/đơn vị xử lý
@@ -237,6 +240,159 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
                     translator.getMessage("outstanding.acceptance.refid.length")
             );
         }
+
+        if (dto.getOutstandingAlertConfigs() != null && !dto.getOutstandingAlertConfigs().isEmpty()) {
+            boolean invalidate = dto.getOutstandingAlertConfigs().stream().anyMatch(config -> config.getAlertDate() == null || config.getAlertDate().isBefore(deadline));
+            if (invalidate) {
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("outstanding.alert.date.invalid"));
+            }
+        }
+    }
+
+    private SysUser getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            if (authentication.getPrincipal() instanceof SysUser user) {
+                return user;
+            }
+            // Logic dự phòng nếu principal là String username
+            return userRepository.findByUsername(authentication.getName()).orElse(null);
+        }
+        return null;
+    }
+
+    @Transactional
+    public OutstandingItemDto createOutstandingItem(OutstandingItemDto dto) {
+        validate(dto, false);
+        SysUser currentUser = getCurrentUser();
+        OutstandingItem outstandingItem = outstandingItemMapper.toEntity(dto, currentUser);
+        outstandingItem = outstandingItemRepository.save(outstandingItem);
+
+        if (dto.getOutstandingAlertConfigs() != null && !dto.getOutstandingAlertConfigs().isEmpty()) {
+            List<OutstandingAlertConfig> outstandingAlertConfigs = outstandingItemMapper.mapToOutstandingAlertConfig(dto.getOutstandingAlertConfigs(), outstandingItem.getId());
+            outstandingAlertConfigRepository.saveAll(outstandingAlertConfigs);
+        }
+        return outstandingItemMapper.mapToOutstandingItemDto(List.of(outstandingItem)).getFirst();
+    }
+
+    @Transactional
+    public OutstandingItemDto updateOutstandingItem(Long id, OutstandingItemDto dto) {
+        if (id == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("outstandingitem.id.null"));
+        }
+        validate(dto, true);
+        OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(id).orElse(null);
+        if (outstandingItem == null) {
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", id));
+        }
+        SysUser currentUser = getCurrentUser();
+        outstandingItemMapper.updateEntityFromDto(dto, outstandingItem, currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
+        outstandingItemRepository.save(outstandingItem);
+
+        // Fetch existing alert configs
+        List<OutstandingAlertConfig> existingConfigs = outstandingAlertConfigRepository.findByOutstandingIdAndIsDeletedFalse(id);
+        Map<Integer, OutstandingAlertConfig> existingConfigMap = existingConfigs.stream()
+                .collect(Collectors.toMap(OutstandingAlertConfig::getLevelNo, config -> config));
+
+        if (dto.getOutstandingAlertConfigs() != null && !dto.getOutstandingAlertConfigs().isEmpty()) {
+            List<OutstandingAlertConfig> configsToSave = outstandingItemMapper.mapToOutstandingAlertConfig(dto.getOutstandingAlertConfigs(), id);
+
+            for (OutstandingAlertConfig newConfig : configsToSave) {
+                OutstandingAlertConfig existingConfig = existingConfigMap.get(newConfig.getLevelNo());
+                if (existingConfig != null) {
+                    // Update existing config
+                    existingConfig.setPercentTime(newConfig.getPercentTime());
+                    existingConfig.setAlertDate(newConfig.getAlertDate());
+                    existingConfig.setIsActive(newConfig.getIsActive());
+                    existingConfig.setUpdatedBy(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
+                    existingConfig.setUpdatedAt(LocalDateTime.now());
+                    outstandingAlertConfigRepository.save(existingConfig);
+                    existingConfigMap.remove(newConfig.getLevelNo());
+                } else {
+                    // Insert new config
+                    outstandingAlertConfigRepository.save(newConfig);
+                }
+            }
+        }
+
+        // Delete configs not present in the incoming array
+        if (!existingConfigMap.isEmpty()) {
+            outstandingAlertConfigRepository.deleteAll(existingConfigMap.values());
+        }
+
+        return outstandingItemMapper.mapToOutstandingItemDto(List.of(outstandingItem)).getFirst();
+    }
+
+    @Transactional
+    public void deleteOutstandingItem(List<Long> ids) {
+        if (ids == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("outstandingitem.id.null"));
+        }
+        List<OutstandingItem> outstandingItems = outstandingItemRepository.findAllByIdInAndIsDeletedFalse(ids);
+        if (outstandingItems == null || outstandingItems.isEmpty()) {
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", ids));
+        }
+        if (outstandingItems.size() != ids.size()) {
+            List<Long> notFoundIds = ids.stream().filter(i -> outstandingItems.stream().noneMatch(e -> e.getId().equals(i))).toList();
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", notFoundIds));
+        }
+
+        boolean invalidateStatus = outstandingItems.stream().anyMatch(item -> OutstandingStatusEnum.CLOSED.name().equals(item.getStatus()) || OutstandingStatusEnum.DONE.name().equals(item.getStatus()));
+        if (invalidateStatus) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("outstandingitem.status.invalid"));
+        }
+
+        outstandingItems.forEach(item -> {
+            item.setIsDeleted(true);
+            item.setLastUpdateAt(LocalDateTime.now());
+            item.setLastUpdateBy(getCurrentUser() != null ? getCurrentUser().getId() : Constants.DEFAULT_USER_ID);
+        });
+        outstandingItemRepository.saveAll(outstandingItems);
+
+        List<OutstandingAlertConfig> outstandingAlertConfigs = outstandingAlertConfigRepository.findAllByOutstandingIdInAndIsDeletedFalse(ids);
+        if (outstandingAlertConfigs != null) {
+            outstandingAlertConfigs.forEach(config -> {
+                config.setIsDeleted(true);
+                config.setUpdatedBy(getCurrentUser() != null ? getCurrentUser().getId() : Constants.DEFAULT_USER_ID);
+                config.setUpdatedAt(LocalDateTime.now());
+            });
+            outstandingAlertConfigRepository.saveAll(outstandingAlertConfigs);
+        }
+
+        List<Attachment> attachments = new ArrayList<>();
+
+        List<OutstandingProcessLog> processLogs = processLogRepository.findAllByOutstandingIdInAndIsDeletedFalse(ids);
+        if (processLogs != null && !processLogs.isEmpty()) {
+            processLogs.forEach(log -> {
+                log.setIsDeleted(true);
+                log.setUpdatedBy(getCurrentUser() != null ? getCurrentUser().getId() : Constants.DEFAULT_USER_ID);
+                log.setUpdatedAt(LocalDateTime.now());
+            });
+            processLogRepository.saveAll(processLogs);
+
+            attachments.addAll(attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(ids, Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE));
+        }
+
+        List<OutstandingAcceptance> acceptances = acceptanceRepository.findAllByOutstandingIdInAndIsDeletedFalse(ids);
+        if (acceptances != null && !acceptances.isEmpty()) {
+            acceptances.forEach(acceptance -> {
+                acceptance.setIsDeleted(true);
+                acceptance.setUpdatedBy(getCurrentUser() != null ? getCurrentUser().getId() : Constants.DEFAULT_USER_ID);
+                acceptance.setUpdatedAt(LocalDateTime.now());
+            });
+            acceptanceRepository.saveAll(acceptances);
+            attachments.addAll(attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(acceptances.stream().map(OutstandingAcceptance::getId).collect(Collectors.toList()), Constants.OUTSTANDING_ACCEPTANCE_REFERENCE_TYPE));
+        }
+
+        attachments.addAll(attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(ids, Constants.OUTSTANDING_REFERENCE_TYPE));
+        if (!attachments.isEmpty()) {
+            attachments.forEach(attachment -> {
+                attachment.setIsDeleted(true);
+                attachment.setUpdatedBy(getCurrentUser() != null ? getCurrentUser().getId() : Constants.DEFAULT_USER_ID);
+                attachment.setUpdatedAt(LocalDateTime.now());
+            });
+            attachmentRepository.saveAll(attachments);
+        }
     }
 
     @Override
@@ -244,11 +400,14 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
         if (id == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("outstandingitem.id.null"));
         }
-        OutstandingItem outstandingItem = outstandingItemRepository.findById(id).orElse(null);
+        OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(id).orElse(null);
         if (outstandingItem == null) {
             throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", id));
         }
-        // TODO mapper out standing
-        return modelMapper.map(outstandingItem, OutstandingItemDto.class);
+        return outstandingItemMapper.mapToOutstandingItemDto(List.of(outstandingItem)).getFirst();
+    }
+
+    List<OutstandingItemDto> getOutstanding() {
+        return List.of();
     }
 }

@@ -35,8 +35,6 @@ public class OutstandingItemMapper {
     @Autowired
     private AttachmentRepository attachmentRepo;
     @Autowired
-    private OutstandingWorkItemRepository outstandingWorkItemRepo;
-    @Autowired
     private SysOrgRepository sysOrgRepo;
 
     @PostConstruct
@@ -91,8 +89,6 @@ public class OutstandingItemMapper {
 
         Map<Long, WorkItem> workItemMap = !outstandingIds.isEmpty() ? workItemRepo.findAllByOutstandingIdInAndIsDeletedFalse(outstandingIds).stream().collect(Collectors.toMap(WorkItem::getId, Function.identity())) : null;
 
-        Map<Long, List<OutstandingWorkItem>> outstandingWorkItemMap = !outstandingIds.isEmpty() ? outstandingWorkItemRepo.findAllByOutstandingIdInAndIsDeletedFalse(outstandingIds).stream().collect(Collectors.groupingBy(OutstandingWorkItem::getOutstandingId)) : null;
-
         Map<Long, ProjectItem> projectItemMap = !itemIds.isEmpty() ? projectItemRepo.findAllByIdInAndIsDeletedFalse(itemIds).stream().collect(Collectors.toMap(ProjectItem::getId, Function.identity())) : null;
 
         Map<Long, SysUser> sysUserMap = sysUserRepo.findAllByIsDeletedFalse().stream().collect(Collectors.toMap(SysUser::getId, Function.identity()));
@@ -107,13 +103,13 @@ public class OutstandingItemMapper {
             attachmentMap = null;
         }
 
-        return outstandingItems.stream().map(item -> toDto(item, projectMap, projectItemMap, outstandingTypeMap, workItemMap, outstandingWorkItemMap, sysUserMap, sysOrgMap, attachmentMap)).toList();
+        return outstandingItems.stream().map(item -> toDto(item, projectMap, projectItemMap, outstandingTypeMap, workItemMap, sysUserMap, sysOrgMap, attachmentMap)).toList();
     }
 
     /**
      * Entity -> DTO
      */
-    public OutstandingItemDto toDto(OutstandingItem entity, Map<Long, Project> projectMap, Map<Long, ProjectItem> projectItemMap, Map<Long, CatOutstandingType> outstandingTypeMap, Map<Long, WorkItem> workItemMap, Map<Long, List<OutstandingWorkItem>> outstandingWorkItemMap, Map<Long, SysUser> userMap, Map<Long, SysOrg> orgMap, Map<Long, List<AttachmentDto>> attachmentMap) {
+    public OutstandingItemDto toDto(OutstandingItem entity, Map<Long, Project> projectMap, Map<Long, ProjectItem> projectItemMap, Map<Long, CatOutstandingType> outstandingTypeMap, Map<Long, WorkItem> workItemMap, Map<Long, SysUser> userMap, Map<Long, SysOrg> orgMap, Map<Long, List<AttachmentDto>> attachmentMap) {
         if (entity == null) return null;
 
         OutstandingItemDto dto = modelMapper.map(entity, OutstandingItemDto.class);
@@ -124,18 +120,8 @@ public class OutstandingItemMapper {
             dto.setProjectItem(modelMapper.map(projectItemMap.get(entity.getItemId()), ProjectItemDto.class));
         }
 
-        if (outstandingWorkItemMap != null && workItemMap != null) {
-            List<OutstandingWorkItem> recWorkItems = outstandingWorkItemMap.get(entity.getId());
-            if (recWorkItems != null && !recWorkItems.isEmpty()) {
-                // Lấy WorkItem từ map
-                List<WorkItemDto> workItemDtos = recWorkItems.stream()
-                        .map(rwi -> workItemMap.get(rwi.getWorkItemId()))
-                        .filter(Objects::nonNull)
-                        .map(wi -> modelMapper.map(wi, WorkItemDto.class))
-                        .toList();
-                dto.setWorkItems(workItemDtos);
-            }
-
+        if (workItemMap != null && entity.getWorkItemId() != null) {
+            dto.setWorkItem(modelMapper.map(workItemMap.get(entity.getWorkItemId()), WorkItemDto.class));
         }
 
         // acceptanceType: String code -> AcceptanceTypeDto
@@ -305,7 +291,26 @@ public class OutstandingItemMapper {
         setSelectFields(dto, entity);
 
         // Cập nhật thông tin sửa
-        entity.setLastUpdate(LocalDateTime.now());
+        entity.setLastUpdateAt(LocalDateTime.now());
         entity.setLastUpdateBy(currentUserId);
+    }
+
+    public List<OutstandingAlertConfig> mapToOutstandingAlertConfig(List<OutstandingAlertConfigDto> dtoList, Long outstandingId, Long userId) {
+        return dtoList.stream().map(dto -> {
+            OutstandingAlertConfig entity = modelMapper.map(dto, OutstandingAlertConfig.class);
+            entity.setIsDeleted(false);
+            entity.setOutstandingId(outstandingId);
+            entity.setCreatedBy(userId);
+            entity.setCreatedAt(LocalDateTime.now());
+            return entity;
+        }).toList();
+    }
+
+    public List<OutstandingAlertConfig> mapToOutstandingAlertConfig(List<OutstandingAlertConfigDto> dtoList, Long currentUserId) {
+        return dtoList.stream().map(dto -> {
+            OutstandingAlertConfig config = modelMapper.map(dto, OutstandingAlertConfig.class);
+            config.setCreatedBy(currentUserId);
+            return config;
+        }).toList();
     }
 }
