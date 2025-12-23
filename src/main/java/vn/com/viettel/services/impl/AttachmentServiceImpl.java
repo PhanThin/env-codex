@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.AttachmentDto;
+import vn.com.viettel.dto.OutstandingItemDto;
+import vn.com.viettel.dto.RecommendationDto;
 import vn.com.viettel.entities.Attachment;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.AttachmentMapper;
@@ -163,19 +165,26 @@ public class AttachmentServiceImpl implements AttachmentService {
     // ================= PRIVATE HELPERS =================
 
     private void validateReferenceExist(Long referenceId, String referenceType) {
-        String type = referenceType != null ? referenceType.toUpperCase() : "";
-        switch (type) {
-            case Constants.RECOMMENDATION_REFERENCE_TYPE:
-                recommendationService.getRecommendationById(referenceId);
-                break;
-
-            case Constants.OUTSTANDING_REFERENCE_TYPE:
-                outstandingItemService.getOutstandingItemById(referenceId);
-                break;
-
-            default:
-                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.invalid", referenceType));
-        }
+        // Not use now
+//        String type = referenceType != null ? referenceType.toUpperCase() : "";
+//        switch (type) {
+//            case Constants.RECOMMENDATION_REFERENCE_TYPE:
+//                RecommendationDto recommendationDto = recommendationService.getRecommendationById(referenceId);
+//                if (recommendationDto == null) {
+//                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", referenceId));
+//                }
+//                break;
+//
+//            case Constants.OUTSTANDING_REFERENCE_TYPE:
+//                OutstandingItemDto outstandingItemDto = outstandingItemService.getOutstandingItemById(referenceId);
+//                if (outstandingItemDto == null) {
+//                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", referenceId));
+//                }
+//                break;
+//
+//            default:
+//                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.invalid", referenceType));
+//        }
     }
 
     private Attachment findById(Long id) {
