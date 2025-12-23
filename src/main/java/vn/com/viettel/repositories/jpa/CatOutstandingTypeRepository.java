@@ -1,4 +1,5 @@
 package vn.com.viettel.repositories.jpa;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,4 +12,6 @@ public interface CatOutstandingTypeRepository extends JpaRepository<CatOutstandi
     Optional<CatOutstandingType> findByIdAndIsDeletedFalse(Long id);
 
     List<CatOutstandingType> findAllByIsDeletedFalse();
+
+    List<CatOutstandingType> findAllByIdInAndIsDeletedFalse(Collection<Long> id);
 }
