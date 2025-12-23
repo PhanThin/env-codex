@@ -17,9 +17,15 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "OUTSTANDING_ALERT_CONFIG")
+@SequenceGenerator(
+        name = "outstanding_alert_config_seq_gen",
+        sequenceName = "SEQ_OUTSTANDING_ALERT_CONFIG",
+        allocationSize = 1
+)
 public class OutstandingAlertConfig {
     @Id
     @Column(name = "CONFIG_ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "outstanding_alert_config_seq_gen")
     private Long id;
 
     @NotNull

@@ -1,9 +1,6 @@
 package vn.com.viettel.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,9 +9,15 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "RECOMMENDATION_SOURCE_REL")
+@SequenceGenerator(
+        name = "recommendation_source_rel_seq_gen",
+        sequenceName = "SEQ_RECOMMENDATION_SOURCE_REL",
+        allocationSize = 1
+)
 public class RecommendationSourceRel {
     @Id
     @Column(name = "ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recommendation_source_rel_seq_gen")
     private Long id;
 
     @NotNull

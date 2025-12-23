@@ -13,5 +13,5 @@ public interface CatOutstandingTypeRepository extends JpaRepository<CatOutstandi
 
     List<CatOutstandingType> findAllByIsDeletedFalse();
 
-    List<CatOutstandingType> findAllByIdInAndIsDeletedFalse(Collection<Long> id);
+    List<CatOutstandingType> findAllByIdInAndIsDeletedFalse(List<Long> ids);
 }

@@ -14,9 +14,15 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "PROJECT")
+@SequenceGenerator(
+        name = "project_seq_gen",
+        sequenceName = "SEQ_PROJECT",
+        allocationSize = 1
+)
 public class Project {
     @Id
     @Column(name = "PROJECT_ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "project_seq_gen")
     private Long id;
 
     @Size(max = 50)

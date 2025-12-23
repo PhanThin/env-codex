@@ -15,9 +15,16 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "CAT_RECOMMENDATION_SOURCE")
+@SequenceGenerator(
+        name = "recommendation_source_seq_gen",
+        sequenceName = "SEQ_CAT_RECOMMENDATION_SOURCE",
+        allocationSize = 1
+)
+
 public class CatRecommendationSource {
     @Id
     @Column(name = "SOURCE_ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "recommendation_source_seq_gen")
     private Long id;
 
     @Size(max = 50)

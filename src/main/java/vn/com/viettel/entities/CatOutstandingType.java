@@ -14,9 +14,15 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "CAT_OUTSTANDING_TYPE")
+@SequenceGenerator(
+        name = "outstanding_type_seq_gen",
+        sequenceName = "SEQ_CAT_OUTSTANDING_TYPE",
+        allocationSize = 1
+)
 public class CatOutstandingType {
     @Id
     @Column(name = "OUTSTANDING_TYPE_ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "outstanding_type_seq_gen")
     private Long id;
 
     @Size(max = 50)
