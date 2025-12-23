@@ -277,7 +277,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     }
 
     @NotNull
-    private static Attachment getAttachment(ObjectFileDTO file, Long entityId, String referenceType, Long userId) {
+    private Attachment getAttachment(ObjectFileDTO file, Long entityId, String referenceType, Long userId) {
         Attachment attachment = new Attachment();
         attachment.setFileName(file.getFileName());
         attachment.setFileSize(file.getFileSize());

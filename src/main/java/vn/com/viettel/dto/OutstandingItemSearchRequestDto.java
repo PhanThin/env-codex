@@ -10,10 +10,10 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
-@Schema(description = "Đối tượng chứa điều kiện tìm kiếm kiến nghị")
-public class RecommendationSearchRequestDto {
+@Schema(description = "Đối tượng chứa điều kiện tìm kiếm tồn tại")
+public class OutstandingItemSearchRequestDto {
 
-    @Schema(description = "Từ khóa tìm kiếm (theo tên kiến nghị)", example = "Kiến nghị về tiến độ")
+    @Schema(description = "Từ khóa tìm kiếm (theo tên tồn tại)", example = "tồn tại về tiến độ")
     private String keyword;
 
     @Schema(description = "ID của dự án. Null nếu tìm kiếm toàn bộ")
@@ -25,23 +25,26 @@ public class RecommendationSearchRequestDto {
     @Schema(description = "ID của công việc. Null nếu tìm kiếm toàn bộ")
     private Long workItemId;
 
-    @Schema(description = "ID của loại kiến nghị. Null nếu tìm kiếm toàn bộ")
-    private Long recommendationTypeId;
+    @Schema(description = "ID của loại tồn tại. Null nếu tìm kiếm toàn bộ")
+    private Long outstandingTypeId;
+
+    @Schema(description = "ID của loại nghiệm thu. Null nếu tìm kiếm toàn bộ")
+    private Long acceptanceTypeId;
 
     @Schema(description = "Mức độ quan trọng. Null nếu tìm kiếm toàn bộ", allowableValues = {"HIGH_PRIORITY", "PRIORITY", "LOW_PRIORITY"}, example = "LOW_PRIORITY")
     private String priority;
 
-    @Schema(description = "Trạng thái kiến nghị. Null nếu tìm kiếm toàn bộ", allowableValues = {"NEW", "DONE"}, example = "NEW")
+    @Schema(description = "Trạng thái tồn tại. Null nếu tìm kiếm toàn bộ", allowableValues = {"NEW", "IN_PROGRESS", "DONE", "CLOSED"}, example = "NEW")
     private String status;
-
-    @Schema(description = "ID đơn vị tạo. Null nếu tìm kiếm toàn bộ")
-    private Long orgId;
 
     @Schema(description = "ID người tạo. Null nếu tìm kiếm toàn bộ")
     private Long createdById;
 
-    @Schema(description = "ID người đóng kiến nghị. Null nếu tìm kiếm toàn bộ")
-    private Long closedById;
+    @Schema(description = "ID người xử lý. Null nếu tìm kiếm toàn bộ")
+    private Long assignedUserId;
+
+    @Schema(description = "ID đơn vị xử lý. Null nếu tìm kiếm toàn bộ")
+    private Long assignedOrgId;
 
     @Schema(description = "Tìm từ ngày tạo (dd-MM-yyyy)", example = "20-12-2023")
     @JsonFormat(pattern = "dd-MM-yyyy")

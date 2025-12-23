@@ -36,6 +36,9 @@ public class OutstandingItem {
     @Column(name = "PROJECT_ID", nullable = false)
     private Long projectId;
 
+    @Column(name = "PHASE_ID", nullable = false)
+    private Long phaseId;
+
     @Column(name = "ITEM_ID") //FK table ProjectItem
     private Long itemId;
 
@@ -70,7 +73,7 @@ public class OutstandingItem {
 
     @NotNull
     @Column(name = "CREATED_BY", nullable = false)
-    private Long createdBy;
+    private Long createdById;
 
     @Column(name = "CREATED_ORG_ID")
     private Long createdOrgId;
@@ -115,5 +118,35 @@ public class OutstandingItem {
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PROJECT_ID", insertable = false, updatable = false)
+    private Project project;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PHASE_ID", insertable = false, updatable = false)
+    private CatProjectPhase phase;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ITEM_ID", insertable = false, updatable = false)
+    private ProjectItem projectItem;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "WORK_ITEM_ID", insertable = false, updatable = false)
+    private WorkItem workItem;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "OUTSTANDING_TYPE_ID", insertable = false, updatable = false)
+    private CatOutstandingType outstandingType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CREATED_BY", insertable = false, updatable = false)
+    private SysUser createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ASSIGNED_USER_ID", insertable = false, updatable = false)
+    private SysUser assignedUser;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ASSIGNED_ORG_ID", insertable = false, updatable = false)
+    private SysOrg assignedOrg;
 }

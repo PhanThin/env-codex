@@ -1,6 +1,9 @@
 package vn.com.viettel.dto;
 
-public enum OutstandingAcceptianceTypeEnum {
+import lombok.Getter;
+
+@Getter
+public enum OutstandingAcceptanceTypeEnum {
 
     WORK_ACCEPTANCE("Nghiệm thu công việc"),
     ITEM_COMPLETION_ACCEPTANCE("Nghiệm thu hoàn thành hạng mục"),
@@ -8,7 +11,7 @@ public enum OutstandingAcceptianceTypeEnum {
 
     private final String vietnameseName;
 
-    OutstandingAcceptianceTypeEnum(String vietnameseName) {
+    OutstandingAcceptanceTypeEnum(String vietnameseName) {
         this.vietnameseName = vietnameseName;
     }
 

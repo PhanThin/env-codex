@@ -58,6 +58,12 @@ public class OutstandingItemDto implements Serializable {
     ProjectDto project; // dự án
 
     @Schema(
+            requiredMode = Schema.RequiredMode.REQUIRED,
+            description = "Giai đoạn dự án"
+    )
+    CatProjectPhaseDto phase; // giai đoạn dự án
+
+    @Schema(
             requiredMode = Schema.RequiredMode.NOT_REQUIRED,
             description = "Hạng mục dự án"
     )
