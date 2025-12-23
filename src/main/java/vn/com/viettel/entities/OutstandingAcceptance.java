@@ -9,15 +9,22 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.YesNoConverter;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "OUTSTANDING_ACCEPTANCE")
+@SequenceGenerator(
+        name = "outstanding_acceptance_seq_gen",
+        sequenceName = "SEQ_OUTSTANDING_ACCEPTANCE",
+        allocationSize = 1
+)
 public class OutstandingAcceptance {
     @Id
     @Column(name = "ACCEPTANCE_ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "outstanding_acceptance_seq_gen")
     private Long id;
 
     @NotNull
@@ -53,6 +60,5 @@ public class OutstandingAcceptance {
 
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
-
 
 }

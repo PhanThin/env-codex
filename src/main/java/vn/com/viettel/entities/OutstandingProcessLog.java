@@ -15,9 +15,15 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "OUTSTANDING_PROCESS_LOG")
+@SequenceGenerator(
+        name = "outstanding_process_log_seq_gen",
+        sequenceName = "SEQ_OUTSTANDING_PROCESS_LOG",
+        allocationSize = 1
+)
 public class OutstandingProcessLog {
     @Id
     @Column(name = "PROCESS_ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "outstanding_process_log_seq_gen")
     private Long id;
 
     @NotNull
@@ -33,15 +39,6 @@ public class OutstandingProcessLog {
     @NotNull
     @Column(name = "PROCESS_CONTENT", nullable = false, length = 2000)
     private String processContent;
-
-    @NotNull
-    @Column(name = "ASSIGNED_USER_ID", nullable = false)
-    private Long assignedUserId;
-
-    @NotNull
-    @ColumnDefault("SYSTIMESTAMP")
-    @Column(name = "PROCESSED_AT", nullable = false)
-    private LocalDateTime processedAt;
 
     @Column(name = "UPDATED_BY")
     private Long updatedBy;

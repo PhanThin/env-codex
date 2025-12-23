@@ -1,9 +1,6 @@
 package vn.com.viettel.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,9 +12,15 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "OUTSTANDING_WORK_ITEM")
+@SequenceGenerator(
+        name = "outstanding_work_item_seq_gen",
+        sequenceName = "SEQ_OUTSTANDING_WORK_ITEM",
+        allocationSize = 1
+)
 public class OutstandingWorkItem {
     @Id
     @Column(name = "ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "outstanding_work_item_seq_gen")
     private Long id;
 
     @NotNull

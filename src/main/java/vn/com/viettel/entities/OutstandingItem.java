@@ -16,9 +16,15 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "OUTSTANDING_ITEM")
+@SequenceGenerator(
+        name = "outstanding_item_seq_gen",
+        sequenceName = "SEQ_OUTSTANDING_ITEM",
+        allocationSize = 1
+)
 public class OutstandingItem {
     @Id
     @Column(name = "OUTSTANDING_ID", nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "outstanding_item_seq_gen")
     private Long id;
 
     @Size(max = 50)
