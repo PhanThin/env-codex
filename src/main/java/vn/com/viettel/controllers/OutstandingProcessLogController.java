@@ -3,6 +3,7 @@ package vn.com.viettel.controllers;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ public class OutstandingProcessLogController {
 
     private final OutstandingProcessLogService service;
 
+    @Hidden
     @Operation(summary = "Create outstanding process log")
     @PostMapping
     public ResponseEntity<OutstandingProcessLogDto> create(
@@ -31,6 +33,7 @@ public class OutstandingProcessLogController {
         return ResponseEntity.ok(service.create(outstandingId, request));
     }
 
+    @Hidden
     @Operation(summary = "Update outstanding process log")
     @PutMapping("/{processId}")
     public ResponseEntity<OutstandingProcessLogDto> update(
@@ -40,6 +43,7 @@ public class OutstandingProcessLogController {
         return ResponseEntity.ok(service.update(outstandingId, processId, request));
     }
 
+    @Hidden
     @Operation(summary = "Get outstanding process log by id")
     @GetMapping("/{processId}")
     public ResponseEntity<OutstandingProcessLogDto> getById(
@@ -54,6 +58,7 @@ public class OutstandingProcessLogController {
         return ResponseEntity.ok(service.getAll(outstandingId));
     }
 
+    @Hidden
     @Operation(summary = "Soft delete outstanding process log")
     @DeleteMapping("/{processId}")
     public ResponseEntity<Void> delete(

@@ -2,6 +2,7 @@ package vn.com.viettel.controllers;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -22,12 +23,14 @@ public class CatRecommendationTypeController {
 
     private final CatRecommendationTypeService service;
 
+    @Hidden
     @Operation(summary = "Create CAT_RECOMMENDATION_TYPE")
     @PostMapping
     public ResponseEntity<CatRecommendationTypeDto> create(@Valid @RequestBody CatRecommendationTypeDto request) {
         return ResponseEntity.ok(service.create(request));
     }
 
+    @Hidden
     @Operation(summary = "Update CAT_RECOMMENDATION_TYPE by id")
     @PutMapping("/{id}")
     public ResponseEntity<CatRecommendationTypeDto> update(
@@ -36,6 +39,7 @@ public class CatRecommendationTypeController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
+    @Hidden
     @Operation(summary = "Get CAT_RECOMMENDATION_TYPE by id")
     @GetMapping("/{id}")
     public ResponseEntity<CatRecommendationTypeDto> getById(@PathVariable Long id) {
@@ -48,6 +52,7 @@ public class CatRecommendationTypeController {
         return ResponseEntity.ok(service.getAll());
     }
 
+    @Hidden
     @Operation(summary = "Soft delete CAT_RECOMMENDATION_TYPE by id")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
