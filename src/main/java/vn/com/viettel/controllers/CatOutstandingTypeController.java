@@ -2,6 +2,7 @@ package vn.com.viettel.controllers;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -21,13 +22,13 @@ import vn.com.viettel.services.CatOutstandingTypeService;
 public class CatOutstandingTypeController {
 
     private final CatOutstandingTypeService service;
-
+    @Hidden
     @Operation(summary = "Create CAT_OUTSTANDING_TYPE")
     @PostMapping
     public ResponseEntity<CatOutstandingTypeDto> create(@Valid @RequestBody CatOutstandingTypeDto request) {
         return ResponseEntity.ok(service.create(request));
     }
-
+    @Hidden
     @Operation(summary = "Update CAT_OUTSTANDING_TYPE by id")
     @PutMapping("/{id}")
     public ResponseEntity<CatOutstandingTypeDto> update(
@@ -35,7 +36,7 @@ public class CatOutstandingTypeController {
             @Valid @RequestBody CatOutstandingTypeDto request) {
         return ResponseEntity.ok(service.update(id, request));
     }
-
+    @Hidden
     @Operation(summary = "Get CAT_OUTSTANDING_TYPE by id")
     @GetMapping("/{id}")
     public ResponseEntity<CatOutstandingTypeDto> getById(@PathVariable Long id) {
@@ -48,6 +49,7 @@ public class CatOutstandingTypeController {
         return ResponseEntity.ok(service.getAll());
     }
 
+    @Hidden
     @Operation(summary = "Soft delete CAT_OUTSTANDING_TYPE by id")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

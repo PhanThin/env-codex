@@ -1,6 +1,7 @@
 
 package vn.com.viettel.controllers;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ public class OutstandingAcceptanceController {
 
     private final OutstandingAcceptanceService service;
 
+    @Hidden
     @Operation(summary = "Create acceptance for outstanding")
     @PostMapping
     public ResponseEntity<OutstandingAcceptanceDto> create(
@@ -29,6 +31,7 @@ public class OutstandingAcceptanceController {
         return ResponseEntity.ok(service.create(outstandingId, request));
     }
 
+    @Hidden
     @Operation(summary = "Update acceptance")
     @PutMapping("/{acceptanceId}")
     public ResponseEntity<OutstandingAcceptanceDto> update(
@@ -44,6 +47,7 @@ public class OutstandingAcceptanceController {
         return ResponseEntity.ok(service.get(outstandingId));
     }
 
+    @Hidden
     @Operation(summary = "Soft delete acceptance")
     @DeleteMapping("/{acceptanceId}")
     public ResponseEntity<Void> delete(
