@@ -29,7 +29,7 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
 
     private final CatRecommendationTypeRepository repository;
     private final CatRecommendationTypeMapper mapper;
-    private Translator translator;
+    private final Translator translator;
 
     @Override
     public CatRecommendationTypeDto create(CatRecommendationTypeDto request) {
