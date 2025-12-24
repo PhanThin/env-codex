@@ -40,6 +40,12 @@ public class OutstandingProcessLog {
     @Column(name = "PROCESS_CONTENT", nullable = false, length = 2000)
     private String processContent;
 
+    @Column(name = "CREATED_BY")
+    private Long createdBy;
+
+    @Column(name = "CREATED_AT")
+    private LocalDateTime createdAt;
+
     @Column(name = "UPDATED_BY")
     private Long updatedBy;
 

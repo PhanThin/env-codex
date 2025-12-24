@@ -1,6 +1,5 @@
 package vn.com.viettel.services.impl;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,9 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.*;
 import vn.com.viettel.entities.*;
 import vn.com.viettel.mapper.OutstandingItemMapper;
-import vn.com.viettel.minio.dto.ObjectFileDTO;
-import vn.com.viettel.minio.services.FileService;
 import vn.com.viettel.repositories.jpa.*;
+import vn.com.viettel.services.AttachmentService;
 import vn.com.viettel.services.OutstandingItemService;
 import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
@@ -50,7 +48,8 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
             Map.entry("workItemName", "workItem.workItemName"),
             Map.entry("createdByUser", "createdByUser.fullName"),
             Map.entry("assignedUser", "assignedUser.fullName"),
-            Map.entry("assignedOrg", "assignedOrg.orgName")
+            Map.entry("assignedOrg", "assignedOrg.orgName"),
+            Map.entry("outstandingType", "outstandingType.typeName")
     );
 
     @Autowired
@@ -74,9 +73,6 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
     private SysUserRepository userRepository;
 
     @Autowired
-    private AttachmentRepository attachmentRepository;
-
-    @Autowired
     private OutstandingAcceptanceRepository acceptanceRepository;
 
     @Autowired
@@ -86,10 +82,10 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
     private Translator translator;
 
     @Autowired
-    private FileService fileService;
+    private OutstandingItemMapper outstandingItemMapper;
 
     @Autowired
-    private OutstandingItemMapper outstandingItemMapper;
+    private AttachmentService attachmentService;
 
     /**
      * Validate dữ liệu khi tạo / cập nhật OutstandingItem
@@ -375,46 +371,13 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
             outstandingAlertConfigRepository.saveAll(outstandingAlertConfigs);
         }
 
-        handleAttachment(acceptanceFiles, documents, outstandingItem.getId(), currentUserId);
+        String channelAcceptance = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItem.getId() + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE;
+        attachmentService.handleAttachment(acceptanceFiles, outstandingItem.getId(), Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE, channelAcceptance);
+
+        String channelDocument = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItem.getId() + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT;
+        attachmentService.handleAttachment(documents, outstandingItem.getId(), Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT, channelDocument);
 
         return outstandingItemMapper.mapToOutstandingItemDto(List.of(outstandingItem)).getFirst();
-    }
-
-    private void handleAttachment(MultipartFile[] acceptanceFiles, MultipartFile[] documents, Long outstandingItemId, Long currentUserId) {
-        List<Attachment> attachments = new ArrayList<>();
-        // Xử lý file nghiệm thu
-        if (acceptanceFiles != null && acceptanceFiles.length > 0) {
-            String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItemId + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE;
-            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, channel, acceptanceFiles);
-
-            for (ObjectFileDTO file : objectFileDTOList) {
-                Attachment attachment = getAttachment(
-                        file,
-                        outstandingItemId,
-                        Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE,
-                        currentUserId
-                );
-                attachments.add(attachment);
-            }
-        }
-        // Xử lý file tài liệu
-        if (documents != null && documents.length > 0) {
-            String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItemId + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT;
-            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, channel, documents);
-
-            for (ObjectFileDTO file : objectFileDTOList) {
-                Attachment attachment = getAttachment(
-                        file,
-                        outstandingItemId,
-                        Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT,
-                        currentUserId
-                );
-                attachments.add(attachment);
-            }
-        }
-        if (!attachments.isEmpty()) {
-            attachmentRepository.saveAll(attachments);
-        }
     }
 
     @Transactional
@@ -468,18 +431,14 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
         }
 
         if (dto.getDeletedAttachments() != null && !dto.getDeletedAttachments().isEmpty()) {
-            List<Attachment> attachments = attachmentRepository.findAllByIdInAndIsDeletedFalse(dto.getDeletedAttachments().stream().map(AttachmentDto::getId).collect(Collectors.toList()));
-            if (attachments != null && !attachments.isEmpty()) {
-                attachments.forEach(attachment -> {
-                    attachment.setIsDeleted(true);
-                    attachment.setUpdatedBy(currentUserId);
-                    attachment.setUpdatedAt(LocalDateTime.now());
-                });
-                attachmentRepository.saveAll(attachments);
-            }
+            attachmentService.deleteAttachmentsById(dto.getDeletedAttachments().stream().map(AttachmentDto::getId).toList(), currentUserId);
         }
 
-        handleAttachment(acceptanceFiles, documents, outstandingItem.getId(), currentUserId);
+        String channelAcceptance = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItem.getId() + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE;
+        attachmentService.handleAttachment(acceptanceFiles, outstandingItem.getId(), Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE, channelAcceptance);
+
+        String channelDocument = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItem.getId() + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT;
+        attachmentService.handleAttachment(documents, outstandingItem.getId(), Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT, channelDocument);
 
         return outstandingItemMapper.mapToOutstandingItemDto(List.of(outstandingItem)).getFirst();
     }
@@ -534,8 +493,7 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
                 log.setUpdatedAt(now);
             });
             processLogRepository.saveAll(processLogs);
-
-            attachments.addAll(attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(ids, Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE));
+            attachmentService.deleteAttachments(processLogs.stream().map(OutstandingProcessLog::getId).toList(), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, currentUserId);
         }
 
         List<OutstandingAcceptance> acceptances = acceptanceRepository.findAllByOutstandingIdInAndIsDeletedFalse(ids);
@@ -546,23 +504,10 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
                 acceptance.setUpdatedAt(now);
             });
             acceptanceRepository.saveAll(acceptances);
-            attachments.addAll(
-                    attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(
-                            acceptances.stream().map(OutstandingAcceptance::getId).collect(Collectors.toList()),
-                            Constants.OUTSTANDING_ACCEPTANCE_REFERENCE_TYPE
-                    )
-            );
+            attachmentService.deleteAttachments(acceptances.stream().map(OutstandingAcceptance::getId).toList(), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, currentUserId);
         }
+        attachmentService.deleteAttachments(ids, Constants.OUTSTANDING_REFERENCE_TYPE, currentUserId);
 
-        attachments.addAll(attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(ids, Constants.OUTSTANDING_REFERENCE_TYPE));
-        if (!attachments.isEmpty()) {
-            attachments.forEach(attachment -> {
-                attachment.setIsDeleted(true);
-                attachment.setUpdatedBy(currentUserId);
-                attachment.setUpdatedAt(now);
-            });
-            attachmentRepository.saveAll(attachments);
-        }
     }
 
     @Override
@@ -635,20 +580,5 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
                 outstandingItemMapper.mapToOutstandingItemDto(entityPage.getContent());
 
         return new PageImpl<>(dtoList, pageRequest, entityPage.getTotalElements());
-    }
-
-    @NotNull
-    private Attachment getAttachment(ObjectFileDTO file, Long entityId, String referenceType, Long userId) {
-        Attachment attachment = new Attachment();
-        attachment.setFileName(file.getFileName());
-        attachment.setFileSize(file.getFileSize());
-        attachment.setFilePath(file.getFilePath());
-        attachment.setFileUrl(file.getLinkUrlPublic()); // Đường dẫn/tên file trên MinIO
-        attachment.setReferenceId(entityId);
-        attachment.setReferenceType(referenceType);
-        attachment.setUploadedAt(LocalDateTime.now());
-        attachment.setUploadedBy(userId);
-        attachment.setIsDeleted(false);
-        return attachment;
     }
 }

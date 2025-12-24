@@ -6,11 +6,14 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
+import vn.com.viettel.dto.OutstandingItemDto;
 import vn.com.viettel.dto.OutstandingProcessLogDto;
 import vn.com.viettel.services.OutstandingProcessLogService;
 
@@ -24,23 +27,23 @@ public class OutstandingProcessLogController {
 
     private final OutstandingProcessLogService service;
 
-    @Hidden
     @Operation(summary = "Create outstanding process log")
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<OutstandingProcessLogDto> create(
             @PathVariable Long outstandingId,
-            @Valid @RequestBody OutstandingProcessLogDto request) {
-        return ResponseEntity.ok(service.create(outstandingId, request));
+            @RequestPart(value = "dto") OutstandingProcessLogDto request,
+            @RequestPart(value = "files", required = false) MultipartFile[] files) {
+        return ResponseEntity.ok(service.create(outstandingId, request, files));
     }
 
-    @Hidden
     @Operation(summary = "Update outstanding process log")
-    @PutMapping("/{processId}")
+    @PutMapping(path = "/{processId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<OutstandingProcessLogDto> update(
             @PathVariable Long outstandingId,
             @PathVariable Long processId,
-            @Valid @RequestBody OutstandingProcessLogDto request) {
-        return ResponseEntity.ok(service.update(outstandingId, processId, request));
+            @RequestPart(value = "dto") OutstandingProcessLogDto request,
+            @RequestPart(value = "files", required = false) MultipartFile[] files) {
+        return ResponseEntity.ok(service.update(outstandingId, processId, request, files));
     }
 
     @Hidden

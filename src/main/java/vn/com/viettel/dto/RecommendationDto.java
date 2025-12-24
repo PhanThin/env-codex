@@ -150,4 +150,9 @@ public class RecommendationDto implements Serializable {
     )
     List<AttachmentDto> attachments;
 
+    @Schema(
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            description = "Danh sách file đã xóa"
+    )
+    List<AttachmentDto> deletedAttachments;
 }

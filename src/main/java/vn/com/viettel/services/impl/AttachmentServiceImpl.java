@@ -1,8 +1,8 @@
 package vn.com.viettel.services.impl;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -11,37 +11,44 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.AttachmentDto;
-import vn.com.viettel.dto.OutstandingItemDto;
-import vn.com.viettel.dto.RecommendationDto;
 import vn.com.viettel.entities.Attachment;
+import vn.com.viettel.entities.OutstandingItem;
+import vn.com.viettel.entities.Recommendation;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.AttachmentMapper;
 import vn.com.viettel.minio.dto.ObjectFileDTO;
 import vn.com.viettel.repositories.jpa.AttachmentRepository;
+import vn.com.viettel.repositories.jpa.OutstandingItemRepository;
+import vn.com.viettel.repositories.jpa.RecommendationRepository;
 import vn.com.viettel.repositories.jpa.SysUserRepository;
 import vn.com.viettel.services.AttachmentService;
-import vn.com.viettel.services.OutstandingItemService;
-import vn.com.viettel.services.RecommendationService;
 import vn.com.viettel.services.StorageService;
 import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AttachmentServiceImpl implements AttachmentService {
 
-    private final AttachmentRepository attachmentRepository;
-    private final SysUserRepository userRepository;
-    private final StorageService storageService;
-    private final Translator translator;
-    private final AttachmentMapper attachmentMapper;
-    private final RecommendationService recommendationService;
-    private final OutstandingItemService outstandingItemService;
+    @Autowired
+    private AttachmentRepository attachmentRepository;
+    @Autowired
+    private SysUserRepository userRepository;
+    @Autowired
+    private StorageService storageService;
+    @Autowired
+    private Translator translator;
+    @Autowired
+    private AttachmentMapper attachmentMapper;
+    @Autowired
+    private RecommendationRepository recommendationRepository;
+    @Autowired
+    private OutstandingItemRepository outstandingItemRepository;
 
     @Value("${minio.bucketName:evn}")
     private String bucketName;
@@ -54,11 +61,10 @@ public class AttachmentServiceImpl implements AttachmentService {
         if (file == null || file.isEmpty()) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.file.required"));
         }
-        if (referenceId == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceId.null"));
-        }
-        if (StringUtils.isBlank(referenceType)) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.required"));
+        if (referenceId != null && StringUtils.isNotBlank(referenceType)) {
+             validateReferenceExist(referenceId, referenceType);
+        } else if (referenceId != null || StringUtils.isNotBlank(referenceType)) {
+             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.reference.incomplete"));
         }
 
         validateReferenceExist(referenceId, referenceType);
@@ -118,7 +124,7 @@ public class AttachmentServiceImpl implements AttachmentService {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceId.null"));
         }
         if (StringUtils.isBlank(referenceType)) {
-             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.required"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.required"));
         }
 
         validateReferenceExist(referenceId, referenceType);
@@ -165,26 +171,25 @@ public class AttachmentServiceImpl implements AttachmentService {
     // ================= PRIVATE HELPERS =================
 
     private void validateReferenceExist(Long referenceId, String referenceType) {
-        // Not use now
-//        String type = referenceType != null ? referenceType.toUpperCase() : "";
-//        switch (type) {
-//            case Constants.RECOMMENDATION_REFERENCE_TYPE:
-//                RecommendationDto recommendationDto = recommendationService.getRecommendationById(referenceId);
-//                if (recommendationDto == null) {
-//                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", referenceId));
-//                }
-//                break;
-//
-//            case Constants.OUTSTANDING_REFERENCE_TYPE:
-//                OutstandingItemDto outstandingItemDto = outstandingItemService.getOutstandingItemById(referenceId);
-//                if (outstandingItemDto == null) {
-//                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", referenceId));
-//                }
-//                break;
-//
-//            default:
-//                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.invalid", referenceType));
-//        }
+        String type = referenceType != null ? referenceType.toUpperCase() : "";
+        switch (type) {
+            case Constants.RECOMMENDATION_REFERENCE_TYPE:
+                Recommendation recommendation = recommendationRepository.findByIdAndIsDeletedFalse(referenceId).orElse(null);
+                if (recommendation == null) {
+                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", referenceId));
+                }
+                break;
+
+            case Constants.OUTSTANDING_REFERENCE_TYPE:
+                OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(referenceId).orElse(null);
+                if (outstandingItem == null) {
+                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", referenceId));
+                }
+                break;
+
+            default:
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.invalid", referenceType));
+        }
     }
 
     private Attachment findById(Long id) {
@@ -207,5 +212,64 @@ public class AttachmentServiceImpl implements AttachmentService {
             }
         }
         return null;
+    }
+
+    @Override
+    public List<Attachment> handleAttachment(MultipartFile[] files, Long entityId, String referenceType, String channel) {
+        List<Attachment> attachments = new ArrayList<>();
+        if (files != null) {
+            SysUser currentUser = getCurrentUser();
+            Long currentUserId = currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID;
+            List<ObjectFileDTO> objectFileDTOList = storageService.uploadFiles(bucketName, channel, files);
+            for (ObjectFileDTO file : objectFileDTOList) {
+                // Lưu thông tin file vào bảng Attachment (tùy thuộc vào cấu trúc entity của bạn)
+                Attachment attachment = getAttachment(file, entityId, referenceType, currentUserId);
+                attachments.add(attachment);
+            }
+            if (!attachments.isEmpty()) {
+                attachmentRepository.saveAll(attachments);
+            }
+        }
+        return attachments;
+    }
+
+    private Attachment getAttachment(ObjectFileDTO file, Long entityId, String referenceType, Long userId) {
+        Attachment attachment = new Attachment();
+        attachment.setFileName(file.getFileName());
+        attachment.setFileSize(file.getFileSize());
+        attachment.setFilePath(file.getFilePath());
+        attachment.setFileUrl(file.getLinkUrlPublic()); // Đường dẫn/tên file trên MinIO
+        attachment.setReferenceId(entityId);
+        attachment.setReferenceType(referenceType);
+        attachment.setUploadedAt(LocalDateTime.now());
+        attachment.setUploadedBy(userId);
+        attachment.setIsDeleted(false);
+        return attachment;
+    }
+
+    @Override
+    public void deleteAttachments(List<Long> referenceId, String referenceType, Long userId) {
+        List<Attachment> attachments = attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(referenceId, referenceType);
+        if (attachments != null && !attachments.isEmpty()) {
+            attachments.forEach(file -> {
+                file.setIsDeleted(true);
+                file.setUpdatedBy(userId != null ? userId : Constants.DEFAULT_USER_ID);
+                file.setUpdatedAt(LocalDateTime.now());
+            });
+            attachmentRepository.saveAll(attachments);
+        }
+    }
+
+    @Override
+    public void deleteAttachmentsById(List<Long> attachmentIds, Long userId) {
+        List<Attachment> attachments = attachmentRepository.findAllByIdInAndIsDeletedFalse(attachmentIds);
+        if (attachments != null && !attachments.isEmpty()) {
+            attachments.forEach(attachment -> {
+                attachment.setIsDeleted(true);
+                attachment.setUpdatedBy(userId != null ? userId : Constants.DEFAULT_USER_ID);
+                attachment.setUpdatedAt(LocalDateTime.now());
+            });
+            attachmentRepository.saveAll(attachments);
+        }
     }
 }

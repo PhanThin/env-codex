@@ -10,9 +10,8 @@ public interface OutstandingAcceptanceRepository extends JpaRepository<Outstandi
     List<OutstandingAcceptance> findAllByOutstandingIdAndIsDeletedFalse(Long outstandingId);
 
     List<OutstandingAcceptance> findAllByOutstandingIdInAndIsDeletedFalse(List<Long> outstandingIds);
+
     Optional<OutstandingAcceptance> findByIdAndIsDeletedFalse(Long acceptanceId);
 
-    Optional<OutstandingAcceptance> findByOutstandingIdAndIsDeletedFalse(Long outstandingId);
-
-    boolean existsByOutstandingIdAndIsDeletedFalse(Long outstandingId);
+    boolean existsByIdAndIsDeletedFalse(Long id);
 }
