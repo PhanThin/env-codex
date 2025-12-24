@@ -3,6 +3,7 @@ package vn.com.viettel.services.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -35,13 +36,20 @@ import java.util.List;
 @Slf4j
 public class AttachmentServiceImpl implements AttachmentService {
 
-    private final AttachmentRepository attachmentRepository;
-    private final SysUserRepository userRepository;
-    private final StorageService storageService;
-    private final Translator translator;
-    private final AttachmentMapper attachmentMapper;
-    private final RecommendationService recommendationService;
-    private final OutstandingItemService outstandingItemService;
+    @Autowired
+    private AttachmentRepository attachmentRepository;
+    @Autowired
+    private SysUserRepository userRepository;
+    @Autowired
+    private StorageService storageService;
+    @Autowired
+    private Translator translator;
+    @Autowired
+    private AttachmentMapper attachmentMapper;
+    @Autowired
+    private RecommendationService recommendationService;
+    @Autowired
+    private OutstandingItemService outstandingItemService;
 
     @Value("${minio.bucketName:evn}")
     private String bucketName;
