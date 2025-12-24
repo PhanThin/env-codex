@@ -67,8 +67,6 @@ public class AttachmentServiceImpl implements AttachmentService {
              throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.reference.incomplete"));
         }
 
-        validateReferenceExist(referenceId, referenceType);
-
         List<ObjectFileDTO> uploadedFiles = storageService.uploadFiles(bucketName, ATTACHMENT_CHANNEL, new MultipartFile[]{file});
 
         if (uploadedFiles == null || uploadedFiles.isEmpty()) {
