@@ -27,12 +27,12 @@ public class Attachment {
     private Long id;
 
     @NotNull
-    @Column(name = "REFERENCE_ID", nullable = false)
+    @Column(name = "REFERENCE_ID")
     private Long referenceId;
 
     @Size(max = 50)
     @NotNull
-    @Column(name = "REFERENCE_TYPE", nullable = false, length = 50)
+    @Column(name = "REFERENCE_TYPE", length = 50)
     private String referenceType;
 
     @Size(max = 255)

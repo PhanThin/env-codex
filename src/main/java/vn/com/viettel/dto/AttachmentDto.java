@@ -19,9 +19,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AttachmentDto implements Serializable {
     Long id;
-    @NotNull
     Long referenceId;
-    @NotNull
     @Size(max = 50)
     String referenceType;
     @NotNull

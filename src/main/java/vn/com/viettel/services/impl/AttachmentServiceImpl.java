@@ -54,11 +54,10 @@ public class AttachmentServiceImpl implements AttachmentService {
         if (file == null || file.isEmpty()) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.file.required"));
         }
-        if (referenceId == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceId.null"));
-        }
-        if (StringUtils.isBlank(referenceType)) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.required"));
+        if (referenceId != null && StringUtils.isNotBlank(referenceType)) {
+             validateReferenceExist(referenceId, referenceType);
+        } else if (referenceId != null || StringUtils.isNotBlank(referenceType)) {
+             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.reference.incomplete"));
         }
 
         validateReferenceExist(referenceId, referenceType);
@@ -165,26 +164,25 @@ public class AttachmentServiceImpl implements AttachmentService {
     // ================= PRIVATE HELPERS =================
 
     private void validateReferenceExist(Long referenceId, String referenceType) {
-        // Not use now
-//        String type = referenceType != null ? referenceType.toUpperCase() : "";
-//        switch (type) {
-//            case Constants.RECOMMENDATION_REFERENCE_TYPE:
-//                RecommendationDto recommendationDto = recommendationService.getRecommendationById(referenceId);
-//                if (recommendationDto == null) {
-//                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", referenceId));
-//                }
-//                break;
-//
-//            case Constants.OUTSTANDING_REFERENCE_TYPE:
-//                OutstandingItemDto outstandingItemDto = outstandingItemService.getOutstandingItemById(referenceId);
-//                if (outstandingItemDto == null) {
-//                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", referenceId));
-//                }
-//                break;
-//
-//            default:
-//                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.invalid", referenceType));
-//        }
+        String type = referenceType != null ? referenceType.toUpperCase() : "";
+        switch (type) {
+            case Constants.RECOMMENDATION_REFERENCE_TYPE:
+                RecommendationDto recommendationDto = recommendationService.getRecommendationById(referenceId);
+                if (recommendationDto == null) {
+                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", referenceId));
+                }
+                break;
+
+            case Constants.OUTSTANDING_REFERENCE_TYPE:
+                OutstandingItemDto outstandingItemDto = outstandingItemService.getOutstandingItemById(referenceId);
+                if (outstandingItemDto == null) {
+                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", referenceId));
+                }
+                break;
+
+            default:
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.invalid", referenceType));
+        }
     }
 
     private Attachment findById(Long id) {

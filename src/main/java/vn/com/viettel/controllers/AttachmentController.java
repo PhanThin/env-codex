@@ -42,9 +42,8 @@ public class AttachmentController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<AttachmentDto> uploadAttachment(
             @Parameter(description = "File cần upload", required = true) @RequestParam("file") MultipartFile file,
-            @Parameter(description = "ID của đối tượng tham chiếu (VD: ID Kiến nghị)", required = true) @RequestParam("referenceId") Long referenceId,
-            @Parameter(description = "Loại đối tượng (VD: RECOMMENDATION, OUTSTANDING...)", required = true) @RequestParam("referenceType") String referenceType) {
-
+            @Parameter(description = "ID tham chiếu (Optional)") @RequestParam(value = "referenceId", required = false) Long referenceId,
+            @Parameter(description = "Loại tham chiếu (Optional)") @RequestParam(value = "referenceType", required = false) String referenceType) {
         AttachmentDto result = attachmentService.uploadAttachment(referenceId, referenceType, file);
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
