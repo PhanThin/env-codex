@@ -1,5 +1,7 @@
 package vn.com.viettel.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -16,8 +18,19 @@ public class SysOrgDto implements Serializable {
     private String orgName;
 
     private Long updatedBy;
+
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
     private LocalDateTime updatedAt;
+
     private Long createdBy;
+
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
     private LocalDateTime createdAt;
 
     private String isActive;

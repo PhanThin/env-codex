@@ -2,6 +2,7 @@ package vn.com.viettel.controllers;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,7 @@ import vn.com.viettel.services.CatProjectPhaseService;
 public class CatProjectPhaseController {
 
     private final CatProjectPhaseService service;
-
+    @Hidden
     @Operation(summary = "Create project phase")
     @PostMapping
     public ResponseEntity<CatProjectPhaseDto> create(
@@ -25,7 +26,7 @@ public class CatProjectPhaseController {
             @Valid @RequestBody CatProjectPhaseDto request) {
         return ResponseEntity.ok(service.create(projectId, request));
     }
-
+    @Hidden
     @Operation(summary = "Update project phase")
     @PutMapping("/{phaseId}")
     public ResponseEntity<CatProjectPhaseDto> update(
@@ -34,7 +35,7 @@ public class CatProjectPhaseController {
             @Valid @RequestBody CatProjectPhaseDto request) {
         return ResponseEntity.ok(service.update(projectId, phaseId, request));
     }
-
+    @Hidden
     @Operation(summary = "Get project phase by id")
     @GetMapping("/{phaseId}")
     public ResponseEntity<CatProjectPhaseDto> getById(
@@ -48,7 +49,7 @@ public class CatProjectPhaseController {
     public ResponseEntity<List<CatProjectPhaseDto>> getAll(@PathVariable Long projectId) {
         return ResponseEntity.ok(service.getAll(projectId));
     }
-
+    @Hidden
     @Operation(summary = "Soft delete project phase")
     @DeleteMapping("/{phaseId}")
     public ResponseEntity<Void> delete(

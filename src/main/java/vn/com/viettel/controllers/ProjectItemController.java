@@ -2,6 +2,7 @@ package vn.com.viettel.controllers;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ public class ProjectItemController {
 
     private final ProjectItemService service;
 
+    @Hidden
     @Operation(summary = "Create project item under a project")
     @PostMapping
     public ResponseEntity<ProjectItemDto> create(
@@ -30,6 +32,7 @@ public class ProjectItemController {
         return ResponseEntity.ok(service.create(projectId, request));
     }
 
+    @Hidden
     @Operation(summary = "Update project item under a project")
     @PutMapping("/{itemId}")
     public ResponseEntity<ProjectItemDto> update(
@@ -39,6 +42,7 @@ public class ProjectItemController {
         return ResponseEntity.ok(service.update(projectId, itemId, request));
     }
 
+    @Hidden
     @Operation(summary = "Get project item by id under a project")
     @GetMapping("/{itemId}")
     public ResponseEntity<ProjectItemDto> getById(
@@ -53,6 +57,7 @@ public class ProjectItemController {
         return ResponseEntity.ok(service.getAll(projectId));
     }
 
+    @Hidden
     @Operation(summary = "Soft delete project item under a project")
     @DeleteMapping("/{itemId}")
     public ResponseEntity<Void> delete(

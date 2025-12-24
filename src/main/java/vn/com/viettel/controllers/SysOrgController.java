@@ -2,6 +2,7 @@ package vn.com.viettel.controllers;
 
 
 
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.com.viettel.dto.SysOrgDto;
@@ -19,26 +20,31 @@ public class SysOrgController {
         this.service = service;
     }
 
+    @Hidden
     @PostMapping
     public ResponseEntity<SysOrgDto> create(@RequestBody SysOrgDto dto) {
         return ResponseEntity.ok(service.create(dto));
     }
 
+    @Hidden
     @PutMapping("/{orgId}")
     public ResponseEntity<SysOrgDto> update(@PathVariable("orgId") Long orgId, @RequestBody SysOrgDto dto) {
         return ResponseEntity.ok(service.update(orgId, dto));
     }
 
+    @Hidden
     @GetMapping("/{orgId}")
     public ResponseEntity<SysOrgDto> getById(@PathVariable("orgId") Long orgId) {
         return ResponseEntity.ok(service.getById(orgId));
     }
+
 
     @GetMapping
     public ResponseEntity<List<SysOrgDto>> getAll() {
         return ResponseEntity.ok(service.getAll());
     }
 
+    @Hidden
     @DeleteMapping("/{orgId}")
     public ResponseEntity<Void> delete(@PathVariable("orgId") Long orgId) {
         service.delete(orgId);
