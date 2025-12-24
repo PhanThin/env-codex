@@ -53,8 +53,8 @@ class CatRecommendationTypeServiceImplTest {
         void create_success() {
             // GIVEN
             CatRecommendationTypeDto request = new CatRecommendationTypeDto();
-            request.setTypeCode("ANY_CODE");   // chỉ để qua validate
-            request.setTypeName("ANY_NAME");   // chỉ để qua validate
+            request.setTypeCode("ANY_CODE");
+            request.setTypeName("ANY_NAME");
 
             CatRecommendationType mappedEntity = new CatRecommendationType();
             CatRecommendationType savedEntity = new CatRecommendationType();
@@ -73,13 +73,10 @@ class CatRecommendationTypeServiceImplTest {
             assertNotNull(result);
 
             CatRecommendationType saved = captor.getValue();
-
-            // ✅ CHỈ TEST PHẦN SERVICE CHỊU TRÁCH NHIỆM
             assertFalse(saved.getIsDeleted());
             assertNotNull(saved.getCreatedAt());
             assertNull(saved.getUpdatedAt());
 
-            // ❌ KHÔNG assert typeCode / typeName
 
             verify(mapper).toEntity(request);
             verify(repository).save(any());
@@ -122,7 +119,7 @@ class CatRecommendationTypeServiceImplTest {
             Long id = 10L;
 
             CatRecommendationTypeDto request = new CatRecommendationTypeDto();
-            request.setTypeCode("ANY_CODE"); // chỉ để qua validate
+            request.setTypeCode("ANY_CODE");
             request.setTypeName("ANY_NAME");
 
             CatRecommendationType existing = new CatRecommendationType();
@@ -145,11 +142,9 @@ class CatRecommendationTypeServiceImplTest {
             assertEquals(id, updated.getId());
             assertNotNull(updated.getUpdatedAt());
 
-            // mapper có side-effect hợp lệ
             verify(mapper).updateEntity(existing, request);
             verify(repository).save(existing);
 
-            // translator KHÔNG được gọi trong success
             verifyNoInteractions(translator);
         }
 
@@ -161,7 +156,7 @@ class CatRecommendationTypeServiceImplTest {
             Long id = 999L;
 
             CatRecommendationTypeDto request = new CatRecommendationTypeDto();
-            request.setTypeCode("ANY_CODE"); // để qua validate
+            request.setTypeCode("ANY_CODE");
             request.setTypeName("ANY_NAME");
 
             when(repository.findByIdAndIsDeletedFalse(id))
