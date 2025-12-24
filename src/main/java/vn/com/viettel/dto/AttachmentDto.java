@@ -1,5 +1,6 @@
 package vn.com.viettel.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,9 +20,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AttachmentDto implements Serializable {
     Long id;
-    @NotNull
     Long referenceId;
-    @NotNull
     @Size(max = 50)
     String referenceType;
     @NotNull
@@ -36,6 +35,10 @@ public class AttachmentDto implements Serializable {
     @NotNull
     @Size(max = 500)
     String filePath;
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
     LocalDateTime uploadedAt;
     Long uploadedBy;
 }

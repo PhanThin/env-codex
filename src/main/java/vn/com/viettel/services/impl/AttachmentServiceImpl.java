@@ -3,6 +3,7 @@ package vn.com.viettel.services.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -34,13 +35,20 @@ import java.util.List;
 @Slf4j
 public class AttachmentServiceImpl implements AttachmentService {
 
-    private final AttachmentRepository attachmentRepository;
-    private final SysUserRepository userRepository;
-    private final StorageService storageService;
-    private final Translator translator;
-    private final AttachmentMapper attachmentMapper;
-    private final RecommendationService recommendationService;
-    private final OutstandingItemService outstandingItemService;
+    @Autowired
+    private AttachmentRepository attachmentRepository;
+    @Autowired
+    private SysUserRepository userRepository;
+    @Autowired
+    private StorageService storageService;
+    @Autowired
+    private Translator translator;
+    @Autowired
+    private AttachmentMapper attachmentMapper;
+    @Autowired
+    private RecommendationService recommendationService;
+    @Autowired
+    private OutstandingItemService outstandingItemService;
 
     @Value("${minio.bucketName:evn}")
     private String bucketName;
@@ -53,11 +61,10 @@ public class AttachmentServiceImpl implements AttachmentService {
         if (file == null || file.isEmpty()) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.file.required"));
         }
-        if (referenceId == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceId.null"));
-        }
-        if (StringUtils.isBlank(referenceType)) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.required"));
+        if (referenceId != null && StringUtils.isNotBlank(referenceType)) {
+             validateReferenceExist(referenceId, referenceType);
+        } else if (referenceId != null || StringUtils.isNotBlank(referenceType)) {
+             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.reference.incomplete"));
         }
 
         validateReferenceExist(referenceId, referenceType);
@@ -164,26 +171,25 @@ public class AttachmentServiceImpl implements AttachmentService {
     // ================= PRIVATE HELPERS =================
 
     private void validateReferenceExist(Long referenceId, String referenceType) {
-        // Not use now
-//        String type = referenceType != null ? referenceType.toUpperCase() : "";
-//        switch (type) {
-//            case Constants.RECOMMENDATION_REFERENCE_TYPE:
-//                RecommendationDto recommendationDto = recommendationService.getRecommendationById(referenceId);
-//                if (recommendationDto == null) {
-//                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", referenceId));
-//                }
-//                break;
-//
-//            case Constants.OUTSTANDING_REFERENCE_TYPE:
-//                OutstandingItemDto outstandingItemDto = outstandingItemService.getOutstandingItemById(referenceId);
-//                if (outstandingItemDto == null) {
-//                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", referenceId));
-//                }
-//                break;
-//
-//            default:
-//                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.invalid", referenceType));
-//        }
+        String type = referenceType != null ? referenceType.toUpperCase() : "";
+        switch (type) {
+            case Constants.RECOMMENDATION_REFERENCE_TYPE:
+                RecommendationDto recommendationDto = recommendationService.getRecommendationById(referenceId);
+                if (recommendationDto == null) {
+                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", referenceId));
+                }
+                break;
+
+            case Constants.OUTSTANDING_REFERENCE_TYPE:
+                OutstandingItemDto outstandingItemDto = outstandingItemService.getOutstandingItemById(referenceId);
+                if (outstandingItemDto == null) {
+                    throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", referenceId));
+                }
+                break;
+
+            default:
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.invalid", referenceType));
+        }
     }
 
     private Attachment findById(Long id) {
