@@ -1,16 +1,16 @@
 
 package vn.com.viettel.controllers;
 
-import io.swagger.v3.oas.annotations.Hidden;
-import jakarta.validation.Valid;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.OutstandingAcceptanceDto;
 import vn.com.viettel.services.OutstandingAcceptanceService;
+
+import java.util.List;
 
 /**
  * REST controller for OUTSTANDING_ACCEPTANCE.
@@ -22,32 +22,38 @@ public class OutstandingAcceptanceController {
 
     private final OutstandingAcceptanceService service;
 
-    @Hidden
     @Operation(summary = "Create acceptance for outstanding")
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<OutstandingAcceptanceDto> create(
             @PathVariable Long outstandingId,
-            @Valid @RequestBody OutstandingAcceptanceDto request) {
-        return ResponseEntity.ok(service.create(outstandingId, request));
+            @RequestPart(value = "dto") OutstandingAcceptanceDto request,
+            @RequestPart(value = "files", required = false) MultipartFile[] files) {
+        return ResponseEntity.ok(service.create(outstandingId, request, files));
     }
 
-    @Hidden
     @Operation(summary = "Update acceptance")
-    @PutMapping("/{acceptanceId}")
+    @PutMapping(path = "/{acceptanceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<OutstandingAcceptanceDto> update(
             @PathVariable Long outstandingId,
             @PathVariable Long acceptanceId,
-            @Valid @RequestBody OutstandingAcceptanceDto request) {
-        return ResponseEntity.ok(service.update(outstandingId, acceptanceId, request));
+            @RequestPart(value = "dto") OutstandingAcceptanceDto request,
+            @RequestPart(value = "files", required = false) MultipartFile[] files) {
+        return ResponseEntity.ok(service.update(outstandingId, acceptanceId, request, files));
     }
 
-    @Operation(summary = "Get acceptance of outstanding")
+    @Operation(summary = "Get a acceptance of outstanding")
+    @GetMapping(path = "/{acceptanceId}")
+    public ResponseEntity<OutstandingAcceptanceDto> get(@PathVariable Long outstandingId, @PathVariable Long acceptanceId) {
+        return ResponseEntity.ok(service.get(outstandingId, acceptanceId));
+    }
+
+
+    @Operation(summary = "Get all outstanding acceptance")
     @GetMapping
-    public ResponseEntity<OutstandingAcceptanceDto> get(@PathVariable Long outstandingId) {
-        return ResponseEntity.ok(service.get(outstandingId));
+    public ResponseEntity<List<OutstandingAcceptanceDto>> getAll(@PathVariable Long outstandingId) {
+        return ResponseEntity.ok(service.getAll(outstandingId));
     }
 
-    @Hidden
     @Operation(summary = "Soft delete acceptance")
     @DeleteMapping("/{acceptanceId}")
     public ResponseEntity<Void> delete(

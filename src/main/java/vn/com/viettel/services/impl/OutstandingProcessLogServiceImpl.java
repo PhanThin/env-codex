@@ -1,18 +1,21 @@
 package vn.com.viettel.services.impl;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.OutstandingProcessLogDto;
 import vn.com.viettel.entities.OutstandingProcessLog;
+import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.OutstandingProcessLogMapper;
-import vn.com.viettel.minio.services.FileService;
 import vn.com.viettel.repositories.jpa.OutstandingItemRepository;
 import vn.com.viettel.repositories.jpa.OutstandingProcessLogRepository;
+import vn.com.viettel.repositories.jpa.SysUserRepository;
 import vn.com.viettel.services.AttachmentService;
 import vn.com.viettel.services.OutstandingProcessLogService;
 import vn.com.viettel.utils.Constants;
@@ -30,22 +33,27 @@ import java.util.Set;
  * No extra fields, no business logic beyond required validations.
  */
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogService {
 
     private static final Set<String> ALLOWED_ACTION_TYPES =
             new HashSet<>(Arrays.asList("SAVE_RESULT", "SEND_FOR_ACCEPTANCE"));
 
-    private final OutstandingProcessLogRepository repository;
-    private final OutstandingItemRepository outstandingItemRepository;
+    @Autowired
+    private OutstandingProcessLogRepository repository;
+    @Autowired
+    private OutstandingItemRepository outstandingItemRepository;
     @Qualifier("outstandingProcessLogMapperDecorator")
-    private final OutstandingProcessLogMapper mapper;
-    private final Translator translator;
-    private final AttachmentService attachmentService;
-    private final FileService fileService;
+    private OutstandingProcessLogMapper mapper;
+    @Autowired
+    private Translator translator;
+    @Autowired
+    private AttachmentService attachmentService;
+    @Autowired
+    private SysUserRepository userRepository;
 
     @Override
+    @Transactional
     public OutstandingProcessLogDto create(Long outstandingId, OutstandingProcessLogDto request, MultipartFile[] attachments) {
         validateOutstandingExists(outstandingId);
         validateRequest(request);
@@ -53,7 +61,8 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
         OutstandingProcessLog entity = mapper.toEntity(request);
         entity.setOutstandingId(outstandingId);
         entity.setIsDeleted(Boolean.FALSE);
-        entity.setUpdatedAt(LocalDateTime.now());
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setCreatedBy(getCurrentUserIdOrDefault());
         repository.save(entity);
         String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingId + "/" + Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE;
         attachmentService.handleAttachment(attachments, entity.getId(), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, channel);
@@ -62,18 +71,25 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
 
 
     @Override
+    @Transactional
     public OutstandingProcessLogDto update(Long outstandingId, Long processId, OutstandingProcessLogDto request, MultipartFile[] attachments) {
+        request.setProcessId(processId);
+
         validateOutstandingExists(outstandingId);
         validateRequest(request);
 
         OutstandingProcessLog entity = getOrThrow(outstandingId, processId);
         mapper.updateEntity(entity, request);
         entity.setUpdatedAt(LocalDateTime.now());
+        entity.setUpdatedBy(getCurrentUserIdOrDefault());
         repository.save(entity);
 
         String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingId + "/" + Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE;
         attachmentService.handleAttachment(attachments, entity.getId(), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, channel);
 
+        if (request.getDeletedAttachments() != null && !request.getDeletedAttachments().isEmpty()) {
+            attachmentService.deleteAttachments(List.of(processId), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, getCurrentUserIdOrDefault());
+        }
         return mapper.toDto(entity);
     }
 
@@ -81,7 +97,8 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
     @Transactional(readOnly = true)
     public OutstandingProcessLogDto getById(Long outstandingId, Long processId) {
         validateOutstandingExists(outstandingId);
-        return mapper.toDto(getOrThrow(outstandingId, processId));
+        OutstandingProcessLog entity = getOrThrow(outstandingId, processId);
+        return mapper.toDtoList(List.of(entity)).getFirst();
     }
 
     @Override
@@ -92,14 +109,15 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
     }
 
     @Override
+    @Transactional
     public void delete(Long outstandingId, Long processId) {
         validateOutstandingExists(outstandingId);
         OutstandingProcessLog entity = getOrThrow(outstandingId, processId);
         entity.setIsDeleted(Boolean.TRUE);
         entity.setUpdatedAt(LocalDateTime.now());
-
-
+        entity.setUpdatedBy(getCurrentUserIdOrDefault());
         repository.save(entity);
+        attachmentService.deleteAttachments(List.of(processId), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, getCurrentUserIdOrDefault());
     }
 
     private void validateOutstandingExists(Long outstandingId) {
@@ -143,5 +161,22 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
             );
         }
         return entity;
+    }
+
+    private SysUser getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            if (authentication.getPrincipal() instanceof SysUser user) {
+                return user;
+            }
+            // Logic dự phòng nếu principal là String username
+            return userRepository.findByUsername(authentication.getName()).orElse(null);
+        }
+        return null;
+    }
+
+    private Long getCurrentUserIdOrDefault() {
+        SysUser currentUser = getCurrentUser();
+        return currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID;
     }
 }

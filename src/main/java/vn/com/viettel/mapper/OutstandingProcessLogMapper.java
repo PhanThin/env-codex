@@ -40,6 +40,7 @@ public interface OutstandingProcessLogMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "attachments", ignore = true)
+    @Mapping(target = "deletedAttachments", ignore = true)
     OutstandingProcessLogDto toDto(OutstandingProcessLog entity);
 
     List<OutstandingProcessLogDto> toDtoList(List<OutstandingProcessLog> entityList);

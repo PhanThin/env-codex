@@ -2,6 +2,7 @@
 package vn.com.viettel.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
@@ -32,7 +33,7 @@ public class OutstandingAcceptanceDto {
     private String acceptanceNote;
 
     @NotNull
-    private Long acceptedBy;
+    private UserDto acceptedByUser;
 
     @NotNull
     @JsonFormat(
@@ -43,11 +44,15 @@ public class OutstandingAcceptanceDto {
 
     private Boolean isDeleted;
 
-    private Long updatedBy;
+    private UserDto updatedByUser;
 
     @JsonFormat(
             shape = JsonFormat.Shape.STRING,
             pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
     )
     private LocalDateTime updatedAt;
+
+    private List<AttachmentDto> attachments;
+
+    private List<AttachmentDto> deletedAttachments;
 }

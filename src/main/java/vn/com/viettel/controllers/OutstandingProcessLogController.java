@@ -27,7 +27,6 @@ public class OutstandingProcessLogController {
 
     private final OutstandingProcessLogService service;
 
-    @Hidden
     @Operation(summary = "Create outstanding process log")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<OutstandingProcessLogDto> create(
@@ -37,9 +36,8 @@ public class OutstandingProcessLogController {
         return ResponseEntity.ok(service.create(outstandingId, request, files));
     }
 
-    @Hidden
     @Operation(summary = "Update outstanding process log")
-    @PutMapping("/{processId}")
+    @PutMapping(path = "/{processId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<OutstandingProcessLogDto> update(
             @PathVariable Long outstandingId,
             @PathVariable Long processId,
