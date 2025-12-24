@@ -1,5 +1,6 @@
 package vn.com.viettel.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -55,91 +56,94 @@ public class OutstandingItemDto implements Serializable {
             requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Dự án"
     )
-    ProjectDto project; // dự án
+    ProjectDto projectDto; // dự án
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Giai đoạn dự án"
     )
-    CatProjectPhaseDto phase; // giai đoạn dự án
+    CatProjectPhaseDto phaseDto; // giai đoạn dự án
 
     @Schema(
             requiredMode = Schema.RequiredMode.NOT_REQUIRED,
             description = "Hạng mục dự án"
     )
-    ProjectItemDto projectItem; // hạng mục dự án
+    ProjectItemDto projectItemDto; // hạng mục dự án
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Công việc"
     )
-    WorkItemDto workItem;
+    WorkItemDto workItemDto;
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Loại tồn tại"
     )
-    OutstandingTypeDto outstandingType;
+    OutstandingTypeDto outstandingTypeDto;
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Mức độ quan trọng"
     )
-    PriorityDto priority;
+    PriorityDto priorityDto;
 
     @Schema(
             accessMode = Schema.AccessMode.READ_ONLY,
             description = "Thông tin người tạo"
     )
-    UserDto createdByUser;
+    UserDto createdByUserDto;
 
     @Schema(
             accessMode = Schema.AccessMode.READ_ONLY,
             description = "Thông tin đơn vị tạo"
     )
-    OrgDto createdOrg;
+    OrgDto createdOrgDto;
 
     @Schema(
             accessMode = Schema.AccessMode.READ_ONLY,
             description = "Thời gian tạo"
     )
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     LocalDateTime createdAt;
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Thông tin người xử lý"
     )
-    UserDto assignedUser;
+    UserDto assignedUserDto;
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Thông tin đơn vị xử lý"
     )
-    OrgDto assignedOrg;
+    OrgDto assignedOrgDto;
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Hạn xử lý"
     )
+    @JsonFormat(pattern = "yyyy-MM-dd")
     LocalDate deadline;
 
     @Schema(
             accessMode = Schema.AccessMode.READ_ONLY,
             description = "Trạng thái xử lý"
     )
-    StatusDto status;
+    StatusDto statusDto;
 
     @Schema(
             accessMode = Schema.AccessMode.READ_ONLY,
             description = "Thời gian cập nhật cuối"
     )
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     LocalDateTime lastUpdate;
 
     @Schema(
             accessMode = Schema.AccessMode.READ_ONLY,
             description = "Thông tin người cập nhật cuối"
     )
-    UserDto lastUpdateBy;
+    UserDto lastUpdateByDto;
 
     @Schema(
             accessMode = Schema.AccessMode.READ_ONLY,
@@ -152,4 +156,10 @@ public class OutstandingItemDto implements Serializable {
             description = "Danh sách cấu hình cảnh báo"
     )
     List<OutstandingAlertConfigDto> outstandingAlertConfigs;
+
+    @Schema(
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            description = "Danh sách file đã xóa"
+    )
+    List<AttachmentDto> deletedAttachments;
 }

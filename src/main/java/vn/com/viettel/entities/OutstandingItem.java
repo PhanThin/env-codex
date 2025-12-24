@@ -28,7 +28,6 @@ public class OutstandingItem {
     private Long id;
 
     @Size(max = 50)
-    @NotNull
     @Column(name = "OUTSTANDING_CODE", length = 50)
     private String outstandingCode;
 
@@ -51,7 +50,7 @@ public class OutstandingItem {
     private String acceptanceType;
 
     @Column(name = "ACCEPTANCE_REF_ID")
-    private Long acceptanceRefId;
+    private String acceptanceRefId;
 
     @Size(max = 1000)
     @Column(name = "ACCEPTANCE_FILE_URL", length = 1000)

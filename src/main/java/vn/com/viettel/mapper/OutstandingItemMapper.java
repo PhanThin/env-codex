@@ -36,6 +36,8 @@ public class OutstandingItemMapper {
     private AttachmentRepository attachmentRepo;
     @Autowired
     private SysOrgRepository sysOrgRepo;
+    @Autowired
+    private CatProjectPhaseRepository phaseRepo;
 
     @PostConstruct
     private void configure() {
@@ -52,14 +54,13 @@ public class OutstandingItemMapper {
                         mapper.skip(OutstandingItem::setCreatedOrgId);
                         mapper.skip(OutstandingItem::setAssignedUserId);
                         mapper.skip(OutstandingItem::setAssignedOrgId);
-                        mapper.skip(OutstandingItem::setAssignedUser);
-                        mapper.skip(OutstandingItem::setAssignedOrg);
                         mapper.skip(OutstandingItem::setStatus);
                         mapper.skip(OutstandingItem::setLastUpdateBy);
-                        mapper.skip(OutstandingItem::setProject);
                         mapper.skip(OutstandingItem::setProjectItem);
+                        mapper.skip(OutstandingItem::setProject);
                         mapper.skip(OutstandingItem::setPhase);
                         mapper.skip(OutstandingItem::setWorkItem);
+                        mapper.skip(OutstandingItem::setOutstandingType);
                     });
         }
 
@@ -69,36 +70,38 @@ public class OutstandingItemMapper {
                     .addMappings(mapper -> {
                         // Bỏ qua các field dạng object sẽ được set thủ công
                         mapper.skip(OutstandingItemDto::setAcceptanceType);
-                        mapper.skip(OutstandingItemDto::setOutstandingType);
-                        mapper.skip(OutstandingItemDto::setPriority);
-                        mapper.skip(OutstandingItemDto::setCreatedByUser);
-                        mapper.skip(OutstandingItemDto::setCreatedOrg);
-                        mapper.skip(OutstandingItemDto::setAssignedUser);
-                        mapper.skip(OutstandingItemDto::setAssignedOrg);
-                        mapper.skip(OutstandingItemDto::setStatus);
-                        mapper.skip(OutstandingItemDto::setLastUpdateBy);
-                        mapper.skip(OutstandingItemDto::setProject);
-                        mapper.skip(OutstandingItemDto::setProjectItem);
-                        mapper.skip(OutstandingItemDto::setPhase);
-                        mapper.skip(OutstandingItemDto::setWorkItem);
+                        mapper.skip(OutstandingItemDto::setPriorityDto);
+                        mapper.skip(OutstandingItemDto::setCreatedByUserDto);
+                        mapper.skip(OutstandingItemDto::setCreatedOrgDto);
+                        mapper.skip(OutstandingItemDto::setStatusDto);
+                        mapper.skip(OutstandingItemDto::setAssignedUserDto);
+                        mapper.skip(OutstandingItemDto::setAssignedOrgDto);
+                        mapper.skip(OutstandingItemDto::setProjectItemDto);
+                        mapper.skip(OutstandingItemDto::setProjectDto);
+                        mapper.skip(OutstandingItemDto::setPhaseDto);
+                        mapper.skip(OutstandingItemDto::setWorkItemDto);
+                        mapper.skip(OutstandingItemDto::setOutstandingTypeDto);
+
                     });
         }
     }
 
     public List<OutstandingItemDto> mapToOutstandingItemDto(List<OutstandingItem> outstandingItems) {
         if (outstandingItems == null || outstandingItems.isEmpty()) return new ArrayList<>();
-        List<Long> outstandingIds = outstandingItems.stream().map(OutstandingItem::getId).distinct().toList();
+        List<Long> phaseId = outstandingItems.stream().map(OutstandingItem::getPhaseId).distinct().filter(Objects::nonNull).toList();
         List<Long> projectIds = outstandingItems.stream().map(OutstandingItem::getProjectId).distinct().filter(Objects::nonNull).toList();
         List<Long> itemIds = outstandingItems.stream().map(OutstandingItem::getItemId).distinct().filter(Objects::nonNull).toList();
         List<Long> recommendationTypeIds = outstandingItems.stream().map(OutstandingItem::getOutstandingTypeId).distinct().filter(Objects::nonNull).toList();
+        List<Long> workItemIds = outstandingItems.stream().map(OutstandingItem::getWorkItemId).distinct().filter(Objects::nonNull).toList();
 
         Map<Long, Project> projectMap = !projectIds.isEmpty() ? projectRepo.findAllByIdInAndIsDeletedFalse(projectIds).stream()
                 .collect(Collectors.toMap(Project::getId, Function.identity())) : null;
-
+        Map<Long, CatProjectPhase> phaseMap = !phaseId.isEmpty() ? phaseRepo.findAllByIdInAndIsDeletedFalse(phaseId).stream()
+                .collect(Collectors.toMap(CatProjectPhase::getId, Function.identity())) : null;
         Map<Long, CatOutstandingType> outstandingTypeMap = !recommendationTypeIds.isEmpty() ? outstandingTypeRepository.findAllByIdInAndIsDeletedFalse(recommendationTypeIds).stream()
                 .collect(Collectors.toMap(CatOutstandingType::getId, Function.identity())) : null;
 
-        Map<Long, WorkItem> workItemMap = !outstandingIds.isEmpty() ? workItemRepo.findAllByOutstandingIdInAndIsDeletedFalse(outstandingIds).stream().collect(Collectors.toMap(WorkItem::getId, Function.identity())) : null;
+        Map<Long, WorkItem> workItemMap = !workItemIds.isEmpty() ? workItemRepo.findAllByIdInAndIsDeletedFalse(workItemIds).stream().collect(Collectors.toMap(WorkItem::getId, Function.identity())) : null;
 
         Map<Long, ProjectItem> projectItemMap = !itemIds.isEmpty() ? projectItemRepo.findAllByIdInAndIsDeletedFalse(itemIds).stream().collect(Collectors.toMap(ProjectItem::getId, Function.identity())) : null;
 
@@ -108,31 +111,33 @@ public class OutstandingItemMapper {
 
         Map<Long, List<AttachmentDto>> attachmentMap;
         if (outstandingItems.size() == 1) { // chỉ lấy attachment khi chỉ có 1 outstandingItem để tối ưu
-            List<Attachment> attachments = attachmentRepo.findAllByReferenceIdAndReferenceTypeAndIsDeletedFalse(outstandingItems.get(0).getId(), Constants.OUTSTANDING_REFERENCE_TYPE);
+            List<Attachment> attachments = attachmentRepo.findAllByReferenceIdAndReferenceTypeInAndIsDeletedFalse(outstandingItems.get(0).getId(), List.of(Constants.OUTSTANDING_REFERENCE_TYPE, Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE, Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT));
             attachmentMap = attachments.stream().map((element) -> modelMapper.map(element, AttachmentDto.class)).collect(Collectors.groupingBy(AttachmentDto::getReferenceId));
         } else {
             attachmentMap = null;
         }
 
-        return outstandingItems.stream().map(item -> toDto(item, projectMap, projectItemMap, outstandingTypeMap, workItemMap, sysUserMap, sysOrgMap, attachmentMap)).toList();
+        return outstandingItems.stream().map(item -> toDto(item, projectMap, phaseMap, projectItemMap, outstandingTypeMap, workItemMap, sysUserMap, sysOrgMap, attachmentMap)).toList();
     }
 
     /**
      * Entity -> DTO
      */
-    public OutstandingItemDto toDto(OutstandingItem entity, Map<Long, Project> projectMap, Map<Long, ProjectItem> projectItemMap, Map<Long, CatOutstandingType> outstandingTypeMap, Map<Long, WorkItem> workItemMap, Map<Long, SysUser> userMap, Map<Long, SysOrg> orgMap, Map<Long, List<AttachmentDto>> attachmentMap) {
+    public OutstandingItemDto toDto(OutstandingItem entity, Map<Long, Project> projectMap, Map<Long, CatProjectPhase> phaseMap, Map<Long, ProjectItem> projectItemMap, Map<Long, CatOutstandingType> outstandingTypeMap, Map<Long, WorkItem> workItemMap, Map<Long, SysUser> userMap, Map<Long, SysOrg> orgMap, Map<Long, List<AttachmentDto>> attachmentMap) {
         if (entity == null) return null;
 
         OutstandingItemDto dto = modelMapper.map(entity, OutstandingItemDto.class);
         if (projectMap != null && entity.getProjectId() != null && projectMap.containsKey(entity.getProjectId())) {
-            dto.setProject(modelMapper.map(projectMap.get(entity.getProjectId()), ProjectDto.class));
+            dto.setProjectDto(modelMapper.map(projectMap.get(entity.getProjectId()), ProjectDto.class));
         }
         if (projectItemMap != null && entity.getItemId() != null && projectItemMap.containsKey(entity.getItemId())) {
-            dto.setProjectItem(modelMapper.map(projectItemMap.get(entity.getItemId()), ProjectItemDto.class));
+            dto.setProjectItemDto(modelMapper.map(projectItemMap.get(entity.getItemId()), ProjectItemDto.class));
         }
-
-        if (workItemMap != null && entity.getWorkItemId() != null) {
-            dto.setWorkItem(modelMapper.map(workItemMap.get(entity.getWorkItemId()), WorkItemDto.class));
+        if (phaseMap != null && entity.getPhaseId() != null && phaseMap.containsKey(entity.getPhaseId())) {
+            dto.setPhaseDto(modelMapper.map(phaseMap.get(entity.getPhaseId()), CatProjectPhaseDto.class));
+        }
+        if (workItemMap != null && entity.getWorkItemId() != null && workItemMap.containsKey(entity.getWorkItemId())) {
+            dto.setWorkItemDto(modelMapper.map(workItemMap.get(entity.getWorkItemId()), WorkItemDto.class));
         }
 
         // acceptanceType: String code -> AcceptanceTypeDto
@@ -147,47 +152,47 @@ public class OutstandingItemMapper {
             StatusDto statusDto = new StatusDto();
             statusDto.setCode(entity.getStatus());
             statusDto.setName(OutstandingStatusEnum.valueOf(entity.getStatus()).getVietnameseName());
-            dto.setStatus(statusDto);
+            dto.setStatusDto(statusDto);
         }
         // priority: String code -> PriorityDto
         if (entity.getPriority() != null) {
             PriorityDto priorityDto = new PriorityDto();
             priorityDto.setCode(entity.getPriority());
             priorityDto.setName(PriorityEnum.valueOf(entity.getPriority()).getVietnameseName());
-            dto.setPriority(priorityDto);
+            dto.setPriorityDto(priorityDto);
         }
 
         // outstandingTypeId -> OutstandingTypeDto
         if (entity.getOutstandingTypeId() != null && outstandingTypeMap != null && outstandingTypeMap.containsKey(entity.getOutstandingTypeId())) {
             OutstandingTypeDto outstandingTypeDto = modelMapper.map(outstandingTypeMap.get(entity.getOutstandingTypeId()), OutstandingTypeDto.class);
-            dto.setOutstandingType(outstandingTypeDto);
+            dto.setOutstandingTypeDto(outstandingTypeDto);
         }
 
-        if (entity.getCreatedBy() != null && userMap != null && userMap.containsKey(entity.getCreatedBy())) {
-            UserDto createdByUser = modelMapper.map(userMap.get(entity.getCreatedBy()), UserDto.class);
-            dto.setCreatedByUser(createdByUser);
+        if (entity.getCreatedById() != null && userMap != null && userMap.containsKey(entity.getCreatedById())) {
+            UserDto createdByUser = modelMapper.map(userMap.get(entity.getCreatedById()), UserDto.class);
+            dto.setCreatedByUserDto(createdByUser);
         }
 
         if (entity.getCreatedOrgId() != null && orgMap != null && orgMap.containsKey(entity.getCreatedOrgId())) {
             OrgDto createdOrg = modelMapper.map(orgMap.get(entity.getCreatedOrgId()), OrgDto.class);
-            dto.setCreatedOrg(createdOrg);
+            dto.setCreatedOrgDto(createdOrg);
         }
 
         // assignedUserId: Long -> UserDto
         if (entity.getAssignedUserId() != null && userMap != null && userMap.containsKey(entity.getAssignedUserId())) {
             UserDto assignedUser = modelMapper.map(userMap.get(entity.getAssignedUserId()), UserDto.class);
-            dto.setAssignedUser(assignedUser);
+            dto.setAssignedUserDto(assignedUser);
         }
 
         // assignedOrgId: Long -> OrgDto
         if (entity.getAssignedOrgId() != null && orgMap != null && orgMap.containsKey(entity.getAssignedOrgId())) {
             OrgDto assignedOrg = modelMapper.map(orgMap.get(entity.getAssignedOrgId()), OrgDto.class);
-            dto.setAssignedOrg(assignedOrg);
+            dto.setAssignedOrgDto(assignedOrg);
         }
 
         if (entity.getLastUpdateBy() != null && userMap != null && userMap.containsKey(entity.getLastUpdateBy())) {
             UserDto lastUpdateBy = modelMapper.map(userMap.get(entity.getLastUpdateBy()), UserDto.class);
-            dto.setLastUpdateBy(lastUpdateBy);
+            dto.setLastUpdateByDto(lastUpdateBy);
         }
 
         if (attachmentMap != null) {
@@ -224,6 +229,18 @@ public class OutstandingItemMapper {
      * tương tự cách RecommendationMapper.setSelectFields(...)
      */
     private void setSelectFields(OutstandingItemDto dto, OutstandingItem entity) {
+        if (dto.getProjectDto() != null) {
+            entity.setProjectId(dto.getProjectDto().getId());
+        }
+        if (dto.getProjectItemDto() != null) {
+            entity.setItemId(dto.getProjectItemDto().getId());
+        }
+        if (dto.getWorkItemDto() != null) {
+            entity.setWorkItemId(dto.getWorkItemDto().getId());
+        }
+        if (dto.getPhaseDto() != null) {
+            entity.setPhaseId(dto.getPhaseDto().getId());
+        }
         // acceptanceType
         if (dto.getAcceptanceType() != null) {
             entity.setAcceptanceType(dto.getAcceptanceType().getCode());
@@ -232,42 +249,42 @@ public class OutstandingItemMapper {
         }
 
         // outstandingType
-        if (dto.getOutstandingType() != null) {
-            entity.setOutstandingTypeId(dto.getOutstandingType().getId());
+        if (dto.getOutstandingTypeDto() != null) {
+            entity.setOutstandingTypeId(dto.getOutstandingTypeDto().getId());
         } else {
             entity.setOutstandingTypeId(null);
         }
 
         // priority
-        if (dto.getPriority() != null) {
-            entity.setPriority(dto.getPriority().getCode());
+        if (dto.getPriorityDto() != null) {
+            entity.setPriority(dto.getPriorityDto().getCode());
         } else {
             entity.setPriority(null);
         }
 
         // createdByUser
-        if (dto.getCreatedByUser() != null) {
-            entity.setCreatedById(dto.getCreatedByUser().getId());
+        if (dto.getCreatedByUserDto() != null) {
+            entity.setCreatedById(dto.getCreatedByUserDto().getId());
         }
 
         // createdOrg
-        if (dto.getCreatedOrg() != null) {
-            entity.setCreatedOrgId(dto.getCreatedOrg().getId());
+        if (dto.getCreatedOrgDto() != null) {
+            entity.setCreatedOrgId(dto.getCreatedOrgDto().getId());
         }
 
         // assignedUser
-        if (dto.getAssignedUser() != null) {
-            entity.setAssignedUserId(dto.getAssignedUser().getId());
+        if (dto.getAssignedUserDto() != null) {
+            entity.setAssignedUserId(dto.getAssignedUserDto().getId());
         }
 
         // assignedOrg
-        if (dto.getAssignedOrg() != null) {
-            entity.setAssignedOrgId(dto.getAssignedOrg().getId());
+        if (dto.getAssignedOrgDto() != null) {
+            entity.setAssignedOrgId(dto.getAssignedOrgDto().getId());
         }
 
         // status
-        if (dto.getStatus() != null) {
-            entity.setStatus(dto.getStatus().getCode());
+        if (dto.getStatusDto() != null) {
+            entity.setStatus(dto.getStatusDto().getCode());
         }
 
     }

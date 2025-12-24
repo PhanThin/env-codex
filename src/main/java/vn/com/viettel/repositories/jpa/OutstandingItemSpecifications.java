@@ -4,6 +4,7 @@ import jakarta.persistence.criteria.Expression;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import vn.com.viettel.dto.OutstandingItemSearchRequestDto;
 import vn.com.viettel.dto.RecommendationSearchRequestDto;
 import vn.com.viettel.entities.OutstandingItem;
 
@@ -18,7 +19,7 @@ public final class OutstandingItemSpecifications {
         // utility class
     }
 
-    public static Specification<OutstandingItem> fromRecommendationSearch(RecommendationSearchRequestDto request) {
+    public static Specification<OutstandingItem> fromRecommendationSearch(OutstandingItemSearchRequestDto request) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -47,6 +48,11 @@ public final class OutstandingItemSpecifications {
                 predicates.add(cb.equal(root.get("projectId"), request.getProjectId()));
             }
 
+            // projectPhaseId
+            if (request.getPhaseId() != null) {
+                predicates.add(cb.equal(root.get("phaseId"), request.getPhaseId()));
+            }
+
             // itemId
             if (request.getItemId() != null) {
                 predicates.add(cb.equal(root.get("itemId"), request.getItemId()));
@@ -55,6 +61,16 @@ public final class OutstandingItemSpecifications {
             // workItemId
             if (request.getWorkItemId() != null) {
                 predicates.add(cb.equal(root.get("workItemId"), request.getWorkItemId()));
+            }
+
+            // outstandingTypeId
+            if (request.getOutstandingTypeId() != null) {
+                predicates.add(cb.equal(root.get("outstandingTypeId"), request.getOutstandingTypeId()));
+            }
+
+            // acceptationType
+            if (StringUtils.isNotBlank(request.getAcceptanceType())) {
+                predicates.add(cb.equal(root.get("acceptationType"), request.getAcceptanceType()));
             }
 
             // priority
@@ -68,13 +84,18 @@ public final class OutstandingItemSpecifications {
             }
 
             // orgId -> createdOrgId
-            if (request.getOrgId() != null) {
-                predicates.add(cb.equal(root.get("createdOrgId"), request.getOrgId()));
+            if (request.getAssignedOrgId() != null) {
+                predicates.add(cb.equal(root.get("assignedOrgId"), request.getAssignedOrgId()));
             }
 
             // createdById -> createdBy
             if (request.getCreatedById() != null) {
-                predicates.add(cb.equal(root.get("createdBy"), request.getCreatedById()));
+                predicates.add(cb.equal(root.get("createdById"), request.getCreatedById()));
+            }
+
+            // assignedOrgId -> assignedOrgId
+            if (request.getAssignedUserId() != null) {
+                predicates.add(cb.equal(root.get("assignedOrgId"), request.getAssignedUserId()));
             }
 
             // createdFrom / createdTo -> createdAt

@@ -19,6 +19,9 @@ public class OutstandingItemSearchRequestDto {
     @Schema(description = "ID của dự án. Null nếu tìm kiếm toàn bộ")
     private Long projectId;
 
+    @Schema(description = "ID của giai đoạn. Null nếu tìm kiếm toàn bộ")
+    private Long phaseId;
+
     @Schema(description = "ID của hạng mục. Null nếu tìm kiếm toàn bộ")
     private Long itemId;
 
@@ -28,8 +31,8 @@ public class OutstandingItemSearchRequestDto {
     @Schema(description = "ID của loại tồn tại. Null nếu tìm kiếm toàn bộ")
     private Long outstandingTypeId;
 
-    @Schema(description = "ID của loại nghiệm thu. Null nếu tìm kiếm toàn bộ")
-    private Long acceptanceTypeId;
+    @Schema(description = "Loại nghiệm thu. Null nếu tìm kiếm toàn bộ")
+    private String acceptanceType;
 
     @Schema(description = "Mức độ quan trọng. Null nếu tìm kiếm toàn bộ", allowableValues = {"HIGH_PRIORITY", "PRIORITY", "LOW_PRIORITY"}, example = "LOW_PRIORITY")
     private String priority;

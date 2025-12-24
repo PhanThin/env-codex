@@ -16,10 +16,6 @@ public interface WorkItemRepository extends JpaRepository<WorkItem, Long> {
     @Query(value = "SELECT DISTINCT w.* FROM WORK_ITEM w INNER JOIN RECOMMENDATION_WORK_ITEM rwi ON w.WORK_ITEM_ID = rwi.WORK_ITEM_ID WHERE rwi.RECOMMENDATION_ID IN :recommendationIds AND w.IS_DELETED = 'N'", nativeQuery = true)
     List<WorkItem> findAllByRecommendationIdInAndIsDeletedFalse(@Param("recommendationIds") List<Long> recommendationIds);
 
-
-    @Query(value = "SELECT DISTINCT w.* FROM WORK_ITEM w INNER JOIN OUTSTANDING_WORK_ITEM rwi ON w.WORK_ITEM_ID = rwi.WORK_ITEM_ID WHERE rwi.OUTSTANDING_ID IN :outstandingIds AND w.IS_DELETED = 'N'", nativeQuery = true)
-    List<WorkItem> findAllByOutstandingIdInAndIsDeletedFalse(@Param("outstandingIds") List<Long> outstandingIds);
-
     Optional<WorkItem> findByIdAndIsDeletedFalse(Long id);
 
     List<WorkItem> findAllByIdAndIsDeletedFalse(Long itemId);

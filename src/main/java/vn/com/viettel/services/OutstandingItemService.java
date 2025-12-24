@@ -4,7 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.OutstandingItemDto;
-import vn.com.viettel.dto.RecommendationSearchRequestDto;
+import vn.com.viettel.dto.OutstandingItemSearchRequestDto;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ public interface OutstandingItemService {
     OutstandingItemDto createOutstandingItem(OutstandingItemDto dto, MultipartFile[] acceptanceFiles, MultipartFile[] documents);
 
     @Transactional
-    OutstandingItemDto updateOutstandingItem(Long id, OutstandingItemDto dto);
+    OutstandingItemDto updateOutstandingItem(Long id, OutstandingItemDto dto, MultipartFile[] acceptanceFiles, MultipartFile[] documents);
 
     @Transactional
     void deleteOutstandingItem(List<Long> ids);
@@ -22,5 +22,5 @@ public interface OutstandingItemService {
     OutstandingItemDto getOutstandingItemById(Long id);
 
     @Transactional(readOnly = true)
-    Page<OutstandingItemDto> searchOutstandingByRecommendation(RecommendationSearchRequestDto request);
+    Page<OutstandingItemDto> searchOutstanding(OutstandingItemSearchRequestDto request);
 }

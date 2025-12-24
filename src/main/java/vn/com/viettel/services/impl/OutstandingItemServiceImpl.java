@@ -16,10 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import vn.com.viettel.dto.OutstandingItemDto;
-import vn.com.viettel.dto.OutstandingStatusEnum;
-import vn.com.viettel.dto.PriorityEnum;
-import vn.com.viettel.dto.RecommendationSearchRequestDto;
+import vn.com.viettel.dto.*;
 import vn.com.viettel.entities.*;
 import vn.com.viettel.mapper.OutstandingItemMapper;
 import vn.com.viettel.minio.dto.ObjectFileDTO;
@@ -142,29 +139,29 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
         }
 
         // 2. Validate loại tồn tại
-        if (dto.getOutstandingType() == null || dto.getOutstandingType().getId() == null) {
+        if (dto.getOutstandingTypeDto() == null || dto.getOutstandingTypeDto().getId() == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("outstanding.type.required")
             );
         } else {
-            if (!outstandingTypeRepository.existsById(dto.getOutstandingType().getId())) {
+            if (!outstandingTypeRepository.existsById(dto.getOutstandingTypeDto().getId())) {
                 throw new CustomException(
                         HttpStatus.NOT_FOUND.value(),
-                        translator.getMessage("outstanding.type.notfound", dto.getOutstandingType().getId())
+                        translator.getMessage("outstanding.type.notfound", dto.getOutstandingTypeDto().getId())
                 );
             }
         }
 
         // 3. Validate priority
-        if (dto.getPriority() == null || StringUtils.isBlank(dto.getPriority().getCode())) {
+        if (dto.getPriorityDto() == null || StringUtils.isBlank(dto.getPriorityDto().getCode())) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("outstanding.priority.required")
             );
         } else {
             try {
-                PriorityEnum.valueOf(dto.getPriority().getCode().toUpperCase());
+                PriorityEnum.valueOf(dto.getPriorityDto().getCode().toUpperCase());
             } catch (IllegalArgumentException ex) {
                 throw new CustomException(
                         HttpStatus.BAD_REQUEST.value(),
@@ -173,7 +170,7 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
             }
         }
         // 4. Validate project & projectItem & workItems thuộc đúng projectItem
-        Long projectId = dto.getProject() == null ? null : dto.getProject().getId();
+        Long projectId = dto.getProjectDto() == null ? null : dto.getProjectDto().getId();
         if (projectId == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
@@ -188,7 +185,7 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
             );
         }
 
-        Long itemId = dto.getProjectItem() == null ? null : dto.getProjectItem().getId();
+        Long itemId = dto.getProjectItemDto() == null ? null : dto.getProjectItemDto().getId();
         if (itemId == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
@@ -210,32 +207,32 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
         }
 
         // 5. Validate danh sách công việc
-        if (dto.getWorkItem() == null || dto.getWorkItem().getId() == null) {
+        if (dto.getWorkItemDto() == null || dto.getWorkItemDto().getId() == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("outstanding.workitem.required")
             );
         }
-        WorkItem wi = workItemRepository.findById(dto.getWorkItem().getId())
+        WorkItem wi = workItemRepository.findById(dto.getWorkItemDto().getId())
                 .orElseThrow(() -> new CustomException(
                         HttpStatus.NOT_FOUND.value(),
-                        translator.getMessage("outstanding.workitem.notfound", dto.getWorkItem().getId())
+                        translator.getMessage("outstanding.workitem.notfound", dto.getWorkItemDto().getId())
                 ));
         if (!Objects.equals(wi.getItemId(), itemId)) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("outstanding.workitem.not_belong_to_item", dto.getWorkItem().getId(), itemId)
+                    translator.getMessage("outstanding.workitem.not_belong_to_item", dto.getWorkItemDto().getId(), itemId)
             );
         }
 
         // 6. Validate người/đơn vị xử lý
-        if (dto.getAssignedUser() == null || dto.getAssignedUser().getId() == null) {
+        if (dto.getAssignedUserDto() == null || dto.getAssignedUserDto().getId() == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("outstanding.assigned_user.required")
             );
         }
-        if (dto.getAssignedOrg() == null || dto.getAssignedOrg().getId() == null) {
+        if (dto.getAssignedOrgDto() == null || dto.getAssignedOrgDto().getId() == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("outstanding.assigned_org.required")
@@ -272,6 +269,23 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("outstanding.acceptance.refid.length")
             );
+        }
+
+        // 9. Validate acceptanceType
+        if (dto.getAcceptanceType() == null || dto.getAcceptanceType().getCode() == null) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("outstanding.acceptance.type.required")
+            );
+        } else {
+            try {
+                OutstandingAcceptanceTypeEnum.valueOf(dto.getAcceptanceType().getCode().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                throw new CustomException(
+                        HttpStatus.BAD_REQUEST.value(),
+                        translator.getMessage("outstanding.acceptance.type.invalid")
+                );
+            }
         }
 
         validateAlertConfigs(dto, deadline);
@@ -361,16 +375,22 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
             outstandingAlertConfigRepository.saveAll(outstandingAlertConfigs);
         }
 
+        handleAttachment(acceptanceFiles, documents, outstandingItem.getId(), currentUserId);
+
+        return outstandingItemMapper.mapToOutstandingItemDto(List.of(outstandingItem)).getFirst();
+    }
+
+    private void handleAttachment(MultipartFile[] acceptanceFiles, MultipartFile[] documents, Long outstandingItemId, Long currentUserId) {
         List<Attachment> attachments = new ArrayList<>();
         // Xử lý file nghiệm thu
         if (acceptanceFiles != null && acceptanceFiles.length > 0) {
-            String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItem.getId() + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE;
+            String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItemId + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE;
             List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, channel, acceptanceFiles);
 
             for (ObjectFileDTO file : objectFileDTOList) {
                 Attachment attachment = getAttachment(
                         file,
-                        outstandingItem.getId(),
+                        outstandingItemId,
                         Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_ACCEPTANCE,
                         currentUserId
                 );
@@ -379,13 +399,13 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
         }
         // Xử lý file tài liệu
         if (documents != null && documents.length > 0) {
-            String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItem.getId() + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT;
+            String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingItemId + "/" + Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT;
             List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, channel, documents);
 
             for (ObjectFileDTO file : objectFileDTOList) {
                 Attachment attachment = getAttachment(
                         file,
-                        outstandingItem.getId(),
+                        outstandingItemId,
                         Constants.OUTSTANDING_DOCUMENT_REFERENCE_TYPE_DOCUMENT,
                         currentUserId
                 );
@@ -395,16 +415,16 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
         if (!attachments.isEmpty()) {
             attachmentRepository.saveAll(attachments);
         }
-
-        return outstandingItemMapper.mapToOutstandingItemDto(List.of(outstandingItem)).getFirst();
     }
 
     @Transactional
     @Override
-    public OutstandingItemDto updateOutstandingItem(Long id, OutstandingItemDto dto) {
+    public OutstandingItemDto updateOutstandingItem(Long id, OutstandingItemDto dto, MultipartFile[] acceptanceFiles, MultipartFile[] documents) {
         if (id == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("outstandingitem.id.null"));
         }
+        dto.setId(id);
+
         validateOutstandingItemRequest(dto, true);
         OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(id).orElse(null);
         if (outstandingItem == null) {
@@ -446,6 +466,20 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
         if (!existingConfigMap.isEmpty()) {
             outstandingAlertConfigRepository.deleteAll(existingConfigMap.values());
         }
+
+        if (dto.getDeletedAttachments() != null && !dto.getDeletedAttachments().isEmpty()) {
+            List<Attachment> attachments = attachmentRepository.findAllByIdInAndIsDeletedFalse(dto.getDeletedAttachments().stream().map(AttachmentDto::getId).collect(Collectors.toList()));
+            if (attachments != null && !attachments.isEmpty()) {
+                attachments.forEach(attachment -> {
+                    attachment.setIsDeleted(true);
+                    attachment.setUpdatedBy(currentUserId);
+                    attachment.setUpdatedAt(LocalDateTime.now());
+                });
+                attachmentRepository.saveAll(attachments);
+            }
+        }
+
+        handleAttachment(acceptanceFiles, documents, outstandingItem.getId(), currentUserId);
 
         return outstandingItemMapper.mapToOutstandingItemDto(List.of(outstandingItem)).getFirst();
     }
@@ -545,9 +579,9 @@ public class OutstandingItemServiceImpl implements OutstandingItemService {
 
     @Transactional(readOnly = true)
     @Override
-    public Page<OutstandingItemDto> searchOutstandingByRecommendation(RecommendationSearchRequestDto request) {
+    public Page<OutstandingItemDto> searchOutstanding(OutstandingItemSearchRequestDto request) {
         if (request == null) {
-            request = new RecommendationSearchRequestDto();
+            request = new OutstandingItemSearchRequestDto();
         }
 
         int page = request.getPage() != null && request.getPage() >= 0 ? request.getPage() : 0;
