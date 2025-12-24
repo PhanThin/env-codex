@@ -5,7 +5,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,8 +18,8 @@ import vn.com.viettel.dto.*;
 import vn.com.viettel.entities.*;
 import vn.com.viettel.mapper.RecommendationMapper;
 import vn.com.viettel.minio.dto.ObjectFileDTO;
-import vn.com.viettel.minio.services.FileService;
 import vn.com.viettel.repositories.jpa.*;
+import vn.com.viettel.services.AttachmentService;
 import vn.com.viettel.services.RecommendationService;
 import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
@@ -55,20 +58,21 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Autowired
     private RecommendationWorkItemRepository recommendationWorkItemRepository;
     @Autowired
-    private AttachmentRepository attachmentRepository;
-    @Autowired
     private RecommendationAssignmentRepository recommendationAssignmentRepository;
     @Autowired
-    private FileService fileService;
-    @Autowired
     private RecommendationResponseRepository recommendationResponseRepository;
+    @Autowired
+    private AttachmentService attachmentService;
 
-    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "createdAt",
-            "deadline",
-            "recommendationTitle",
-            "priority",
-            "status"
+    private static final Map<String, String> ALLOWED_SORT_FIELDS = Map.of(
+            "createdAt", "createdAt",
+            "deadline", "deadline",
+            "recommendationTitle", "recommendationTitle",
+            "priority", "priority",
+            "status", "status",
+            "createdByUser", "createdByUser.fullName",
+            "recommendationType", "catRecommendationType.typeName"
+
     );
 
     @Override
@@ -88,18 +92,11 @@ public class RecommendationServiceImpl implements RecommendationService {
             recommendationAssignmentRepository.saveAll(recommendationAssignmentList);
         }
 
-        if (files != null) {
-            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, Constants.RECOMMENDATION_REFERENCE_TYPE, files);
-
-            for (ObjectFileDTO file : objectFileDTOList) {
-                // Lưu thông tin file vào bảng Attachment (tùy thuộc vào cấu trúc entity của bạn)
-                Attachment attachment = getAttachment(file, entity.getId(), Constants.RECOMMENDATION_REFERENCE_TYPE, currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
-                attachmentRepository.save(attachment);
-            }
-        }
+        attachmentService.handleAttachment(files, entity.getId(), Constants.RECOMMENDATION_REFERENCE_TYPE, Constants.RECOMMENDATION_REFERENCE_TYPE);
 
         return recommendationMapper.mapToRecommendationWorkItem(List.of(entity)).getFirst();
     }
+
 
     @Transactional
     @Override
@@ -127,14 +124,12 @@ public class RecommendationServiceImpl implements RecommendationService {
         // 6. Xử lý Assignment
         updateAssigment(dto, id, currentUserId);
 
-
         // 7. Xử lý file đính kèm mới (nếu có)
-        if (files != null && files.length > 0) {
-            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, Constants.RECOMMENDATION_REFERENCE_TYPE, files);
-            for (ObjectFileDTO file : objectFileDTOList) {
-                Attachment attachment = getAttachment(file, entity.getId(), Constants.RECOMMENDATION_REFERENCE_TYPE, currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
-                attachmentRepository.save(attachment);
-            }
+        attachmentService.handleAttachment(files, entity.getId(), Constants.RECOMMENDATION_REFERENCE_TYPE, Constants.RECOMMENDATION_REFERENCE_TYPE);
+
+        // 8. Xử lý file đính kèm đã xóa (nếu có)
+        if (dto.getDeletedAttachments() != null && !dto.getDeletedAttachments().isEmpty()) {
+            attachmentService.deleteAttachmentsById(dto.getDeletedAttachments().stream().map(AttachmentDto::getId).collect(Collectors.toList()), currentUserId);
         }
 
         return recommendationMapper.mapToRecommendationWorkItem(List.of(entity)).getFirst();
@@ -253,15 +248,9 @@ public class RecommendationServiceImpl implements RecommendationService {
             recommendationWorkItemRepository.saveAll(recommendationWorkItemList);
         }
 
-        List<Attachment> recommendationFileList = attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(id, Constants.RECOMMENDATION_REFERENCE_TYPE);
-        if (recommendationFileList != null && !recommendationFileList.isEmpty()) {
-            recommendationFileList.forEach(file -> {
-                file.setIsDeleted(true);
-                file.setUpdatedBy(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
-                file.setUpdatedAt(LocalDateTime.now());
-            });
-            attachmentRepository.saveAll(recommendationFileList);
-        }
+        // Delete attachment
+        attachmentService.deleteAttachments(id, Constants.RECOMMENDATION_REFERENCE_TYPE, currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
+
     }
 
     private SysUser getCurrentUser() {
@@ -298,13 +287,20 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         // --- Validate & chuẩn hóa sortBy ---
         String sortBy = StringUtils.defaultIfBlank(request.getSortBy(), "createdAt");
-        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
-            // Có thể dùng message bundle nếu muốn i18n
+        String sortProperty = ALLOWED_SORT_FIELDS.get(sortBy);
+        if (sortProperty == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
-                    "sortBy không hợp lệ. Các giá trị được phép: " + ALLOWED_SORT_FIELDS
+                    "sortBy không hợp lệ. Các giá trị được phép: " + ALLOWED_SORT_FIELDS.keySet()
             );
         }
+//        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+//            // Có thể dùng message bundle nếu muốn i18n
+//            throw new CustomException(
+//                    HttpStatus.BAD_REQUEST.value(),
+//                    "sortBy không hợp lệ. Các giá trị được phép: " + ALLOWED_SORT_FIELDS
+//            );
+//        }
 
         // --- Validate & chuẩn hóa sortDirection ---
         String sortDirectionRaw = StringUtils.defaultIfBlank(request.getSortDirection(), "DESC");
@@ -319,18 +315,32 @@ public class RecommendationServiceImpl implements RecommendationService {
                     "sortDirection không hợp lệ. Chỉ chấp nhận ASC hoặc DESC"
             );
         }
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-
         // Build specification theo điều kiện
-        var spec = buildSpecification(request);
+        var specification = buildSpecification(request);
 
-        Page<Recommendation> resultPage = recommendationRepository.findAll(spec, pageable);
+        PageRequest pageRequest;
+
+        // 2. Nếu sort theo status/priority/acceptanceType -> dùng CASE WHEN trong Specification
+        if ("status".equalsIgnoreCase(sortBy)
+                || "priority".equalsIgnoreCase(sortBy)
+                || "acceptanceType".equalsIgnoreCase(sortBy)) {
+            specification = specification.and(
+                    RecommendationSpecifications.withCustomSort(sortBy, direction)
+            );
+            // Pageable KHÔNG cần sort, chỉ phân trang
+            pageRequest = PageRequest.of(page, size);
+        } else {
+            // 3. Các field khác dùng Sort bình thường (dùng sortProperty đã map)
+            Sort sort = Sort.by(direction, sortProperty);
+            pageRequest = PageRequest.of(page, size, sort);
+        }
+
+        Page<Recommendation> resultPage = recommendationRepository.findAll(specification, pageRequest);
 
         // Map sang DTO (tái sử dụng mapper hiện tại để enrich project, user, workItems...)
         List<RecommendationDto> dtoList = recommendationMapper.mapToRecommendationWorkItem(resultPage.getContent());
 
-        return new PageImpl<>(dtoList, pageable, resultPage.getTotalElements());
+        return new PageImpl<>(dtoList, pageRequest, resultPage.getTotalElements());
     }
 
     @Override
@@ -383,15 +393,11 @@ public class RecommendationServiceImpl implements RecommendationService {
         SysUser currentUser = getCurrentUser();
         RecommendationResponse recommendationResponse = recommendationMapper.mapToRecommendationResponse(dto, recommendationId, currentUser);
         recommendationResponseRepository.save(recommendationResponse);
-        List<Attachment> attachments = new ArrayList<>();
-        if (files != null && files.length > 0) {
-            String channel = Constants.RECOMMENDATION_REFERENCE_TYPE + "/" + recommendationResponse.getId() + "/" + Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE;
-            List<ObjectFileDTO> objectFileDTOList = fileService.uploadFiles(bucketName, channel, files);
-            for (ObjectFileDTO file : objectFileDTOList) {
-                attachments.add(getAttachment(file, recommendationResponse.getId(), Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE, currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID));
-            }
-            attachmentRepository.saveAll(attachments);
-        }
+
+        String channel = Constants.RECOMMENDATION_REFERENCE_TYPE + "/" + recommendationResponse.getId() + "/" + Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE;
+        List<Attachment> attachments = attachmentService.handleAttachment(files, recommendationResponse.getId(), Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE, channel);
+
+
         return recommendationMapper.mapToRecommendationResponseDto(recommendationResponse, currentUser, attachments);
     }
 

@@ -11,8 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.AttachmentDto;
-import vn.com.viettel.dto.OutstandingItemDto;
-import vn.com.viettel.dto.RecommendationDto;
 import vn.com.viettel.entities.Attachment;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.AttachmentMapper;
@@ -28,6 +26,7 @@ import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -118,7 +117,7 @@ public class AttachmentServiceImpl implements AttachmentService {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceId.null"));
         }
         if (StringUtils.isBlank(referenceType)) {
-             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.required"));
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("attachment.referenceType.required"));
         }
 
         validateReferenceExist(referenceId, referenceType);
@@ -207,5 +206,64 @@ public class AttachmentServiceImpl implements AttachmentService {
             }
         }
         return null;
+    }
+
+    @Override
+    public List<Attachment> handleAttachment(MultipartFile[] files, Long entityId, String referenceType, String channel) {
+        List<Attachment> attachments = new ArrayList<>();
+        if (files != null) {
+            SysUser currentUser = getCurrentUser();
+            Long currentUserId = currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID;
+            List<ObjectFileDTO> objectFileDTOList = storageService.uploadFiles(bucketName, channel, files);
+            for (ObjectFileDTO file : objectFileDTOList) {
+                // Lưu thông tin file vào bảng Attachment (tùy thuộc vào cấu trúc entity của bạn)
+                Attachment attachment = getAttachment(file, entityId, referenceType, currentUserId);
+                attachments.add(attachment);
+            }
+            if (!attachments.isEmpty()) {
+                attachmentRepository.saveAll(attachments);
+            }
+        }
+        return attachments;
+    }
+
+    private Attachment getAttachment(ObjectFileDTO file, Long entityId, String referenceType, Long userId) {
+        Attachment attachment = new Attachment();
+        attachment.setFileName(file.getFileName());
+        attachment.setFileSize(file.getFileSize());
+        attachment.setFilePath(file.getFilePath());
+        attachment.setFileUrl(file.getLinkUrlPublic()); // Đường dẫn/tên file trên MinIO
+        attachment.setReferenceId(entityId);
+        attachment.setReferenceType(referenceType);
+        attachment.setUploadedAt(LocalDateTime.now());
+        attachment.setUploadedBy(userId);
+        attachment.setIsDeleted(false);
+        return attachment;
+    }
+
+    @Override
+    public void deleteAttachments(List<Long> referenceId, String referenceType, Long userId) {
+        List<Attachment> attachments = attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(referenceId, referenceType);
+        if (attachments != null && !attachments.isEmpty()) {
+            attachments.forEach(file -> {
+                file.setIsDeleted(true);
+                file.setUpdatedBy(userId != null ? userId : Constants.DEFAULT_USER_ID);
+                file.setUpdatedAt(LocalDateTime.now());
+            });
+            attachmentRepository.saveAll(attachments);
+        }
+    }
+
+    @Override
+    public void deleteAttachmentsById(List<Long> attachmentIds, Long userId) {
+        List<Attachment> attachments = attachmentRepository.findAllByIdInAndIsDeletedFalse(attachmentIds);
+        if (attachments != null && !attachments.isEmpty()) {
+            attachments.forEach(attachment -> {
+                attachment.setIsDeleted(true);
+                attachment.setUpdatedBy(userId != null ? userId : Constants.DEFAULT_USER_ID);
+                attachment.setUpdatedAt(LocalDateTime.now());
+            });
+            attachmentRepository.saveAll(attachments);
+        }
     }
 }

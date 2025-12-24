@@ -1,26 +1,29 @@
 package vn.com.viettel.services.impl;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+import vn.com.viettel.dto.OutstandingProcessLogDto;
+import vn.com.viettel.entities.OutstandingProcessLog;
+import vn.com.viettel.mapper.OutstandingProcessLogMapper;
+import vn.com.viettel.minio.services.FileService;
+import vn.com.viettel.repositories.jpa.OutstandingItemRepository;
+import vn.com.viettel.repositories.jpa.OutstandingProcessLogRepository;
+import vn.com.viettel.services.AttachmentService;
+import vn.com.viettel.services.OutstandingProcessLogService;
+import vn.com.viettel.utils.Constants;
+import vn.com.viettel.utils.Translator;
+import vn.com.viettel.utils.exceptions.CustomException;
+
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
-import lombok.RequiredArgsConstructor;
-import vn.com.viettel.dto.OutstandingProcessLogDto;
-import vn.com.viettel.entities.OutstandingProcessLog;
-import vn.com.viettel.mapper.OutstandingProcessLogMapper;
-import vn.com.viettel.repositories.jpa.OutstandingItemRepository;
-import vn.com.viettel.repositories.jpa.OutstandingProcessLogRepository;
-import vn.com.viettel.services.OutstandingProcessLogService;
-import vn.com.viettel.utils.Translator;
-import vn.com.viettel.utils.exceptions.CustomException;
 
 /**
  * CRUD-only service implementation for OUTSTANDING_PROCESS_LOG.
@@ -36,11 +39,14 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
 
     private final OutstandingProcessLogRepository repository;
     private final OutstandingItemRepository outstandingItemRepository;
+    @Qualifier("outstandingProcessLogMapperDecorator")
     private final OutstandingProcessLogMapper mapper;
-    private Translator translator;
+    private final Translator translator;
+    private final AttachmentService attachmentService;
+    private final FileService fileService;
 
     @Override
-    public OutstandingProcessLogDto create(Long outstandingId, OutstandingProcessLogDto request) {
+    public OutstandingProcessLogDto create(Long outstandingId, OutstandingProcessLogDto request, MultipartFile[] attachments) {
         validateOutstandingExists(outstandingId);
         validateRequest(request);
 
@@ -48,20 +54,27 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
         entity.setOutstandingId(outstandingId);
         entity.setIsDeleted(Boolean.FALSE);
         entity.setUpdatedAt(LocalDateTime.now());
-
-        return mapper.toDto(repository.save(entity));
+        repository.save(entity);
+        String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingId + "/" + Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE;
+        attachmentService.handleAttachment(attachments, entity.getId(), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, channel);
+        return mapper.toDto(entity);
     }
 
+
     @Override
-    public OutstandingProcessLogDto update(Long outstandingId, Long processId, OutstandingProcessLogDto request) {
+    public OutstandingProcessLogDto update(Long outstandingId, Long processId, OutstandingProcessLogDto request, MultipartFile[] attachments) {
         validateOutstandingExists(outstandingId);
         validateRequest(request);
 
         OutstandingProcessLog entity = getOrThrow(outstandingId, processId);
         mapper.updateEntity(entity, request);
         entity.setUpdatedAt(LocalDateTime.now());
+        repository.save(entity);
 
-        return mapper.toDto(repository.save(entity));
+        String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingId + "/" + Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE;
+        attachmentService.handleAttachment(attachments, entity.getId(), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, channel);
+
+        return mapper.toDto(entity);
     }
 
     @Override
@@ -75,10 +88,7 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
     @Transactional(readOnly = true)
     public List<OutstandingProcessLogDto> getAll(Long outstandingId) {
         validateOutstandingExists(outstandingId);
-        return repository.findAllByOutstandingIdAndIsDeletedFalseOrderByUpdatedAtDesc(outstandingId)
-                .stream()
-                .map(mapper::toDto)
-                .collect(Collectors.toList());
+        return mapper.toDtoList(repository.findAllByOutstandingIdAndIsDeletedFalseOrderByUpdatedAtDesc(outstandingId));
     }
 
     @Override
@@ -87,6 +97,8 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
         OutstandingProcessLog entity = getOrThrow(outstandingId, processId);
         entity.setIsDeleted(Boolean.TRUE);
         entity.setUpdatedAt(LocalDateTime.now());
+
+
         repository.save(entity);
     }
 

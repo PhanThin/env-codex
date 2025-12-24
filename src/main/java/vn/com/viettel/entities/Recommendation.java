@@ -107,5 +107,11 @@ public class Recommendation {
     @Column(name = "LAST_UPDATE_BY")
     private Long lastUpdateBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "RECOMMENDATION_TYPE_ID", insertable = false, updatable = false)
+    private CatRecommendationType catRecommendationType;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CREATED_BY", insertable = false, updatable = false)
+    private SysUser createdBy;
 }

@@ -2,6 +2,7 @@ package vn.com.viettel.repositories.jpa;
 
 import jakarta.persistence.criteria.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import vn.com.viettel.dto.RecommendationSearchRequestDto;
 import vn.com.viettel.entities.Recommendation;
@@ -126,6 +127,44 @@ public final class RecommendationSpecifications {
             }
 
             return predicate;
+        };
+    }
+
+    public static Specification<Recommendation> withCustomSort(String sortBy, Sort.Direction direction) {
+        return (root, query, cb) -> {
+            // Tránh ảnh hưởng đến count query
+            Class<?> resultType = query.getResultType();
+            if (resultType == Long.class || resultType == long.class) {
+                return cb.conjunction();
+            }
+
+            // Nếu không sort theo các field đặc biệt thì bỏ qua
+            if (!"status".equalsIgnoreCase(sortBy) && !"priority".equalsIgnoreCase(sortBy)) {
+                return cb.conjunction();
+            }
+
+            boolean asc = direction == Sort.Direction.ASC;
+
+            if ("status".equalsIgnoreCase(sortBy)) {
+                // Thứ tự ví dụ: NEW -> IN_PROGRESS -> DONE -> CLOSED
+                Expression<Object> statusOrder = cb.selectCase(root.get("status"))
+                        .when("NEW", 1)
+                        .when("DONE", 2)
+                        .otherwise(99);
+
+                query.orderBy(asc ? cb.asc(statusOrder) : cb.desc(statusOrder));
+            } else if ("priority".equalsIgnoreCase(sortBy)) {
+                // Thứ tự ví dụ: HIGH_PRIORITY -> PRIORITY -> LOW_PRIORITY
+                Expression<Object> priorityOrder = cb.selectCase(root.get("priority"))
+                        .when("HIGH_PRIORITY", 1)
+                        .when("PRIORITY", 2)
+                        .when("LOW_PRIORITY", 3)
+                        .otherwise(99);
+
+                query.orderBy(asc ? cb.asc(priorityOrder) : cb.desc(priorityOrder));
+            }
+
+            return cb.conjunction();
         };
     }
 }
