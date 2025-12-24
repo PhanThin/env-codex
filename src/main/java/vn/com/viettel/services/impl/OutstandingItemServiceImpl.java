@@ -1,6 +1,5 @@
 package vn.com.viettel.services.impl;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.*;
 import vn.com.viettel.entities.*;
 import vn.com.viettel.mapper.OutstandingItemMapper;
-import vn.com.viettel.minio.dto.ObjectFileDTO;
 import vn.com.viettel.repositories.jpa.*;
 import vn.com.viettel.services.AttachmentService;
 import vn.com.viettel.services.OutstandingItemService;

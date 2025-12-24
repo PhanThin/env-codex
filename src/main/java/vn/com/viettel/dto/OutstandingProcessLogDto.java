@@ -32,7 +32,7 @@ public class OutstandingProcessLogDto {
     @NotBlank
     @Size(max = 30)
     @Schema(description = "Loại hành động", allowableValues = {"SAVE_RESULT", "SEND_FOR_ACCEPTANCE"}, requiredMode = Schema.RequiredMode.REQUIRED)
-    private String actionType;
+    private OutstandingProcessActionEnum actionType;
 
     /**
      * Processing content/result.

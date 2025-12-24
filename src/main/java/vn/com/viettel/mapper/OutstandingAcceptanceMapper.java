@@ -26,6 +26,7 @@ public interface OutstandingAcceptanceMapper {
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "acceptedAt", ignore = true)
     @Mapping(target = "acceptedBy", ignore = true)
+    @Mapping(target = "result", ignore = true)
     OutstandingAcceptance toEntity(OutstandingAcceptanceDto dto);
 
     @Mapping(target = "id", ignore = true)
@@ -35,6 +36,7 @@ public interface OutstandingAcceptanceMapper {
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "acceptedAt", ignore = true)
     @Mapping(target = "acceptedBy", ignore = true)
+    @Mapping(target = "result", ignore = true)
     void updateEntity(@MappingTarget OutstandingAcceptance entity, OutstandingAcceptanceDto dto);
 
     @Mapping(target = "acceptanceId", source = "id")

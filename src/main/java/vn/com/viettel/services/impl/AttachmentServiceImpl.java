@@ -1,6 +1,5 @@
 package vn.com.viettel.services.impl;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,14 +12,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.AttachmentDto;
 import vn.com.viettel.entities.Attachment;
+import vn.com.viettel.entities.OutstandingItem;
+import vn.com.viettel.entities.Recommendation;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.AttachmentMapper;
 import vn.com.viettel.minio.dto.ObjectFileDTO;
 import vn.com.viettel.repositories.jpa.AttachmentRepository;
+import vn.com.viettel.repositories.jpa.OutstandingItemRepository;
+import vn.com.viettel.repositories.jpa.RecommendationRepository;
 import vn.com.viettel.repositories.jpa.SysUserRepository;
 import vn.com.viettel.services.AttachmentService;
-import vn.com.viettel.services.OutstandingItemService;
-import vn.com.viettel.services.RecommendationService;
 import vn.com.viettel.services.StorageService;
 import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
@@ -31,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AttachmentServiceImpl implements AttachmentService {
 
@@ -46,9 +46,9 @@ public class AttachmentServiceImpl implements AttachmentService {
     @Autowired
     private AttachmentMapper attachmentMapper;
     @Autowired
-    private RecommendationService recommendationService;
+    private RecommendationRepository recommendationRepository;
     @Autowired
-    private OutstandingItemService outstandingItemService;
+    private OutstandingItemRepository outstandingItemRepository;
 
     @Value("${minio.bucketName:evn}")
     private String bucketName;
@@ -174,15 +174,15 @@ public class AttachmentServiceImpl implements AttachmentService {
         String type = referenceType != null ? referenceType.toUpperCase() : "";
         switch (type) {
             case Constants.RECOMMENDATION_REFERENCE_TYPE:
-                RecommendationDto recommendationDto = recommendationService.getRecommendationById(referenceId);
-                if (recommendationDto == null) {
+                Recommendation recommendation = recommendationRepository.findByIdAndIsDeletedFalse(referenceId).orElse(null);
+                if (recommendation == null) {
                     throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", referenceId));
                 }
                 break;
 
             case Constants.OUTSTANDING_REFERENCE_TYPE:
-                OutstandingItemDto outstandingItemDto = outstandingItemService.getOutstandingItemById(referenceId);
-                if (outstandingItemDto == null) {
+                OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(referenceId).orElse(null);
+                if (outstandingItem == null) {
                     throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", referenceId));
                 }
                 break;

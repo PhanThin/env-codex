@@ -10,8 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import vn.com.viettel.dto.AttachmentDto;
 import vn.com.viettel.dto.OutstandingAcceptanceDto;
+import vn.com.viettel.dto.OutstandingAcceptanceResultEnum;
+import vn.com.viettel.dto.OutstandingStatusEnum;
 import vn.com.viettel.entities.OutstandingAcceptance;
+import vn.com.viettel.entities.OutstandingItem;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.OutstandingAcceptanceMapper;
 import vn.com.viettel.repositories.jpa.OutstandingAcceptanceRepository;
@@ -44,6 +48,7 @@ public class OutstandingAcceptanceServiceImpl implements OutstandingAcceptanceSe
     @Autowired
     private OutstandingItemRepository outstandingItemRepository;
     @Qualifier("outstandingAcceptanceMapperDecorator")
+    @Autowired
     private OutstandingAcceptanceMapper mapper;
     @Autowired
     private Translator translator;
@@ -55,18 +60,35 @@ public class OutstandingAcceptanceServiceImpl implements OutstandingAcceptanceSe
     @Override
     @Transactional
     public OutstandingAcceptanceDto create(Long outstandingId, OutstandingAcceptanceDto request, MultipartFile[] files) {
-        validateOutstandingExists(outstandingId);
+        OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(outstandingId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstanding.notfound", outstandingId)));
 
         validateRequest(request);
 
+        Long currentUserId = getCurrentUserIdOrDefault();
+
         OutstandingAcceptance entity = mapper.toEntity(request);
+        entity.setResult(request.getResult().name());
         entity.setOutstandingId(outstandingId);
         entity.setIsDeleted(Boolean.FALSE);
         entity.setAcceptedAt(LocalDateTime.now());
-        entity.setAcceptedBy(getCurrentUserIdOrDefault());
+        entity.setAcceptedBy(currentUserId);
         repository.save(entity);
 
         attachmentService.handleAttachment(files, entity.getId(), Constants.OUTSTANDING_ACCEPTANCE_REFERENCE_TYPE, Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingId + "/" + Constants.OUTSTANDING_ACCEPTANCE_REFERENCE_TYPE);
+
+        if (OutstandingAcceptanceResultEnum.ACCEPTED.equals(request.getResult())) {
+            outstandingItem.setStatus(OutstandingStatusEnum.CLOSED.name());
+            outstandingItem.setLastUpdateAt(LocalDateTime.now());
+            outstandingItem.setLastUpdateBy(currentUserId);
+            outstandingItemRepository.save(outstandingItem);
+
+        } else if (OutstandingAcceptanceResultEnum.REJECTED.equals(request.getResult())) {
+            outstandingItem.setStatus(OutstandingStatusEnum.NEW.name());
+            outstandingItem.setLastUpdateAt(LocalDateTime.now());
+            outstandingItem.setLastUpdateBy(currentUserId);
+            outstandingItemRepository.save(outstandingItem);
+
+        }
 
         return mapper.toDtoList(List.of(entity)).getFirst();
     }
@@ -76,14 +98,19 @@ public class OutstandingAcceptanceServiceImpl implements OutstandingAcceptanceSe
     public OutstandingAcceptanceDto update(Long outstandingId, Long acceptanceId, OutstandingAcceptanceDto request, MultipartFile[] files) {
         validateOutstandingExists(outstandingId);
         validateRequest(request);
-
+        Long currentUserId = getCurrentUserIdOrDefault();
         OutstandingAcceptance entity = getOrThrow(outstandingId, acceptanceId);
         mapper.updateEntity(entity, request);
+        entity.setResult(request.getResult().name());
         entity.setUpdatedAt(LocalDateTime.now());
-        entity.setUpdatedBy(getCurrentUserIdOrDefault());
+        entity.setUpdatedBy(currentUserId);
         repository.save(entity);
 
         attachmentService.handleAttachment(files, entity.getId(), Constants.OUTSTANDING_ACCEPTANCE_REFERENCE_TYPE, Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingId + "/" + Constants.OUTSTANDING_ACCEPTANCE_REFERENCE_TYPE);
+
+        if (request.getDeletedAttachments() != null && !request.getDeletedAttachments().isEmpty()) {
+            attachmentService.deleteAttachmentsById(request.getDeletedAttachments().stream().map(AttachmentDto::getId).toList(), currentUserId);
+        }
 
         return mapper.toDtoList(List.of(entity)).getFirst();
     }
@@ -131,7 +158,7 @@ public class OutstandingAcceptanceServiceImpl implements OutstandingAcceptanceSe
 
     private void validateRequest(OutstandingAcceptanceDto request) {
         if (request == null
-                || !StringUtils.hasText(request.getResult())
+                || request.getResult() == null || request.getResult().name().isEmpty()
                 || !StringUtils.hasText(request.getAcceptanceNote())) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),

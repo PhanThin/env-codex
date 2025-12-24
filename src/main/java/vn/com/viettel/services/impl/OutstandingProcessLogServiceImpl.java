@@ -9,7 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import vn.com.viettel.dto.OutstandingProcessActionEnum;
 import vn.com.viettel.dto.OutstandingProcessLogDto;
+import vn.com.viettel.dto.OutstandingStatusEnum;
+import vn.com.viettel.entities.OutstandingItem;
 import vn.com.viettel.entities.OutstandingProcessLog;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.OutstandingProcessLogMapper;
@@ -44,6 +47,7 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
     @Autowired
     private OutstandingItemRepository outstandingItemRepository;
     @Qualifier("outstandingProcessLogMapperDecorator")
+    @Autowired
     private OutstandingProcessLogMapper mapper;
     @Autowired
     private Translator translator;
@@ -75,7 +79,8 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
     public OutstandingProcessLogDto update(Long outstandingId, Long processId, OutstandingProcessLogDto request, MultipartFile[] attachments) {
         request.setProcessId(processId);
 
-        validateOutstandingExists(outstandingId);
+        OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(outstandingId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstanding.notfound", outstandingId)));
+
         validateRequest(request);
 
         OutstandingProcessLog entity = getOrThrow(outstandingId, processId);
@@ -89,6 +94,18 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
 
         if (request.getDeletedAttachments() != null && !request.getDeletedAttachments().isEmpty()) {
             attachmentService.deleteAttachments(List.of(processId), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, getCurrentUserIdOrDefault());
+        }
+
+        if (OutstandingProcessActionEnum.SEND_FOR_ACCEPTANCE.equals(request.getActionType())) {
+            outstandingItem.setStatus(OutstandingStatusEnum.DONE.name());
+            outstandingItem.setLastUpdateAt(LocalDateTime.now());
+            outstandingItem.setLastUpdateBy(getCurrentUserIdOrDefault());
+            outstandingItemRepository.save(outstandingItem);
+        } else if (OutstandingProcessActionEnum.SAVE_RESULT.equals(request.getActionType())) {
+            outstandingItem.setStatus(OutstandingStatusEnum.IN_PROGRESS.name());
+            outstandingItem.setLastUpdateAt(LocalDateTime.now());
+            outstandingItem.setLastUpdateBy(getCurrentUserIdOrDefault());
+            outstandingItemRepository.save(outstandingItem);
         }
         return mapper.toDto(entity);
     }
@@ -131,7 +148,7 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
 
     private void validateRequest(OutstandingProcessLogDto request) {
         if (request == null
-                || !StringUtils.hasText(request.getActionType())
+                || request.getActionType() == null || request.getActionType().name().isEmpty()
                 || !StringUtils.hasText(request.getProcessContent())) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
