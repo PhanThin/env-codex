@@ -29,7 +29,7 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
 
     private final CatOutstandingTypeRepository repository;
     private final CatOutstandingTypeMapper mapper;
-    private Translator translator;
+    private final Translator translator;
     @Override
     public CatOutstandingTypeDto create(CatOutstandingTypeDto request) {
         validateRequest(request);
