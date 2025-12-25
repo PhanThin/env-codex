@@ -40,8 +40,8 @@ import java.util.Set;
 @Transactional
 public class OutstandingAcceptanceServiceImpl implements OutstandingAcceptanceService {
 
-    private static final Set<String> ALLOWED_RESULTS =
-            new HashSet<>(Arrays.asList("PASS", "FAILED"));
+    private static final Set<OutstandingAcceptanceResultEnum> ALLOWED_RESULTS =
+            new HashSet<>(Arrays.asList(OutstandingAcceptanceResultEnum.ACCEPTED, OutstandingAcceptanceResultEnum.REJECTED));
 
     @Autowired
     private OutstandingAcceptanceRepository repository;
