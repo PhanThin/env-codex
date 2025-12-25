@@ -5,7 +5,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import vn.com.viettel.dto.CatOutstandingTypeDto;
+import vn.com.viettel.dto.OutstandingTypeDto;
+import vn.com.viettel.dto.OutstandingTypeDto;
 import vn.com.viettel.entities.CatOutstandingType;
 import vn.com.viettel.mapper.CatOutstandingTypeMapper;
 import vn.com.viettel.repositories.jpa.CatOutstandingTypeRepository;
@@ -66,7 +67,7 @@ class CatOutstandingTypeServiceImplTest {
         @DisplayName("TC_01: Tạo mới thành công - Xác minh logic Entity và Audit Fields")
         void create_success() {
             // GIVEN
-            CatOutstandingTypeDto request = CatOutstandingTypeDto.builder()
+            OutstandingTypeDto request = OutstandingTypeDto.builder()
                     .typeCode("OT_001")
                     .typeName("Loại nợ 1")
                     .build();
@@ -81,7 +82,7 @@ class CatOutstandingTypeServiceImplTest {
             when(mapper.toDto(entityFromMapper)).thenReturn(request);
 
             // WHEN
-            CatOutstandingTypeDto result = service.create(request);
+            OutstandingTypeDto result = service.create(request);
 
             // THEN
             ArgumentCaptor<CatOutstandingType> captor = ArgumentCaptor.forClass(CatOutstandingType.class);
@@ -103,7 +104,7 @@ class CatOutstandingTypeServiceImplTest {
         @DisplayName("TC_02: Tạo mới thất bại - Dữ liệu đầu vào thiếu trường bắt buộc")
         void create_fail_validation() {
             // GIVEN
-            CatOutstandingTypeDto request = CatOutstandingTypeDto.builder()
+            OutstandingTypeDto request = OutstandingTypeDto.builder()
                     .typeCode("") // Trống
                     .typeName("Loại nợ")
                     .build();
@@ -130,7 +131,7 @@ class CatOutstandingTypeServiceImplTest {
         void update_success() {
             // GIVEN
             Long id = 100L;
-            CatOutstandingTypeDto request = CatOutstandingTypeDto.builder()
+            OutstandingTypeDto request = OutstandingTypeDto.builder()
                     .typeCode("CODE_NEW")
                     .typeName("NAME_NEW")
                     .build();
@@ -162,7 +163,7 @@ class CatOutstandingTypeServiceImplTest {
         void update_fail_notFound() {
             // GIVEN
             Long id = 999L;
-            CatOutstandingTypeDto request = CatOutstandingTypeDto.builder().typeCode("A").typeName("B").build();
+            OutstandingTypeDto request = OutstandingTypeDto.builder().typeCode("A").typeName("B").build();
 
             when(repository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.empty());
             when(translator.getMessage("catOutstandingType.notFound", id)).thenReturn("Không tìm thấy ID: " + id);
@@ -249,13 +250,13 @@ class CatOutstandingTypeServiceImplTest {
             CatOutstandingType entity = new CatOutstandingType();
             entity.setId(id);
             when(repository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(entity));
-            when(mapper.toDto(entity)).thenReturn(CatOutstandingTypeDto.builder().outstandingTypeId(id).build());
+            when(mapper.toDto(entity)).thenReturn(OutstandingTypeDto.builder().id(id).build());
 
             // WHEN
-            CatOutstandingTypeDto result = service.getById(id);
+            OutstandingTypeDto result = service.getById(id);
 
             // THEN
-            assertEquals(id, result.getOutstandingTypeId());
+            assertEquals(id, result.getId());
             verify(repository).findByIdAndIsDeletedFalse(id);
         }
 
@@ -265,10 +266,10 @@ class CatOutstandingTypeServiceImplTest {
             // GIVEN
             CatOutstandingType e1 = new CatOutstandingType();
             when(repository.findAllByIsDeletedFalse()).thenReturn(List.of(e1));
-            when(mapper.toDto(e1)).thenReturn(CatOutstandingTypeDto.builder().build());
+            when(mapper.toDto(e1)).thenReturn(OutstandingTypeDto.builder().build());
 
             // WHEN
-            List<CatOutstandingTypeDto> result = service.getAll();
+            List<OutstandingTypeDto> result = service.getAll();
 
             // THEN
             assertFalse(result.isEmpty());
@@ -284,7 +285,7 @@ class CatOutstandingTypeServiceImplTest {
             when(repository.findAllByIsDeletedFalse()).thenReturn(Collections.emptyList());
 
             // WHEN
-            List<CatOutstandingTypeDto> result = service.getAll();
+            List<OutstandingTypeDto> result = service.getAll();
 
             // THEN
             assertTrue(result.isEmpty());

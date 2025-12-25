@@ -60,7 +60,7 @@ public class OutstandingAcceptanceServiceImpl implements OutstandingAcceptanceSe
     @Override
     @Transactional
     public OutstandingAcceptanceDto create(Long outstandingId, OutstandingAcceptanceDto request, MultipartFile[] files) {
-        OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(outstandingId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstanding.notfound", outstandingId)));
+        OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(outstandingId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", outstandingId)));
 
         validateRequest(request);
 
@@ -151,7 +151,7 @@ public class OutstandingAcceptanceServiceImpl implements OutstandingAcceptanceSe
         if (outstandingId == null || !outstandingItemRepository.existsByIdAndIsDeletedFalse(outstandingId)) {
             throw new CustomException(
                     HttpStatus.NOT_FOUND.value(),
-                    translator.getMessage("outstanding.notfound", outstandingId)
+                    translator.getMessage("outstandingitem.notFound", outstandingId)
             );
         }
     }

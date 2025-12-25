@@ -2,10 +2,7 @@ package vn.com.viettel.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.Value;
+import lombok.*;
 
 import java.io.Serializable;
 
@@ -15,6 +12,8 @@ import java.io.Serializable;
 @Getter
 @Setter
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class OutstandingTypeDto implements Serializable {
     Long id;
     @NotNull

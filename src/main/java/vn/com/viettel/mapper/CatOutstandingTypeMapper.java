@@ -5,6 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import vn.com.viettel.dto.CatOutstandingTypeDto;
+import vn.com.viettel.dto.OutstandingTypeDto;
 import vn.com.viettel.entities.CatOutstandingType;
 
 /**
@@ -17,13 +18,13 @@ public interface CatOutstandingTypeMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "isDeleted", ignore = true)
-    CatOutstandingType toEntity(CatOutstandingTypeDto dto);
+    CatOutstandingType toEntity(OutstandingTypeDto dto);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "isDeleted", ignore = true)
-    void updateEntity(@MappingTarget CatOutstandingType entity, CatOutstandingTypeDto dto);
+    void updateEntity(@MappingTarget CatOutstandingType entity, OutstandingTypeDto dto);
 
-    CatOutstandingTypeDto toDto(CatOutstandingType entity);
+    OutstandingTypeDto toDto(CatOutstandingType entity);
 }

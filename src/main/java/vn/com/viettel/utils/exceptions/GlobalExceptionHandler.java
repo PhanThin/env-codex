@@ -17,7 +17,6 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import vn.com.viettel.auth.utils.SecurityContextUtils;
-import vn.com.viettel.core.config.I18n;
 import vn.com.viettel.core.dto.response.BaseResponse;
 import vn.com.viettel.core.utils.HandleExceptionUtils;
 import vn.com.viettel.utils.ErrorApp;
@@ -63,7 +62,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         if (Objects.isNull(ex.getErrorApp()) && Objects.nonNull(ex.getCodeError())) {
             return errorResponse(ex.getErrorApp(), request.getRequestURI(), HttpStatus.BAD_REQUEST);
         }
-        return HandleExceptionUtils.errorResponse(I18n.getMessage(ex.getMessage()), request.getRequestURI(), HttpStatus.BAD_REQUEST);
+        return HandleExceptionUtils.errorResponse(ex.getMessage(), request.getRequestURI(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
