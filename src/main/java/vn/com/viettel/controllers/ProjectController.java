@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * REST controller for PROJECT CRUD APIs.
  */
-@Tag(name = "02. Dự án", description = "Các API cho dự án")
+@Tag(name = "03. Quản lý dự án", description = "API quản lý dự án")
 @RestController
 @RequestMapping("/api/v1/project")
 @RequiredArgsConstructor

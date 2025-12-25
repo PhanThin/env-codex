@@ -18,7 +18,7 @@ import vn.com.viettel.services.ProjectItemService;
  * REST controller for PROJECT_ITEM CRUD APIs under a Project.
  */
 @RestController
-@Tag(name = "09. Hạng mục", description = "Các API một phần cấu thành của dự án")
+@Tag(name = "05. Quản lý hạng mục của dự án", description = "API quản lý hạng mục của dự án")
 @RequestMapping("/api/v1/projects-items/{projectId}")
 @RequiredArgsConstructor
 public class ProjectItemController {

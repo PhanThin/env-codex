@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * REST controller for OUTSTANDING_ACCEPTANCE.
  */
-@Tag(name = "04. Nghiệm thu tồn tại", description = "Các API kết quả nghiệm thu xử lý tồn tại")
+@Tag(name = "13. Nghiệm thu tồn tại", description = "API nghiệm tồn tại")
 @RestController
 @RequestMapping("/api/v1/outstandings-acceptance/{outstandingId}")
 @RequiredArgsConstructor

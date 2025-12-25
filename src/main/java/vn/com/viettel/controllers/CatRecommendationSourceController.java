@@ -17,7 +17,7 @@ import vn.com.viettel.services.CatRecommendationSourceService;
 /**
  * REST controller for CAT_RECOMMENDATION_SOURCE CRUD APIs.
  */
-@Tag(name = "13. Nguồn kiến nghị", description = "Các API nguồn phát sinh kiến nghị")
+@Tag(name = "07. Quản lý nguồn kiến nghị", description = "API quản lý nguồn kiến nghị")
 @RestController
 @RequestMapping("/api/v1/cat-recommendation-source")
 @RequiredArgsConstructor

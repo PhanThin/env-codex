@@ -10,7 +10,7 @@ import vn.com.viettel.services.SysUserService;
 
 import java.util.List;
 
-@Tag(name = "17.Người dùng", description = "")
+@Tag(name = "02. Quản lý người dùng", description = "API quản lý người dùng")
 @RestController
 @RequestMapping("/api/v1/users")
 public class SysUserController {

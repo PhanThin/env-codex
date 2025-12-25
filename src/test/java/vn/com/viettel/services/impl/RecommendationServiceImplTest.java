@@ -15,9 +15,9 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.*;
 import vn.com.viettel.entities.*;
 import vn.com.viettel.mapper.RecommendationMapper;
-import vn.com.viettel.minio.dto.ObjectFileDTO;
 import vn.com.viettel.minio.services.FileService;
 import vn.com.viettel.repositories.jpa.*;
+import vn.com.viettel.services.AttachmentService;
 import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
@@ -78,6 +78,9 @@ class RecommendationServiceImplTest {
 
     @Mock
     private FileService fileService;
+
+    @Mock
+    private AttachmentService attachmentService;
 
     // ========= EXISTING TESTS (updateRecommendation) =========
 
@@ -280,8 +283,8 @@ class RecommendationServiceImplTest {
 
         when(recommendationRepository.findAllByIdInAndIsDeletedFalse(ids)).thenReturn(List.of(rec));
         when(recommendationWorkItemRepository.findAllByRecommendationIdInAndIsDeletedFalse(ids)).thenReturn(List.of());
-        when(attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(eq(ids), anyString()))
-                .thenReturn(List.of());
+//        when(attachmentRepository.findAllByReferenceIdInAndReferenceTypeAndIsDeletedFalse(eq(ids), anyString()))
+//                .thenReturn(List.of());
 
         assertDoesNotThrow(() -> recommendationService.deleteRecommendations(ids));
 
@@ -596,18 +599,17 @@ class RecommendationServiceImplTest {
         outputDto.setResponseContent("OK");
 
         MultipartFile file = mock(MultipartFile.class);
-        ObjectFileDTO objectFileDTO = new ObjectFileDTO();
-        objectFileDTO.setFileName("test.txt");
-        objectFileDTO.setFilePath("path");
-        objectFileDTO.setFileSize(100L);
-        objectFileDTO.setLinkUrlPublic("url");
+        Attachment attachment = new Attachment();
+        attachment.setId(1L);
+        attachment.setReferenceId(responseEntity.getId());
+        attachment.setReferenceType(Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE);
+
 
         when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
         when(recommendationMapper.mapToRecommendationResponse(eq(inputDto), eq(id), any()))
                 .thenReturn(responseEntity);
-        when(fileService.uploadFiles(any(), any(), any()))
-                .thenReturn(List.of(objectFileDTO));
-        when(attachmentRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(attachmentService.handleAttachment(any(), anyLong(), anyString(), anyString()))
+                .thenReturn(List.of(attachment));
         when(recommendationMapper.mapToRecommendationResponseDto(eq(responseEntity), any(), anyList()))
                 .thenReturn(outputDto);
 
@@ -615,8 +617,11 @@ class RecommendationServiceImplTest {
                 recommendationService.addRecommendationResponse(id, inputDto, new MultipartFile[]{file});
 
         assertNotNull(result);
-        verify(fileService).uploadFiles(any(), contains(String.valueOf(responseEntity.getId())), any());
-        verify(attachmentRepository).saveAll(anyList());
+        assertEquals(id, result.getRecommendationId());
+        verify(recommendationResponseRepository).save(responseEntity);
+        verify(attachmentService).handleAttachment(any(), eq(responseEntity.getId()),
+                eq(Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE), contains(String.valueOf(responseEntity.getId())));
+
     }
 
     // ========= NEW TESTS: getRecommendationResponses =========
@@ -721,11 +726,11 @@ class RecommendationServiceImplTest {
         entity.setId(1L);
 
         MultipartFile file = mock(MultipartFile.class);
-        ObjectFileDTO objectFileDTO = new ObjectFileDTO();
-        objectFileDTO.setFileName("test.txt");
-        objectFileDTO.setFilePath("path");
-        objectFileDTO.setFileSize(100L);
-        objectFileDTO.setLinkUrlPublic("url");
+        Attachment attachment = new Attachment();
+        attachment.setId(1L);
+        attachment.setReferenceId(entity.getId());
+        attachment.setReferenceType(Constants.RECOMMENDATION_REFERENCE_TYPE);
+
 
         when(recommendationTypeRepository.existsById(1L)).thenReturn(true);
         when(recommendationRepository.findByRecommendationTitle("New Title")).thenReturn(Optional.empty());
@@ -735,15 +740,17 @@ class RecommendationServiceImplTest {
                 .thenReturn(List.of(new RecommendationWorkItem()));
         when(recommendationMapper.mapToRecommendationAssignment(eq(dto.getAssignedUsers()), eq(entity.getId())))
                 .thenReturn(List.of(new RecommendationAssignment()));
-        when(fileService.uploadFiles(any(), anyString(), any()))
-                .thenReturn(List.of(objectFileDTO));
+        when(attachmentService.handleAttachment(any(), eq(entity.getId()),
+                eq(Constants.RECOMMENDATION_REFERENCE_TYPE), eq(Constants.RECOMMENDATION_REFERENCE_TYPE)))
+                .thenReturn(List.of(attachment));
 
         RecommendationDto result = recommendationService.createRecommendation(dto, new MultipartFile[]{file});
 
         assertNotNull(result);
         verify(recommendationWorkItemRepository).saveAll(anyList());
         verify(recommendationAssignmentRepository).saveAll(anyList());
-        verify(fileService).uploadFiles(any(), eq(Constants.RECOMMENDATION_REFERENCE_TYPE), any());
-        verify(attachmentRepository, atLeastOnce()).save(any(Attachment.class));
+        verify(attachmentService).handleAttachment(any(), eq(entity.getId()),
+                eq(Constants.RECOMMENDATION_REFERENCE_TYPE), eq(Constants.RECOMMENDATION_REFERENCE_TYPE));
+
     }
 }

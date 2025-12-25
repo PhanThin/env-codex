@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import vn.com.viettel.dto.CatProjectPhaseDto;
 import vn.com.viettel.services.CatProjectPhaseService;
 
-@Tag(name = "12. Giai đoạn", description = "Các API giai đoạn triển khai của dự án ")
+@Tag(name = "04. Quản lý giai đoạn của dự án", description = "API quản lý giai đoạn của dự án")
 @RestController
 @RequestMapping("/api/v1/projects-phases/{projectId}")
 @RequiredArgsConstructor

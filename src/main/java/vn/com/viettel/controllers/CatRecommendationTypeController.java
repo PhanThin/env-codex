@@ -17,7 +17,7 @@ import vn.com.viettel.services.CatRecommendationTypeService;
 /**
  * REST controller for CAT_RECOMMENDATION_TYPE CRUD APIs.
  */
-@Tag(name = "03. Loại kiến nghị", description = "Các API phân loại kiến nghị")
+@Tag(name = "08. Quản lý loại kiến nghị", description = "API quản lý loại kiến nghị")
 @RestController
 @RequestMapping("/api/v1/cat-recommendation-type")
 @RequiredArgsConstructor

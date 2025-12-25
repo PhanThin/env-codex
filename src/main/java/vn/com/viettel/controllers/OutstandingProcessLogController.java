@@ -22,7 +22,7 @@ import vn.com.viettel.services.OutstandingProcessLogService;
  * REST controller for OUTSTANDING_PROCESS_LOG under an outstandingId.
  */
 @RestController
-@Tag(name = "10. Xử lý tồn tại", description = "Các API xử lý một bản ghi")
+@Tag(name = "12. Xử lý tồn tại", description = "API xử lý tồn tại")
 @RequestMapping("/api/v1/outstandings-process-logs/{outstandingId}")
 @RequiredArgsConstructor
 public class OutstandingProcessLogController {

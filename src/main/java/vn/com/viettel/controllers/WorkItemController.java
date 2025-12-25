@@ -14,7 +14,7 @@ import vn.com.viettel.dto.WorkItemDto;
 import vn.com.viettel.services.WorkItemService;
 
 @RestController
-@Tag(name = "08. Công Việc", description = "Các API đơn vị công việc cụ thể trong hạng mục")
+@Tag(name = "06. Quản lý công việc", description = "API quản lý công việc trong hạng mục")
 @RequestMapping("/api/v1/work-items/{itemId}")
 @RequiredArgsConstructor
 public class WorkItemController {

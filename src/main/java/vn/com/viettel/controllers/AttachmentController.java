@@ -23,7 +23,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-@Tag(name = "00. Tệp đính kèm", description = "Các API quản lý tệp đính kèm chung (Attachment)")
+@Tag(name = "14. Quản lý file đính kèm", description = "API quản lý file đính kèm")
 @RestController
 @RequestMapping("/api/v1/attachments")
 @Slf4j

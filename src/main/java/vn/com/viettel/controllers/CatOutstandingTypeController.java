@@ -17,7 +17,7 @@ import vn.com.viettel.services.CatOutstandingTypeService;
 /**
  * REST controller for CAT_OUTSTANDING_TYPE CRUD APIs.
  */
-@Tag(name = "11. Loại tồn tại", description = "Các API phân loại tồn tại ")
+@Tag(name = "10. Quản lý loại tồn tại", description = "API quản lý loại tồn tại")
 @RestController
 @RequestMapping("/api/v1/cat-outstanding-type")
 @RequiredArgsConstructor
