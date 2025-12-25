@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import vn.com.viettel.dto.CatOutstandingTypeDto;
+import vn.com.viettel.dto.OutstandingTypeDto;
 import vn.com.viettel.services.CatOutstandingTypeService;
 
 /**
@@ -27,27 +28,27 @@ public class CatOutstandingTypeController {
     @Hidden
     @Operation(summary = "Create CAT_OUTSTANDING_TYPE")
     @PostMapping
-    public ResponseEntity<CatOutstandingTypeDto> create(@Valid @RequestBody CatOutstandingTypeDto request) {
+    public ResponseEntity<OutstandingTypeDto> create(@Valid @RequestBody OutstandingTypeDto request) {
         return ResponseEntity.ok(service.create(request));
     }
     @Hidden
     @Operation(summary = "Update CAT_OUTSTANDING_TYPE by id")
     @PutMapping("/{id}")
-    public ResponseEntity<CatOutstandingTypeDto> update(
+    public ResponseEntity<OutstandingTypeDto> update(
             @PathVariable Long id,
-            @Valid @RequestBody CatOutstandingTypeDto request) {
+            @Valid @RequestBody OutstandingTypeDto request) {
         return ResponseEntity.ok(service.update(id, request));
     }
     @Hidden
     @Operation(summary = "Get CAT_OUTSTANDING_TYPE by id")
     @GetMapping("/{id}")
-    public ResponseEntity<CatOutstandingTypeDto> getById(@PathVariable Long id) {
+    public ResponseEntity<OutstandingTypeDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @Operation(summary = "Get all CAT_OUTSTANDING_TYPE")
     @GetMapping
-    public ResponseEntity<List<CatOutstandingTypeDto>> getAll() {
+    public ResponseEntity<List<OutstandingTypeDto>> getAll() {
         return ResponseEntity.ok(service.getAll());
     }
 

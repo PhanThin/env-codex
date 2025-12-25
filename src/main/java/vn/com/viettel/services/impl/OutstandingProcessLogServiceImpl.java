@@ -79,7 +79,7 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
     public OutstandingProcessLogDto update(Long outstandingId, Long processId, OutstandingProcessLogDto request, MultipartFile[] attachments) {
         request.setProcessId(processId);
 
-        OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(outstandingId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstanding.notfound", outstandingId)));
+        OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(outstandingId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", outstandingId)));
 
         validateRequest(request);
 
@@ -141,7 +141,7 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
         if (outstandingId == null || !outstandingItemRepository.existsByIdAndIsDeletedFalse(outstandingId)) {
             throw new CustomException(
                     HttpStatus.NOT_FOUND.value(),
-                    translator.getMessage("outstanding.notfound", outstandingId)
+                    translator.getMessage("outstandingitem.notFound", outstandingId)
             );
         }
     }

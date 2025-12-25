@@ -1,6 +1,6 @@
 package vn.com.viettel.services;
 
-import vn.com.viettel.dto.CatOutstandingTypeDto;
+import vn.com.viettel.dto.OutstandingTypeDto;
 
 import java.util.List;
 
@@ -10,13 +10,13 @@ import java.util.List;
  */
 public interface CatOutstandingTypeService {
 
-    CatOutstandingTypeDto create(CatOutstandingTypeDto request);
+    OutstandingTypeDto create(OutstandingTypeDto request);
 
-    CatOutstandingTypeDto update(Long id, CatOutstandingTypeDto request);
+    OutstandingTypeDto update(Long id, OutstandingTypeDto request);
 
-    CatOutstandingTypeDto getById(Long id);
+    OutstandingTypeDto getById(Long id);
 
-    List<CatOutstandingTypeDto> getAll();
+    List<OutstandingTypeDto> getAll();
 
     void delete(Long id);
 }

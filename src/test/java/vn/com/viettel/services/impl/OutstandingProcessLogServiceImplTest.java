@@ -88,7 +88,7 @@ class OutstandingProcessLogServiceImplTest {
         void create_OutstandingNotFound_ThrowException() {
             // GIVEN
             when(outstandingItemRepository.existsByIdAndIsDeletedFalse(OUTSTANDING_ID)).thenReturn(false);
-            when(translator.getMessage("outstanding.notfound", OUTSTANDING_ID)).thenReturn("Item not found");
+            when(translator.getMessage("outstandingitem.notFound", OUTSTANDING_ID)).thenReturn("Item not found");
 
             // WHEN
             CustomException ex = assertThrows(CustomException.class,

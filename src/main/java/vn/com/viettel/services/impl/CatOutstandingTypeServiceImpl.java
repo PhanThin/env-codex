@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 
 import lombok.RequiredArgsConstructor;
 import vn.com.viettel.dto.CatOutstandingTypeDto;
+import vn.com.viettel.dto.OutstandingTypeDto;
 import vn.com.viettel.entities.CatOutstandingType;
 import vn.com.viettel.mapper.CatOutstandingTypeMapper;
 import vn.com.viettel.repositories.jpa.CatOutstandingTypeRepository;
@@ -31,7 +32,7 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
     private final CatOutstandingTypeMapper mapper;
     private final Translator translator;
     @Override
-    public CatOutstandingTypeDto create(CatOutstandingTypeDto request) {
+    public OutstandingTypeDto create(OutstandingTypeDto request) {
         validateRequest(request);
 
         CatOutstandingType entity = mapper.toEntity(request);
@@ -43,7 +44,7 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
     }
 
     @Override
-    public CatOutstandingTypeDto update(Long id, CatOutstandingTypeDto request) {
+    public OutstandingTypeDto update(Long id, OutstandingTypeDto request) {
         validateRequest(request);
 
         CatOutstandingType entity = repository.findByIdAndIsDeletedFalse(id)
@@ -61,7 +62,7 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
 
     @Override
     @Transactional(readOnly = true)
-    public CatOutstandingTypeDto getById(Long id) {
+    public OutstandingTypeDto getById(Long id) {
         CatOutstandingType entity = repository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new CustomException(
                         HttpStatus.NOT_FOUND.value(),
@@ -72,7 +73,7 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
 
     @Override
     @Transactional(readOnly = true)
-    public List<CatOutstandingTypeDto> getAll() {
+    public List<OutstandingTypeDto> getAll() {
         return repository.findAllByIsDeletedFalse()
                 .stream()
                 .map(mapper::toDto)
@@ -95,7 +96,7 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
     /**
      * Minimal request validation (beyond bean validation) to follow enterprise style.
      */
-    private void validateRequest(CatOutstandingTypeDto request) {
+    private void validateRequest(OutstandingTypeDto request) {
         if (request == null
                 || !StringUtils.hasText(request.getTypeCode())
                 || !StringUtils.hasText(request.getTypeName())) {
