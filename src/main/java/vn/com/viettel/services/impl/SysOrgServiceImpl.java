@@ -27,11 +27,12 @@ public class SysOrgServiceImpl implements SysOrgService {
 
     private final SysOrgRepository repository;
     private final SysOrgMapper mapper;
-    private Translator translator;
+    private final Translator translator;
 
-    public SysOrgServiceImpl(SysOrgRepository repository, SysOrgMapper mapper) {
+    public SysOrgServiceImpl(SysOrgRepository repository, SysOrgMapper mapper, Translator translator) {
         this.repository = repository;
         this.mapper = mapper;
+        this.translator = translator;
     }
 
     @Override
@@ -51,7 +52,10 @@ public class SysOrgServiceImpl implements SysOrgService {
         entity.setOrgName(dto.getOrgName().trim());
 
         entity.setIsDeleted(NOT_DELETED);
-        entity.setIsActive(dto.getIsActive() == null || !dto.getIsActive().equalsIgnoreCase("0") ? ACTIVE : DEACTIVE);
+        entity.setIsActive(
+                dto.getIsActive() == null ? ACTIVE : dto.getIsActive()
+        );
+
 
         entity.setCreatedAt(LocalDateTime.now());
         entity.setCreatedBy(dto.getCreatedBy());
@@ -91,7 +95,9 @@ public class SysOrgServiceImpl implements SysOrgService {
 
         entity.setOrgCode(newOrgCode);
         entity.setOrgName(dto.getOrgName().trim());
-    entity.setIsActive(dto.getIsActive() == null || !dto.getIsActive().equalsIgnoreCase("0") ? ACTIVE : DEACTIVE);
+        entity.setIsActive(
+                dto.getIsActive() == null ? entity.getIsActive() : dto.getIsActive()
+        );
 
 
         entity.setUpdatedAt(LocalDateTime.now());

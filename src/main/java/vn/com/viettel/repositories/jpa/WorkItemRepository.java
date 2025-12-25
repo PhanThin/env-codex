@@ -18,7 +18,7 @@ public interface WorkItemRepository extends JpaRepository<WorkItem, Long> {
 
     Optional<WorkItem> findByIdAndIsDeletedFalse(Long id);
 
-    List<WorkItem> findAllByIdAndIsDeletedFalse(Long itemId);
+    List<WorkItem> findAllByItemIdAndIsDeletedFalse(Long itemId);
 
-    boolean existsByIdAndWorkItemNameAndIsDeletedFalse(Long itemId, String workItemName);
+    boolean existsByItemIdAndWorkItemNameAndIsDeletedFalse(Long itemId, String workItemName);
 }

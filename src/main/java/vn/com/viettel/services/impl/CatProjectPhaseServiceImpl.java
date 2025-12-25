@@ -27,14 +27,14 @@ public class CatProjectPhaseServiceImpl implements CatProjectPhaseService {
     private final CatProjectPhaseRepository repository;
     private final ProjectRepository projectRepository;
     private final CatProjectPhaseMapper mapper;
-    private Translator translator;
+    private final Translator translator;
 
     @Override
     public CatProjectPhaseDto create(Long projectId, CatProjectPhaseDto request) {
         validateProject(projectId);
         validateRequest(request);
 
-        if (repository.existsByIdAndPhaseCodeAndIsDeletedFalse(projectId, request.getPhaseCode())) {
+        if (repository.existsByProjectIdAndPhaseCodeAndIsDeletedFalse(projectId, request.getPhaseCode())) {
             throw new CustomException(
                 HttpStatus.CONFLICT.value(),
                 translator.getMessage("project.phase.duplicate", request.getPhaseCode())
@@ -72,7 +72,7 @@ public class CatProjectPhaseServiceImpl implements CatProjectPhaseService {
     @Transactional(readOnly = true)
     public List<CatProjectPhaseDto> getAll(Long projectId) {
         validateProject(projectId);
-        return repository.findAllByIdAndIsDeletedFalseOrderByDisplayOrderAsc(projectId)
+        return repository.findAllByProjectIdAndIsDeletedFalseOrderByDisplayOrderAsc(projectId)
                 .stream().map(mapper::toDto).collect(Collectors.toList());
     }
 

@@ -10,7 +10,7 @@ public interface CatProjectPhaseRepository extends JpaRepository<CatProjectPhase
     List<CatProjectPhase>  findAllByIdInAndIsDeletedFalse(List<Long> ids);
     Optional<CatProjectPhase> findByIdAndIsDeletedFalse(Long phaseId);
 
-    List<CatProjectPhase> findAllByIdAndIsDeletedFalseOrderByDisplayOrderAsc(Long projectId);
+    List<CatProjectPhase> findAllByProjectIdAndIsDeletedFalseOrderByDisplayOrderAsc(Long projectId);
 
-    boolean existsByIdAndPhaseCodeAndIsDeletedFalse(Long projectId, String phaseCode);
+    boolean existsByProjectIdAndPhaseCodeAndIsDeletedFalse(Long projectId, String phaseCode);
 }

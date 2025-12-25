@@ -32,10 +32,11 @@ public class SysUserServiceImpl implements SysUserService {
     private static final Boolean DEACTIVE = false;
     private final SysUserRepository repository;
     private final SysUserMapper mapper;
-    private Translator translator;
-    public SysUserServiceImpl(SysUserRepository repository, SysUserMapper mapper) {
+    private final Translator translator;
+    public SysUserServiceImpl(SysUserRepository repository, SysUserMapper mapper, Translator translator) {
         this.repository = repository;
         this.mapper = mapper;
+        this.translator = translator;
     }
 
     @Override
@@ -56,7 +57,9 @@ public class SysUserServiceImpl implements SysUserService {
 
         // Soft delete flags
         entity.setIsDeleted(NOT_DELETED);
-        entity.setIsActive(dto.getIsActive() == null || !dto.getIsActive().equalsIgnoreCase("0") ? ACTIVE : DEACTIVE);
+        entity.setIsActive(
+                dto.getIsActive() == null ? ACTIVE : dto.getIsActive()
+        );
 
         // Audit fields (chưa có auth => lấy từ dto nếu client truyền, hoặc null)
         entity.setCreatedAt(LocalDateTime.now());
@@ -99,7 +102,9 @@ public class SysUserServiceImpl implements SysUserService {
         entity.setFullName(dto.getFullName().trim());
         entity.setTitle(dto.getTitle());
         entity.setOrgId(dto.getOrgId());
-        entity.setIsActive(dto.getIsActive() == null || !dto.getIsActive().equalsIgnoreCase("0") ? ACTIVE : DEACTIVE);
+        entity.setIsActive(
+                dto.getIsActive() == null ? entity.getIsActive() : dto.getIsActive()
+        );
 
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setUpdatedBy(dto.getUpdatedBy());

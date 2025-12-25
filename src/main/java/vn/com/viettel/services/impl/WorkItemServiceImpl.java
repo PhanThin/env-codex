@@ -28,13 +28,13 @@ public class WorkItemServiceImpl implements WorkItemService {
     private final WorkItemRepository repository;
     private final ProjectItemRepository projectItemRepository;
     private final WorkItemMapper mapper;
-    private Translator translator;
+    private final Translator translator;
     @Override
     public WorkItemDto create(Long itemId, WorkItemDto request) {
         validateItem(itemId);
         validateRequest(request);
 
-        if (repository.existsByIdAndWorkItemNameAndIsDeletedFalse(itemId, request.getWorkItemName())) {
+        if (repository.existsByItemIdAndWorkItemNameAndIsDeletedFalse(itemId, request.getWorkItemName())) {
             throw new CustomException(
                 HttpStatus.CONFLICT.value(),
                 translator.getMessage("workitem.duplicate", request.getWorkItemName())
@@ -72,7 +72,7 @@ public class WorkItemServiceImpl implements WorkItemService {
     @Transactional(readOnly = true)
     public List<WorkItemDto> getAll(Long itemId) {
         validateItem(itemId);
-        return repository.findAllByIdAndIsDeletedFalse(itemId)
+        return repository.findAllByItemIdAndIsDeletedFalse(itemId)
                 .stream().map(mapper::toDto).collect(Collectors.toList());
     }
 

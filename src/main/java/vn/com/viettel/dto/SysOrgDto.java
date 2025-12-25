@@ -33,8 +33,8 @@ public class SysOrgDto implements Serializable {
     )
     private LocalDateTime createdAt;
 
-    private String isActive;
-    private String isDeleted;
+    private Boolean isActive;
+    private Boolean isDeleted;
 
     public Long getOrgId() {
         return orgId;
@@ -92,19 +92,19 @@ public class SysOrgDto implements Serializable {
         this.createdAt = createdAt;
     }
 
-    public String getIsActive() {
+    public Boolean getIsActive() {
         return isActive;
     }
 
-    public void setIsActive(String isActive) {
+    public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
     }
 
-    public String getIsDeleted() {
+    public Boolean getIsDeleted() {
         return isDeleted;
     }
 
-    public void setIsDeleted(String isDeleted) {
+    public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
 }

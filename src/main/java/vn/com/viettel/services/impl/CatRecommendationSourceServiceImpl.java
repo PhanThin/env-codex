@@ -29,7 +29,7 @@ public class CatRecommendationSourceServiceImpl implements CatRecommendationSour
 
     private final CatRecommendationSourceRepository repository;
     private final CatRecommendationSourceMapper mapper;
-    private Translator translator;
+    private final Translator translator;
     @Override
     public CatRecommendationSourceDto create(CatRecommendationSourceDto request) {
         validateRequest(request);

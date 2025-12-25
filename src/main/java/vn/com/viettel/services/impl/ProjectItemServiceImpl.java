@@ -31,7 +31,7 @@ public class ProjectItemServiceImpl implements ProjectItemService {
     private final ProjectItemRepository projectItemRepository;
     private final ProjectRepository projectRepository;
     private final ProjectItemMapper mapper;
-    private Translator translator;
+    private final Translator translator;
     @Override
     public ProjectItemDto create(Long projectId, ProjectItemDto request) {
         validateProjectExists(projectId);
