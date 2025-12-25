@@ -3,6 +3,7 @@ package vn.com.viettel.controllers;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import vn.com.viettel.services.CatOutstandingTypeService;
 /**
  * REST controller for CAT_OUTSTANDING_TYPE CRUD APIs.
  */
+@Tag(name = "10. Quản lý loại tồn tại", description = "API quản lý loại tồn tại")
 @RestController
 @RequestMapping("/api/v1/cat-outstanding-type")
 @RequiredArgsConstructor

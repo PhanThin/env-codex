@@ -23,7 +23,7 @@ import vn.com.viettel.services.OutstandingItemService;
 
 import java.util.List;
 
-@Tag(name = "03. tồn tại", description = "Các API cho chức năng tồn tại")
+@Tag(name = "11. Quản lý tồn tại", description = "API quản lý tồn tại")
 @RestController
 @RequestMapping("/api/v1/outstanding")
 @Slf4j

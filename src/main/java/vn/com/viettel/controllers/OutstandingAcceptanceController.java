@@ -2,6 +2,7 @@
 package vn.com.viettel.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.List;
 /**
  * REST controller for OUTSTANDING_ACCEPTANCE.
  */
+@Tag(name = "13. Nghiệm thu tồn tại", description = "API nghiệm tồn tại")
 @RestController
 @RequestMapping("/api/v1/outstandings-acceptance/{outstandingId}")
 @RequiredArgsConstructor

@@ -4,6 +4,7 @@ package vn.com.viettel.controllers;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import org.springframework.http.MediaType;
@@ -21,6 +22,7 @@ import vn.com.viettel.services.OutstandingProcessLogService;
  * REST controller for OUTSTANDING_PROCESS_LOG under an outstandingId.
  */
 @RestController
+@Tag(name = "12. Xử lý tồn tại", description = "API xử lý tồn tại")
 @RequestMapping("/api/v1/outstandings-process-logs/{outstandingId}")
 @RequiredArgsConstructor
 public class OutstandingProcessLogController {

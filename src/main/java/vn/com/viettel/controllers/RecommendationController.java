@@ -24,7 +24,7 @@ import vn.com.viettel.services.RecommendationService;
 
 import java.util.List;
 
-@Tag(name = "01. Kiến nghị", description = "Các API cho chức năng kiến nghị")
+@Tag(name = "09. Quản lý kiến nghị", description = "API quản lý kiến nghị")
 @RestController
 @RequestMapping("/api/v1/recommendation")
 @Slf4j

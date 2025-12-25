@@ -3,6 +3,7 @@ package vn.com.viettel.controllers;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import vn.com.viettel.services.CatRecommendationTypeService;
 /**
  * REST controller for CAT_RECOMMENDATION_TYPE CRUD APIs.
  */
+@Tag(name = "08. Quản lý loại kiến nghị", description = "API quản lý loại kiến nghị")
 @RestController
 @RequestMapping("/api/v1/cat-recommendation-type")
 @RequiredArgsConstructor

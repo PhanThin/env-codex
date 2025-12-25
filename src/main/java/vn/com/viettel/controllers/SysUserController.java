@@ -2,6 +2,7 @@ package vn.com.viettel.controllers;
 
 
 import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.com.viettel.dto.SysUserDto;
@@ -9,6 +10,7 @@ import vn.com.viettel.services.SysUserService;
 
 import java.util.List;
 
+@Tag(name = "02. Quản lý người dùng", description = "API quản lý người dùng")
 @RestController
 @RequestMapping("/api/v1/users")
 public class SysUserController {
