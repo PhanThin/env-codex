@@ -32,7 +32,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OutstandingAcceptanceService Tests - Full Coverage")
+@DisplayName("OutstandingAcceptanceService Tests - Updated Enum Logic")
 class OutstandingAcceptanceServiceImplTest {
 
     @InjectMocks
@@ -143,22 +143,20 @@ class OutstandingAcceptanceServiceImplTest {
         }
 
         @Test
-        @DisplayName("Case 05: Verify Config ALLOWED_RESULTS matches Enum (Paranoid Check)")
+        @DisplayName("Case 05: Verify Config ALLOWED_RESULTS matches Enum (Type Safe Check)")
         void create_Case05_VerifyConfiguration() {
-            // NOTE: Vì DTO dùng Enum nên không thể truyền String sai ("PASS") từ test case được.
-            // Tuy nhiên, logic code check: ALLOWED_RESULTS.contains(request.getResult())
-            // Ta cần verify rằng Set ALLOWED_RESULTS trong Service phải chứa đủ các giá trị Enum.
-
-            // GIVEN
+            // GIVEN: Access the private static final field
             @SuppressWarnings("unchecked")
-            Set<String> allowedResults = (Set<String>) ReflectionTestUtils.getField(service, "ALLOWED_RESULTS");
+            Set<OutstandingAcceptanceResultEnum> allowedResults =
+                (Set<OutstandingAcceptanceResultEnum>) ReflectionTestUtils.getField(service, "ALLOWED_RESULTS");
 
-            // THEN
-            assertNotNull(allowedResults);
-            assertTrue(allowedResults.contains(OutstandingAcceptanceResultEnum.ACCEPTED.name()));
-            assertTrue(allowedResults.contains(OutstandingAcceptanceResultEnum.REJECTED.name()));
-            // Đảm bảo không có cấu hình thừa/thiếu gây logic sai lệch
-            assertEquals(2, allowedResults.size());
+            // THEN: Ensure it strictly contains the Enums
+            assertNotNull(allowedResults, "ALLOWED_RESULTS Set must not be null");
+            assertTrue(allowedResults.contains(OutstandingAcceptanceResultEnum.ACCEPTED), "Set must contain ACCEPTED");
+            assertTrue(allowedResults.contains(OutstandingAcceptanceResultEnum.REJECTED), "Set must contain REJECTED");
+
+            // Ensure no accidental deletion of supported values
+            assertEquals(2, allowedResults.size(), "Set should contain exactly 2 allowed statuses");
         }
 
         @Test
@@ -187,6 +185,7 @@ class OutstandingAcceptanceServiceImplTest {
 
                 // THEN
                 verify(repository).save(acceptanceCaptor.capture());
+                // Verify Entity stores the Enum name (String)
                 assertEquals("ACCEPTED", acceptanceCaptor.getValue().getResult());
                 assertEquals(USER_ID, acceptanceCaptor.getValue().getAcceptedBy());
 
@@ -260,7 +259,6 @@ class OutstandingAcceptanceServiceImplTest {
 
                 // THEN
                 verify(repository).save(acceptanceCaptor.capture());
-                // Verify Default ID is used
                 assertEquals(Constants.DEFAULT_USER_ID, acceptanceCaptor.getValue().getAcceptedBy());
 
                 verify(outstandingItemRepository).save(itemCaptor.capture());
@@ -301,30 +299,47 @@ class OutstandingAcceptanceServiceImplTest {
         @Test
         @DisplayName("Case 10: Acceptance Not Found - Throw 404")
         void update_Case10_AcceptanceNotFound() {
+            // GIVEN
             when(outstandingItemRepository.existsByIdAndIsDeletedFalse(OUTSTANDING_ID)).thenReturn(true);
             when(repository.findByIdAndIsDeletedFalse(ACCEPTANCE_ID)).thenReturn(Optional.empty());
+
+            // Mock Translator cho message lỗi Not Found
             when(translator.getMessage(anyString(), any())).thenReturn("Msg");
 
-            OutstandingAcceptanceDto req = OutstandingAcceptanceDto.builder().build();
+            OutstandingAcceptanceDto req = OutstandingAcceptanceDto.builder()
+                    .result(OutstandingAcceptanceResultEnum.ACCEPTED)
+                    .acceptanceNote("Any Note")
+                    .build();
 
+            // WHEN & THEN
             CustomException ex = assertThrows(CustomException.class,
                 () -> service.update(OUTSTANDING_ID, ACCEPTANCE_ID, req, null));
+
             assertEquals(HttpStatus.NOT_FOUND.value(), ex.getCodeError());
         }
 
         @Test
         @DisplayName("Case 11: Id Mismatch - Throw 404")
         void update_Case11_IdMismatch() {
-            defaultEntity.setOutstandingId(9999L); // Wrong Outstanding ID
+            // GIVEN
+            defaultEntity.setOutstandingId(9999L);
 
             when(outstandingItemRepository.existsByIdAndIsDeletedFalse(OUTSTANDING_ID)).thenReturn(true);
             when(repository.findByIdAndIsDeletedFalse(ACCEPTANCE_ID)).thenReturn(Optional.of(defaultEntity));
-            when(translator.getMessage(anyString(), any())).thenReturn("Msg");
 
-            OutstandingAcceptanceDto req = OutstandingAcceptanceDto.builder().build();
+            // Mock cho thông báo lỗi ID Mismatch (Hàm này dùng 2 tham số: code + id)
+            when(translator.getMessage(anyString(), any())).thenReturn("Not Found Msg");
 
+            // 3. FIX QUAN TRỌNG: Tạo Request HỢP LỆ để vượt qua validateRequest()
+            OutstandingAcceptanceDto req = OutstandingAcceptanceDto.builder()
+                    .result(OutstandingAcceptanceResultEnum.ACCEPTED) // Bắt buộc có
+                    .acceptanceNote("Any note") // Bắt buộc có
+                    .build();
+
+            // WHEN & THEN
             CustomException ex = assertThrows(CustomException.class,
                 () -> service.update(OUTSTANDING_ID, ACCEPTANCE_ID, req, null));
+
             assertEquals(HttpStatus.NOT_FOUND.value(), ex.getCodeError());
         }
 
