@@ -39,8 +39,8 @@ import java.util.Set;
 @Transactional
 public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogService {
 
-    private static final Set<String> ALLOWED_ACTION_TYPES =
-            new HashSet<>(Arrays.asList("SAVE_RESULT", "SEND_FOR_ACCEPTANCE"));
+    private static final Set<OutstandingProcessActionEnum> ALLOWED_ACTION_TYPES =
+            new HashSet<>(Arrays.asList(OutstandingProcessActionEnum.SAVE_RESULT, OutstandingProcessActionEnum.SEND_FOR_ACCEPTANCE));
 
     @Autowired
     private OutstandingProcessLogRepository repository;
