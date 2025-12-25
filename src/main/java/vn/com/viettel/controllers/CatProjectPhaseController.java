@@ -3,6 +3,7 @@ package vn.com.viettel.controllers;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,8 +13,9 @@ import lombok.RequiredArgsConstructor;
 import vn.com.viettel.dto.CatProjectPhaseDto;
 import vn.com.viettel.services.CatProjectPhaseService;
 
+@Tag(name = "12. Giai đoạn", description = "Các API giai đoạn triển khai của dự án ")
 @RestController
-@RequestMapping("/api/v1/projects/{projectId}/phases")
+@RequestMapping("/api/v1/projects-phases/{projectId}")
 @RequiredArgsConstructor
 public class CatProjectPhaseController {
 

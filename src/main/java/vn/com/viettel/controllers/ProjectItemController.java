@@ -3,6 +3,7 @@ package vn.com.viettel.controllers;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -17,7 +18,8 @@ import vn.com.viettel.services.ProjectItemService;
  * REST controller for PROJECT_ITEM CRUD APIs under a Project.
  */
 @RestController
-@RequestMapping("/api/v1/projects/{projectId}/items")
+@Tag(name = "09. Hạng mục", description = "Các API một phần cấu thành của dự án")
+@RequestMapping("/api/v1/projects-items/{projectId}")
 @RequiredArgsConstructor
 public class ProjectItemController {
 

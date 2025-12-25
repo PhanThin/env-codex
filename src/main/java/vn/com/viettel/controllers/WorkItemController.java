@@ -2,6 +2,8 @@ package vn.com.viettel.controllers;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,12 +14,13 @@ import vn.com.viettel.dto.WorkItemDto;
 import vn.com.viettel.services.WorkItemService;
 
 @RestController
-@RequestMapping("/api/project-items/{itemId}/work-items")
+@Tag(name = "08. Công Việc", description = "Các API đơn vị công việc cụ thể trong hạng mục")
+@RequestMapping("/api/v1/work-items/{itemId}")
 @RequiredArgsConstructor
 public class WorkItemController {
 
     private final WorkItemService service;
-
+    @Hidden
     @Operation(summary = "Create work item")
     @PostMapping
     public ResponseEntity<WorkItemDto> create(
@@ -26,6 +29,7 @@ public class WorkItemController {
         return ResponseEntity.ok(service.create(itemId, request));
     }
 
+    @Hidden
     @Operation(summary = "Update work item")
     @PutMapping("/{workItemId}")
     public ResponseEntity<WorkItemDto> update(
@@ -49,6 +53,7 @@ public class WorkItemController {
         return ResponseEntity.ok(service.getAll(itemId));
     }
 
+    @Hidden
     @Operation(summary = "Soft delete work item")
     @DeleteMapping("/{workItemId}")
     public ResponseEntity<Void> delete(
