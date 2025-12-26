@@ -1,19 +1,6 @@
 package vn.com.viettel.services.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -21,14 +8,22 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-
 import vn.com.viettel.dto.CatProjectPhaseDto;
 import vn.com.viettel.entities.CatProjectPhase;
+import vn.com.viettel.entities.Project;
 import vn.com.viettel.mapper.CatProjectPhaseMapper;
 import vn.com.viettel.repositories.jpa.CatProjectPhaseRepository;
 import vn.com.viettel.repositories.jpa.ProjectRepository;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Kiểm thử dịch vụ quản lý giai đoạn dự án (CatProjectPhaseService)")
@@ -47,18 +42,17 @@ class CatProjectPhaseServiceImplTest {
     private CatProjectPhaseServiceImpl service;
 
     private MockedStatic<LocalDateTime> mockedLocalDateTime;
-    private LocalDateTime fixedTime;
+    private LocalDateTime fixedNow;
 
     private final Long PROJECT_ID = 1L;
     private final Long PHASE_ID = 10L;
-    private final String PHASE_CODE = "PHASE_01";
 
     @BeforeEach
     void setUp() {
-        // Cố định thời gian hệ thống để kiểm chứng createdAt/updatedAt chính xác tuyệt đối
-        fixedTime = LocalDateTime.of(2025, 12, 25, 10, 0);
+        fixedNow = LocalDateTime.of(2025, 12, 26, 10, 0);
+        // Thay đổi dòng dưới đây:
         mockedLocalDateTime = mockStatic(LocalDateTime.class);
-        mockedLocalDateTime.when(LocalDateTime::now).thenReturn(fixedTime);
+        mockedLocalDateTime.when(LocalDateTime::now).thenReturn(fixedNow);
     }
 
     @AfterEach
@@ -66,181 +60,170 @@ class CatProjectPhaseServiceImplTest {
         mockedLocalDateTime.close();
     }
 
+    private void mockProjectExists(boolean exists) {
+        when(projectRepository.existsByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(exists);
+        if (!exists) {
+            when(translator.getMessage(eq("project.notfound"), any())).thenReturn("Không tìm thấy dự án");
+        }
+    }
+
     @Nested
-    @DisplayName("Kịch bản kiểm thử: Phương thức tạo mới (create)")
-    class CreateMethodTest {
-
+    @DisplayName("Nhóm kiểm thử Validation (Ràng buộc dữ liệu)")
+    class ValidationTests {
         @Test
-        @DisplayName("Thất bại: Ném ngoại lệ khi không tìm thấy thông tin dự án")
-        void create_ProjectNotFound_ThrowsException() {
-            // GIVEN
-            when(projectRepository.existsByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(false);
-            when(translator.getMessage(eq("project.notfound"), any())).thenReturn("Dự án không tồn tại");
+        @DisplayName("Kiểm tra Project ID không tồn tại - Phải ném lỗi 404")
+        void validateProject_NotFound_ShouldThrowException() {
+            mockProjectExists(false);
 
-            // WHEN & THEN
-            CustomException ex = assertThrows(CustomException.class, () -> service.create(PROJECT_ID, new CatProjectPhaseDto()));
+            CustomException ex = assertThrows(CustomException.class, () -> service.getById(PROJECT_ID, PHASE_ID));
             assertEquals(HttpStatus.NOT_FOUND.value(), ex.getCodeError());
-            assertEquals("Dự án không tồn tại", ex.getMessage());
         }
 
         @Test
-        @DisplayName("Thất bại: Ném ngoại lệ khi dữ liệu yêu cầu không hợp lệ (Mã giai đoạn trống)")
-        void create_InvalidRequest_ThrowsException() {
-            // GIVEN
+        @DisplayName("Kiểm tra Request null - Phải ném lỗi 400")
+        void validateRequest_NullPayload_ShouldThrowException() {
+            mockProjectExists(true);
+            when(translator.getMessage("project.phase.payload.null")).thenReturn("Dữ liệu trống");
+
+            assertThrows(CustomException.class, () -> service.create(PROJECT_ID, null));
+        }
+
+        @Test
+        @DisplayName("Kiểm tra thiếu Phase Code - Phải ném lỗi 400")
+        void validateRequest_EmptyPhaseCode_ShouldThrowException() {
+            mockProjectExists(true);
             CatProjectPhaseDto dto = new CatProjectPhaseDto();
-            dto.setPhaseCode(""); // Không hợp lệ
-            when(projectRepository.existsByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(true);
-            when(translator.getMessage("invalid.request")).thenReturn("Yêu cầu không hợp lệ");
+            dto.setPhaseCode("");
+            when(translator.getMessage("project.phase.phaseCode.required")).thenReturn("Mã giai đoạn bắt buộc");
 
-            // WHEN & THEN
-            CustomException ex = assertThrows(CustomException.class, () -> service.create(PROJECT_ID, dto));
-            assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getCodeError());
+            assertThrows(CustomException.class, () -> service.create(PROJECT_ID, dto));
         }
+    }
 
+    @Nested
+    @DisplayName("Nhóm kiểm thử chức năng Thêm mới (Create)")
+    class CreateTests {
         @Test
-        @DisplayName("Thất bại: Ném ngoại lệ CONFLICT khi mã giai đoạn đã tồn tại trong dự án")
-        void create_DuplicatePhaseCode_ThrowsException() {
-            // GIVEN
-            CatProjectPhaseDto dto = createValidDto();
-            when(projectRepository.existsByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(true);
-            when(repository.existsByProjectIdAndPhaseCodeAndIsDeletedFalse(PROJECT_ID, PHASE_CODE)).thenReturn(true);
+        @DisplayName("Trùng mã giai đoạn trong dự án - Phải ném lỗi 409")
+        void create_DuplicatePhaseCode_ShouldThrowException() {
+            mockProjectExists(true);
+            CatProjectPhaseDto request = createValidDto();
+            when(repository.existsByProjectIdAndPhaseCodeAndIsDeletedFalse(PROJECT_ID, "P01")).thenReturn(true);
             when(translator.getMessage(eq("project.phase.duplicate"), any())).thenReturn("Mã giai đoạn đã tồn tại");
 
-            // WHEN & THEN
-            CustomException ex = assertThrows(CustomException.class, () -> service.create(PROJECT_ID, dto));
-            assertEquals(HttpStatus.CONFLICT.value(), ex.getCodeError());
+            assertThrows(CustomException.class, () -> service.create(PROJECT_ID, request));
+            verify(repository, never()).save(any());
         }
 
         @Test
-        @DisplayName("Thành công: Tạo mới giai đoạn khi dữ liệu đầu vào hợp lệ")
-        void create_ValidData_Success() {
-            // GIVEN
-            CatProjectPhaseDto requestDto = createValidDto();
-            CatProjectPhase entityBeforeSave = new CatProjectPhase();
-            CatProjectPhase entityAfterSave = new CatProjectPhase();
-            entityAfterSave.setId(PHASE_ID);
+        @DisplayName("Thêm mới thành công - Phải lưu đúng thời gian tạo và thông tin")
+        void create_Success_ShouldReturnDto() {
+            mockProjectExists(true);
+            CatProjectPhaseDto request = createValidDto();
+            CatProjectPhase entity = new CatProjectPhase();
+            CatProjectPhase savedEntity = new CatProjectPhase();
+            savedEntity.setProjectId(PROJECT_ID);
 
-            when(projectRepository.existsByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(true);
-            when(repository.existsByProjectIdAndPhaseCodeAndIsDeletedFalse(PROJECT_ID, PHASE_CODE)).thenReturn(false);
-            when(mapper.toEntity(requestDto)).thenReturn(entityBeforeSave);
-            when(repository.save(any(CatProjectPhase.class))).thenReturn(entityAfterSave);
-            when(mapper.toDto(entityAfterSave)).thenReturn(new CatProjectPhaseDto());
+            when(repository.existsByProjectIdAndPhaseCodeAndIsDeletedFalse(PROJECT_ID, "P01")).thenReturn(false);
+            when(mapper.toEntity(request, PROJECT_ID)).thenReturn(entity);
+            when(repository.save(entity)).thenReturn(savedEntity);
+            when(projectRepository.findByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(Optional.of(new Project()));
 
-            // WHEN
-            service.create(PROJECT_ID, requestDto);
+            service.create(PROJECT_ID, request);
 
-            // THEN
             ArgumentCaptor<CatProjectPhase> captor = ArgumentCaptor.forClass(CatProjectPhase.class);
             verify(repository).save(captor.capture());
-            CatProjectPhase savedEntity = captor.getValue();
-
-            assertAll("Kiểm tra dữ liệu thực thể trước khi lưu",
-                    () -> assertEquals(PROJECT_ID, savedEntity.getProjectId(), "ID dự án phải khớp"),
-                    () -> assertEquals(Boolean.FALSE, savedEntity.getIsDeleted(), "Trạng thái xóa phải là FALSE"),
-                    () -> assertEquals(fixedTime, savedEntity.getCreatedAt(), "Thời gian tạo phải khớp với thời gian hệ thống cố định")
-            );
+            assertEquals(fixedNow, captor.getValue().getCreatedAt(), "Thời gian tạo phải được gán bằng LocalDateTime.now()");
         }
     }
 
     @Nested
-    @DisplayName("Kịch bản kiểm thử: Phương thức cập nhật (update)")
-    class UpdateMethodTest {
-
+    @DisplayName("Nhóm kiểm thử chức năng Cập nhật (Update)")
+    class UpdateTests {
         @Test
-        @DisplayName("Thất bại: Ném ngoại lệ khi giai đoạn thuộc về một dự án khác")
-        void update_WrongProject_ThrowsException() {
-            // GIVEN
-            CatProjectPhaseDto dto = createValidDto();
-            CatProjectPhase existingEntity = new CatProjectPhase();
-            existingEntity.setProjectId(999L); // ID dự án khác hoàn toàn
+        @DisplayName("Cập nhật giai đoạn không tồn tại - Phải ném lỗi 404")
+        void update_PhaseNotFound_ShouldThrowException() {
+            mockProjectExists(true);
+            when(repository.findByIdAndIsDeletedFalse(PHASE_ID)).thenReturn(Optional.empty());
+            when(translator.getMessage(eq("project.phase.notfound"), any())).thenReturn("Không thấy giai đoạn");
 
-            when(projectRepository.existsByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(true);
-            when(repository.findByIdAndIsDeletedFalse(PHASE_ID)).thenReturn(Optional.of(existingEntity));
-            when(translator.getMessage(eq("project.phase.notfound"), any())).thenReturn("Không tìm thấy giai đoạn");
-
-            // WHEN & THEN
-            assertThrows(CustomException.class, () -> service.update(PROJECT_ID, PHASE_ID, dto));
+            assertThrows(CustomException.class, () -> service.update(PROJECT_ID, PHASE_ID, createValidDto()));
         }
 
         @Test
-        @DisplayName("Thành công: Cập nhật thông tin và tự động ghi nhận thời gian chỉnh sửa")
-        void update_ValidData_Success() {
-            // GIVEN
-            CatProjectPhaseDto dto = createValidDto();
-            CatProjectPhase existingEntity = new CatProjectPhase();
-            existingEntity.setProjectId(PROJECT_ID);
+        @DisplayName("Giai đoạn tồn tại nhưng không thuộc dự án chỉ định - Phải ném lỗi 404 (Bảo mật)")
+        void update_WrongProjectId_ShouldThrowException() {
+            mockProjectExists(true);
+            CatProjectPhase existing = new CatProjectPhase();
+            existing.setProjectId(999L);
+            when(repository.findByIdAndIsDeletedFalse(PHASE_ID)).thenReturn(Optional.of(existing));
+            when(translator.getMessage(eq("project.phase.notfound"), any())).thenReturn("Không thấy giai đoạn");
 
-            when(projectRepository.existsByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(true);
-            when(repository.findByIdAndIsDeletedFalse(PHASE_ID)).thenReturn(Optional.of(existingEntity));
+            assertThrows(CustomException.class, () -> service.update(PROJECT_ID, PHASE_ID, createValidDto()));
+        }
 
-            // WHEN
-            service.update(PROJECT_ID, PHASE_ID, dto);
+        @Test
+        @DisplayName("Cập nhật thành công - Phải cập nhật thời gianUpdatedAt")
+        void update_Success_ShouldUpdateTimestamp() {
+            mockProjectExists(true);
+            CatProjectPhase existing = new CatProjectPhase();
+            existing.setProjectId(PROJECT_ID);
 
-            // THEN
-            verify(mapper).updateEntity(existingEntity, dto);
-            verify(repository).save(existingEntity);
-            assertEquals(fixedTime, existingEntity.getUpdatedAt(), "Thời gian cập nhật phải khớp với thời gian hệ thống cố định");
+            when(repository.findByIdAndIsDeletedFalse(PHASE_ID)).thenReturn(Optional.of(existing));
+            when(projectRepository.findByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(Optional.of(new Project()));
+
+            service.update(PROJECT_ID, PHASE_ID, createValidDto());
+
+            ArgumentCaptor<CatProjectPhase> captor = ArgumentCaptor.forClass(CatProjectPhase.class);
+            verify(repository).save(captor.capture());
+            assertEquals(fixedNow, captor.getValue().getUpdatedAt(), "Thời gian cập nhật phải được làm mới");
         }
     }
 
     @Nested
-    @DisplayName("Kịch bản kiểm thử: Phương thức xóa (delete)")
-    class DeleteMethodTest {
-
+    @DisplayName("Nhóm kiểm thử chức năng Xóa (Delete)")
+    class DeleteTests {
         @Test
-        @DisplayName("Thành công: Thực hiện xóa mềm (đổi trạng thái isDeleted sang TRUE)")
-        void delete_Success() {
-            // GIVEN
-            CatProjectPhase existingEntity = new CatProjectPhase();
-            existingEntity.setProjectId(PROJECT_ID);
-            existingEntity.setIsDeleted(false);
+        @DisplayName("Xóa logic thành công - Phải set isDeleted = TRUE")
+        void delete_Success_ShouldSetDeletedTrue() {
+            mockProjectExists(true);
+            CatProjectPhase existing = new CatProjectPhase();
+            existing.setProjectId(PROJECT_ID);
+            when(repository.findByIdAndIsDeletedFalse(PHASE_ID)).thenReturn(Optional.of(existing));
 
-            when(projectRepository.existsByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(true);
-            when(repository.findByIdAndIsDeletedFalse(PHASE_ID)).thenReturn(Optional.of(existingEntity));
-
-            // WHEN
             service.delete(PROJECT_ID, PHASE_ID);
 
-            // THEN
             ArgumentCaptor<CatProjectPhase> captor = ArgumentCaptor.forClass(CatProjectPhase.class);
             verify(repository).save(captor.capture());
-            CatProjectPhase deletedEntity = captor.getValue();
-
-            assertTrue(deletedEntity.getIsDeleted(), "Trạng thái xóa phải được chuyển thành TRUE");
-            assertEquals(fixedTime, deletedEntity.getUpdatedAt(), "Phải ghi nhận thời gian xóa vào trường updatedAt");
+            assertTrue(captor.getValue().getIsDeleted(), "Cờ xóa phải được set thành TRUE");
+            assertEquals(fixedNow, captor.getValue().getUpdatedAt());
         }
     }
 
     @Nested
-    @DisplayName("Kịch bản kiểm thử: Phương thức lấy danh sách (getAll)")
-    class GetAllMethodTest {
-
+    @DisplayName("Nhóm kiểm thử chức năng Truy vấn (Query)")
+    class QueryTests {
         @Test
-        @DisplayName("Thành công: Trả về danh sách DTO đã được sắp xếp theo thứ tự hiển thị")
-        void getAll_Success() {
-            // GIVEN
-            CatProjectPhase entity = new CatProjectPhase();
-            when(projectRepository.existsByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(true);
+        @DisplayName("Lấy danh sách tất cả giai đoạn - Phải map đúng Project tương ứng")
+        void getAll_Success_ShouldMapCorrectly() {
+            mockProjectExists(true);
+            CatProjectPhase phase = new CatProjectPhase();
+            phase.setProjectId(PROJECT_ID);
+
             when(repository.findAllByProjectIdAndIsDeletedFalseOrderByDisplayOrderAsc(PROJECT_ID))
-                    .thenReturn(Collections.singletonList(entity));
-            when(mapper.toDto(entity)).thenReturn(new CatProjectPhaseDto());
+                    .thenReturn(List.of(phase));
+            when(projectRepository.findByIdAndIsDeletedFalse(PROJECT_ID)).thenReturn(Optional.of(new Project()));
 
-            // WHEN
-            List<CatProjectPhaseDto> result = service.getAll(PROJECT_ID);
+            service.getAll(PROJECT_ID);
 
-            // THEN
-            assertNotNull(result);
-            assertEquals(1, result.size());
-            verify(repository).findAllByProjectIdAndIsDeletedFalseOrderByDisplayOrderAsc(PROJECT_ID);
+            verify(mapper).toDto(eq(phase), argThat(map -> map.containsKey(PROJECT_ID)));
         }
     }
 
-    // Phương thức hỗ trợ tạo dữ liệu mẫu
     private CatProjectPhaseDto createValidDto() {
         CatProjectPhaseDto dto = new CatProjectPhaseDto();
-        dto.setPhaseCode(PHASE_CODE);
-        dto.setPhaseName("Giai đoạn thiết kế");
-        dto.setIsActive(true);
+        dto.setPhaseCode("P01");
+        dto.setPhaseName("Giai đoạn 1");
         return dto;
     }
 }

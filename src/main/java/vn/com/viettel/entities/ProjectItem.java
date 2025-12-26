@@ -61,5 +61,7 @@ public class ProjectItem {
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PROJECT_ID", insertable = false, updatable = false)
+    private Project project;
 }

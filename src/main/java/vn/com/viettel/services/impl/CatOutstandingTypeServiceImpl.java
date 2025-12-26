@@ -97,12 +97,24 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
      * Minimal request validation (beyond bean validation) to follow enterprise style.
      */
     private void validateRequest(OutstandingTypeDto request) {
-        if (request == null
-                || !StringUtils.hasText(request.getTypeCode())
-                || !StringUtils.hasText(request.getTypeName())) {
+        if (request == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("invalid.request")
+                    translator.getMessage("catOutstandingType.payload.null")
+            );
+        }
+
+        if (!StringUtils.hasText(request.getTypeCode())) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catOutstandingType.typeCode.required")
+            );
+        }
+
+        if (!StringUtils.hasText(request.getTypeName())) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catOutstandingType.typeName.required")
             );
         }
     }

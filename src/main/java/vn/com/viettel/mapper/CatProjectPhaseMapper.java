@@ -1,31 +1,84 @@
 package vn.com.viettel.mapper;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Component;
 import vn.com.viettel.dto.CatProjectPhaseDto;
+import vn.com.viettel.dto.ProjectDto;
 import vn.com.viettel.entities.CatProjectPhase;
+import vn.com.viettel.entities.Project;
+
+import java.util.Map;
+
+@Component
+@RequiredArgsConstructor
+public class CatProjectPhaseMapper {
+
+    private final ModelMapper modelMapper;
+
+    @PostConstruct
+    private void configure() {
+
+        // DTO -> Entity
+        if (modelMapper.getTypeMap(CatProjectPhaseDto.class, CatProjectPhase.class) == null) {
+            modelMapper.typeMap(CatProjectPhaseDto.class, CatProjectPhase.class)
+                    .addMappings(mapper -> {
+                        mapper.skip(CatProjectPhase::setId);
+                        mapper.skip(CatProjectPhase::setProjectId);
+                        mapper.skip(CatProjectPhase::setCreatedAt);
+                        mapper.skip(CatProjectPhase::setCreatedBy);
+                        mapper.skip(CatProjectPhase::setUpdatedAt);
+                        mapper.skip(CatProjectPhase::setUpdatedBy);
+                        mapper.skip(CatProjectPhase::setIsDeleted);
+                    });
+        }
+
+        // Entity -> DTO
+        if (modelMapper.getTypeMap(CatProjectPhase.class, CatProjectPhaseDto.class) == null) {
+            modelMapper.typeMap(CatProjectPhase.class, CatProjectPhaseDto.class)
+                    .addMappings(mapper -> {
+                        mapper.skip(CatProjectPhaseDto::setProjectDto);
+                    });
+        }
+    }
+    public CatProjectPhaseDto toDto(
+            CatProjectPhase entity,
+            Map<Long, Project> projectMap
+    ) {
+        if (entity == null) return null;
+
+        CatProjectPhaseDto dto = modelMapper.map(entity, CatProjectPhaseDto.class);
+
+        if (projectMap != null
+                && entity.getProjectId() != null
+                && projectMap.containsKey(entity.getProjectId())) {
+
+            ProjectDto projectDto =
+                    modelMapper.map(projectMap.get(entity.getProjectId()), ProjectDto.class);
+
+            dto.setProjectDto(projectDto);
+        }
+
+        return dto;
+    }
+    public CatProjectPhase toEntity(CatProjectPhaseDto dto, Long projectId) {
+        if (dto == null) return null;
+
+        CatProjectPhase entity = modelMapper.map(dto, CatProjectPhase.class);
+        entity.setProjectId(projectId);
+        entity.setIsDeleted(Boolean.FALSE);
+
+        return entity;
+    }
+    public void updateEntity(
+            CatProjectPhaseDto dto,
+            CatProjectPhase entity
+    ) {
+        if (dto == null || entity == null) return;
+
+        modelMapper.map(dto, entity);
+    }
 
 
-/**
- * MapStruct mapper for CAT_PROJECT_PHASE.
- */
-@Mapper(componentModel = "spring")
-public interface CatProjectPhaseMapper {
-
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "projectId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "isDeleted", ignore = true)
-    CatProjectPhase toEntity(CatProjectPhaseDto dto);
-
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "projectId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "isDeleted", ignore = true)
-    void updateEntity(@MappingTarget CatProjectPhase entity, CatProjectPhaseDto dto);
-
-    CatProjectPhaseDto toDto(CatProjectPhase entity);
 }

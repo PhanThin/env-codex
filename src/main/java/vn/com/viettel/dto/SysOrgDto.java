@@ -1,6 +1,9 @@
 package vn.com.viettel.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -9,11 +12,14 @@ import java.time.LocalDateTime;
  * SysOrgDto dùng chung cho Create/Update/Response theo rule.
  * Lưu ý: Service sẽ tự set createdAt/updatedAt/isDeleted theo nghiệp vụ, không lấy từ client.
  */
+@Getter
+@Setter
+@NoArgsConstructor
 public class SysOrgDto implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private Long orgId;
+    private Long id;
     private String orgCode;
     private String orgName;
 
@@ -36,75 +42,5 @@ public class SysOrgDto implements Serializable {
     private Boolean isActive;
     private Boolean isDeleted;
 
-    public Long getOrgId() {
-        return orgId;
-    }
 
-    public void setOrgId(Long orgId) {
-        this.orgId = orgId;
-    }
-
-    public String getOrgCode() {
-        return orgCode;
-    }
-
-    public void setOrgCode(String orgCode) {
-        this.orgCode = orgCode;
-    }
-
-    public String getOrgName() {
-        return orgName;
-    }
-
-    public void setOrgName(String orgName) {
-        this.orgName = orgName;
-    }
-
-    public Long getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(Long updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Long getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(Long createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Boolean getIsActive() {
-        return isActive;
-    }
-
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
-
-    public Boolean getIsDeleted() {
-        return isDeleted;
-    }
-
-    public void setIsDeleted(Boolean isDeleted) {
-        this.isDeleted = isDeleted;
-    }
 }

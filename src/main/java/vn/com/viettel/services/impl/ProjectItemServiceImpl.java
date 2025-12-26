@@ -106,15 +106,29 @@ public class ProjectItemServiceImpl implements ProjectItemService {
     }
 
     private void validateRequest(ProjectItemDto request) {
-        if (request == null
-                || !StringUtils.hasText(request.getItemCode())
-                || !StringUtils.hasText(request.getItemName())) {
+
+        if (request == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("invalid.request")
+                    translator.getMessage("project.item.payload.null")
+            );
+        }
+
+        if (!StringUtils.hasText(request.getItemCode())) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("project.item.itemCode.required")
+            );
+        }
+
+        if (!StringUtils.hasText(request.getItemName())) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("project.item.itemName.required")
             );
         }
     }
+
 
     private ProjectItem getItemOrThrow(Long projectId, Long itemId) {
         ProjectItem entity = projectItemRepository.findByIdAndIsDeletedFalse(itemId)

@@ -26,5 +26,6 @@ public interface ProjectItemMapper {
     @Mapping(target = "isDeleted", ignore = true)
     void updateEntity(@MappingTarget ProjectItem entity, ProjectItemDto dto);
 
+    @Mapping(target = "project", source = "project")
     ProjectItemDto toDto(ProjectItem entity);
 }

@@ -139,7 +139,7 @@ public class SysOrgServiceImpl implements SysOrgService {
         if (orgId == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
-                    ("org.id.required")
+                    translator.getMessage("org.id.required")
             );
         }
 

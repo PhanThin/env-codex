@@ -95,13 +95,21 @@ public class WorkItemServiceImpl implements WorkItemService {
     }
 
     private void validateRequest(WorkItemDto request) {
-        if (request == null || !StringUtils.hasText(request.getWorkItemName())) {
+        if (request == null) {
             throw new CustomException(
-                HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("invalid.request")
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("workitem.request.null")
+            );
+        }
+
+        if (!StringUtils.hasText(request.getWorkItemName())) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("workitem.name.required")
             );
         }
     }
+
 
     private WorkItem getOrThrow(Long itemId, Long workItemId) {
         WorkItem entity = repository.findByIdAndIsDeletedFalse(workItemId)

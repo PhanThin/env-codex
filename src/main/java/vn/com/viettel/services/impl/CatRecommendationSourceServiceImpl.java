@@ -93,14 +93,34 @@ public class CatRecommendationSourceServiceImpl implements CatRecommendationSour
     }
 
     private void validateRequest(CatRecommendationSourceDto request) {
-        if (request == null
-                || !StringUtils.hasText(request.getSourceCode())
-                || !StringUtils.hasText(request.getSourceName())
-                || !StringUtils.hasText(request.getIsActive())) {
+
+        if (request == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("invalid.request")
+                    translator.getMessage("catRecommendationSource.payload.null")
+            );
+        }
+
+        if (!StringUtils.hasText(request.getSourceCode())) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catRecommendationSource.sourceCode.required")
+            );
+        }
+
+        if (!StringUtils.hasText(request.getSourceName())) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catRecommendationSource.sourceName.required")
+            );
+        }
+
+        if (request.getIsActive() == null) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catRecommendationSource.isActive.required")
             );
         }
     }
+
 }

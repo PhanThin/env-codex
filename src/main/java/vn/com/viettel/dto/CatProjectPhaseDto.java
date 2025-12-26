@@ -18,7 +18,7 @@ import java.io.Serializable;
 public class CatProjectPhaseDto implements Serializable {
     Long id;
     @NotNull
-    ProjectDto project;
+    ProjectDto projectDto;
     @NotNull
     @Size(max = 50)
     String phaseCode;

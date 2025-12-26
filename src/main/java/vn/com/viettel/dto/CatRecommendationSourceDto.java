@@ -19,7 +19,7 @@ import lombok.Setter;
 @Builder
 public class CatRecommendationSourceDto {
 
-    private Long sourceId;
+    private Long id;
 
     /**
      * Mã nguồn kiến nghị.
