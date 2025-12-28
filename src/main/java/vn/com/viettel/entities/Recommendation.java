@@ -88,6 +88,9 @@ public class Recommendation {
     @Column(name = "CLOSED_BY")
     private Long closedById;
 
+    @Column(name = "CURRENT_PROCESS_BY")
+    private Long currentProcessById;
+
     @NotNull
     @JdbcTypeCode(java.sql.Types.CHAR)
     @Convert(converter = YesNoConverter.class)
@@ -114,4 +117,8 @@ public class Recommendation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CREATED_BY", insertable = false, updatable = false)
     private SysUser createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CURRENT_PROCESS_BY", insertable = false, updatable = false)
+    private SysUser currentProcessBy;
 }

@@ -149,7 +149,9 @@ public final class RecommendationSpecifications {
                 // Thứ tự ví dụ: NEW -> IN_PROGRESS -> DONE -> CLOSED
                 Expression<Object> statusOrder = cb.selectCase(root.get("status"))
                         .when("NEW", 1)
-                        .when("DONE", 2)
+                        .when("IN_PROGRESS", 2)
+                        .when("DONE", 3)
+                        .when("CLOSED", 4)
                         .otherwise(99);
 
                 query.orderBy(asc ? cb.asc(statusOrder) : cb.desc(statusOrder));

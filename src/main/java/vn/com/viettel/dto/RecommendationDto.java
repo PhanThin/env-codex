@@ -139,10 +139,16 @@ public class RecommendationDto implements Serializable {
     List<WorkItemDto> workItems;
 
     @Schema(
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            accessMode = Schema.AccessMode.READ_ONLY,
             description = "Danh sách người được giao xử lý"
     )
     List<UserDto> assignedUsers;
+
+    @Schema(
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            description = "Người được giao xử lý hiện tại"
+    )
+    UserDto currentProcessUser;
 
     @Schema(
             accessMode = Schema.AccessMode.READ_ONLY,

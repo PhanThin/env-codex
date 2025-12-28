@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,4 +24,7 @@ public class RecommendationResponseDto implements Serializable {
     @Size(max = 2000)
     String responseContent;
     List<AttachmentDto> attachments;
+    UserDto redirectToUser;
+    LocalDate deadline;
+    Boolean isRedirect;
 }

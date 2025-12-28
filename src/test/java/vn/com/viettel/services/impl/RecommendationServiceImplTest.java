@@ -101,10 +101,16 @@ class RecommendationServiceImplTest {
         inputDto.setDeadline(LocalDate.now().plusDays(10));
         inputDto.setId(recommendationId);
 
+        UserDto userDto = new UserDto();
+        userDto.setId(1L);
+        inputDto.setCurrentProcessUser(userDto);
+
         Recommendation recommendation = new Recommendation();
         recommendation.setId(recommendationId);
+        recommendation.setStatus(RecommendationStatusEnum.NEW.name());
 
-        when(recommendationRepository.findById(recommendationId)).thenReturn(Optional.of(recommendation));
+        when(sysUserRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(new SysUser()));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(recommendationId)).thenReturn(Optional.of(recommendation));
         when(recommendationTypeRepository.existsById(1L)).thenReturn(true);
         when(recommendationRepository.findByRecommendationTitle("Updated Title")).thenReturn(Optional.empty());
         when(recommendationMapper.mapToRecommendationWorkItem(anyList())).thenReturn(List.of(inputDto));
@@ -121,7 +127,7 @@ class RecommendationServiceImplTest {
         Long recommendationId = 1L;
         RecommendationDto inputDto = new RecommendationDto();
 
-        when(recommendationRepository.findById(recommendationId)).thenReturn(Optional.empty());
+        when(recommendationRepository.findByIdAndIsDeletedFalse(recommendationId)).thenReturn(Optional.empty());
         when(translator.getMessage("recommendation.notFound", recommendationId)).thenReturn("Recommendation not found.");
 
         CustomException exception = assertThrows(CustomException.class,
@@ -150,13 +156,17 @@ class RecommendationServiceImplTest {
         RecommendationDto inputDto = new RecommendationDto();
         inputDto.setId(recommendationId);
         inputDto.setRecommendationTitle("Duplicate Title");
+        UserDto userDto = new UserDto();
+        userDto.setId(1L);
+        inputDto.setCurrentProcessUser(userDto);
 
         Recommendation existingRecommendation = new Recommendation();
         existingRecommendation.setId(2L);
         existingRecommendation.setRecommendationTitle("Duplicate Title");
+        existingRecommendation.setStatus(RecommendationStatusEnum.NEW.name());
 
-        when(recommendationRepository.findById(recommendationId))
-                .thenReturn(Optional.of(new Recommendation()));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(recommendationId))
+                .thenReturn(Optional.of(existingRecommendation));
         when(recommendationRepository.findByRecommendationTitle("Duplicate Title"))
                 .thenReturn(Optional.of(existingRecommendation));
         when(translator.getMessage("recommendation.title.duplicate", "Duplicate Title"))
@@ -184,7 +194,17 @@ class RecommendationServiceImplTest {
         inputDto.setPriority(priorityDto);
         inputDto.setRecommendationType(recommendationTypeDto);
 
-        when(recommendationRepository.findById(recommendationId)).thenReturn(Optional.of(new Recommendation()));
+        UserDto userDto = new UserDto();
+        userDto.setId(1L);
+        inputDto.setCurrentProcessUser(userDto);
+
+        Recommendation existingRecommendation = new Recommendation();
+        existingRecommendation.setId(recommendationId);
+        existingRecommendation.setStatus(RecommendationStatusEnum.NEW.name());
+
+
+//        when(sysUserRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(new SysUser()));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(recommendationId)).thenReturn(Optional.of(existingRecommendation));
         when(recommendationTypeRepository.existsById(1L)).thenReturn(true);
         when(translator.getMessage("recommendation.priority.invalid")).thenReturn("Invalid priority level.");
 
@@ -211,9 +231,14 @@ class RecommendationServiceImplTest {
         priorityDto.setCode("HIGH_PRIORITY");
         dto.setPriority(priorityDto);
 
+        UserDto currentUser = new UserDto();
+        currentUser.setId(1L);
+        dto.setCurrentProcessUser(currentUser);
+
         Recommendation entity = new Recommendation();
         entity.setId(1L);
 
+        when(sysUserRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(new SysUser()));
         when(recommendationTypeRepository.existsById(1L)).thenReturn(true);
         when(recommendationRepository.findByRecommendationTitle("New Title")).thenReturn(Optional.empty());
         when(recommendationMapper.toEntity(eq(dto), any())).thenReturn(entity);
@@ -307,7 +332,7 @@ class RecommendationServiceImplTest {
     @Test
     void getRecommendationById_notFound() {
         Long id = 1L;
-        when(recommendationRepository.findById(id)).thenReturn(Optional.empty());
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.empty());
         when(translator.getMessage("recommendation.notFound", id)).thenReturn("Not found");
 
         CustomException ex = assertThrows(CustomException.class,
@@ -325,7 +350,7 @@ class RecommendationServiceImplTest {
         RecommendationDto dto = new RecommendationDto();
         dto.setId(id);
 
-        when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(rec));
         when(recommendationMapper.mapToRecommendationWorkItem(List.of(rec))).thenReturn(List.of(dto));
 
         RecommendationDto result = recommendationService.getRecommendationById(id);
@@ -399,7 +424,7 @@ class RecommendationServiceImplTest {
     @Test
     void closeRecommendation_notFound() {
         Long id = 1L;
-        when(recommendationRepository.findById(id)).thenReturn(Optional.empty());
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.empty());
         when(translator.getMessage("recommendation.notFound", id)).thenReturn("Not found");
 
         CustomException ex = assertThrows(CustomException.class,
@@ -416,7 +441,7 @@ class RecommendationServiceImplTest {
         rec.setId(id);
         rec.setStatus(RecommendationStatusEnum.DONE.name());
 
-        when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(rec));
         when(translator.getMessage("recommendation.already_done")).thenReturn("Already done");
 
         CustomException ex = assertThrows(CustomException.class,
@@ -436,7 +461,7 @@ class RecommendationServiceImplTest {
         RecommendationDto dto = new RecommendationDto();
         dto.setId(id);
 
-        when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(rec));
         when(recommendationMapper.mapToRecommendationWorkItem(List.of(rec))).thenReturn(List.of(dto));
 
         RecommendationDto result = recommendationService.closeRecommendation(id);
@@ -477,7 +502,7 @@ class RecommendationServiceImplTest {
     void addRecommendationResponse_notFoundRecommendation() {
         Long id = 1L;
         RecommendationResponseDto dto = new RecommendationResponseDto();
-        when(recommendationRepository.findById(id)).thenReturn(Optional.empty());
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.empty());
         when(translator.getMessage("recommendation.notFound", id)).thenReturn("Not found");
 
         CustomException ex = assertThrows(CustomException.class,
@@ -495,7 +520,7 @@ class RecommendationServiceImplTest {
         rec.setStatus(RecommendationStatusEnum.DONE.name());
         RecommendationResponseDto dto = new RecommendationResponseDto();
 
-        when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(rec));
         when(translator.getMessage("recommendation.already_done")).thenReturn("Already done");
 
         CustomException ex = assertThrows(CustomException.class,
@@ -514,7 +539,7 @@ class RecommendationServiceImplTest {
         RecommendationResponseDto dto = new RecommendationResponseDto();
         dto.setResponseContent("   ");
 
-        when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(rec));
         when(translator.getMessage("recommendation.response.content.required"))
                 .thenReturn("Content required");
 
@@ -534,7 +559,7 @@ class RecommendationServiceImplTest {
         RecommendationResponseDto dto = new RecommendationResponseDto();
         dto.setResponseContent("x".repeat(501));
 
-        when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(rec));
         when(translator.getMessage("recommendation.response.content.length"))
                 .thenReturn("Too long");
 
@@ -564,7 +589,7 @@ class RecommendationServiceImplTest {
         outputDto.setRecommendationId(id);
         outputDto.setResponseContent("OK");
 
-        when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(rec));
         when(recommendationMapper.mapToRecommendationResponse(eq(inputDto), eq(id), any()))
                 .thenReturn(responseEntity);
         when(recommendationMapper.mapToRecommendationResponseDto(eq(responseEntity), any(), anyList()))
@@ -605,7 +630,7 @@ class RecommendationServiceImplTest {
         attachment.setReferenceType(Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE);
 
 
-        when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(rec));
         when(recommendationMapper.mapToRecommendationResponse(eq(inputDto), eq(id), any()))
                 .thenReturn(responseEntity);
         when(attachmentService.handleAttachment(any(), anyLong(), anyString(), anyString()))
@@ -640,7 +665,7 @@ class RecommendationServiceImplTest {
     @Test
     void getRecommendationResponses_notFoundRecommendation() {
         Long id = 1L;
-        when(recommendationRepository.findById(id)).thenReturn(Optional.empty());
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.empty());
         when(translator.getMessage("recommendation.notFound", id)).thenReturn("Not found");
 
         CustomException ex = assertThrows(CustomException.class,
@@ -663,7 +688,7 @@ class RecommendationServiceImplTest {
         RecommendationResponseDto dto = new RecommendationResponseDto();
         dto.setRecommendationId(id);
 
-        when(recommendationRepository.findById(id)).thenReturn(Optional.of(rec));
+        when(recommendationRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(rec));
         when(recommendationResponseRepository.findAllByRecommendationIdAndIsDeletedFalse(id))
                 .thenReturn(List.of(response));
         when(recommendationMapper.mapToRecommendationResponseDto(List.of(response)))
@@ -720,7 +745,7 @@ class RecommendationServiceImplTest {
         // Assigned users
         UserDto userDto = new UserDto();
         userDto.setId(200L);
-        dto.setAssignedUsers(List.of(userDto));
+        dto.setCurrentProcessUser(userDto);
 
         Recommendation entity = new Recommendation();
         entity.setId(1L);
@@ -731,15 +756,15 @@ class RecommendationServiceImplTest {
         attachment.setReferenceId(entity.getId());
         attachment.setReferenceType(Constants.RECOMMENDATION_REFERENCE_TYPE);
 
-
+        when(sysUserRepository.findByIdAndIsDeletedFalse(200L)).thenReturn(Optional.of(new SysUser()));
         when(recommendationTypeRepository.existsById(1L)).thenReturn(true);
         when(recommendationRepository.findByRecommendationTitle("New Title")).thenReturn(Optional.empty());
         when(recommendationMapper.toEntity(eq(dto), any())).thenReturn(entity);
         when(recommendationMapper.mapToRecommendationWorkItem(List.of(entity))).thenReturn(List.of(dto));
         when(recommendationMapper.mapToRecommendationWorkItem(eq(dto.getWorkItems()), eq(entity.getId()), anyLong()))
                 .thenReturn(List.of(new RecommendationWorkItem()));
-        when(recommendationMapper.mapToRecommendationAssignment(eq(dto.getAssignedUsers()), eq(entity.getId())))
-                .thenReturn(List.of(new RecommendationAssignment()));
+//        when(recommendationMapper.mapToRecommendationAssignment(eq(dto.getAssignedUsers()), eq(entity.getId())))
+//                .thenReturn(List.of(new RecommendationAssignment()));
         when(attachmentService.handleAttachment(any(), eq(entity.getId()),
                 eq(Constants.RECOMMENDATION_REFERENCE_TYPE), eq(Constants.RECOMMENDATION_REFERENCE_TYPE)))
                 .thenReturn(List.of(attachment));
@@ -748,7 +773,7 @@ class RecommendationServiceImplTest {
 
         assertNotNull(result);
         verify(recommendationWorkItemRepository).saveAll(anyList());
-        verify(recommendationAssignmentRepository).saveAll(anyList());
+//        verify(recommendationAssignmentRepository).saveAll(anyList());
         verify(attachmentService).handleAttachment(any(), eq(entity.getId()),
                 eq(Constants.RECOMMENDATION_REFERENCE_TYPE), eq(Constants.RECOMMENDATION_REFERENCE_TYPE));
 

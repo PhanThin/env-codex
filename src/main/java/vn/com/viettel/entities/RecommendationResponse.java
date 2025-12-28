@@ -12,6 +12,7 @@ import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.type.YesNoConverter;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -61,5 +62,14 @@ public class RecommendationResponse {
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 
+    @Column(name = "REDIRECT_TO")
+    private Long redirectTo;
 
+    @Column(name = "DEADLINE")
+    private LocalDate deadline;
+
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
+    @Column(name = "IS_REDIRECT")
+    private Boolean isRedirect;
 }

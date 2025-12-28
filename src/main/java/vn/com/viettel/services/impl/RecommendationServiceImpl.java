@@ -2,7 +2,6 @@ package vn.com.viettel.services.impl;
 
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -17,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 import vn.com.viettel.dto.*;
 import vn.com.viettel.entities.*;
 import vn.com.viettel.mapper.RecommendationMapper;
-import vn.com.viettel.minio.dto.ObjectFileDTO;
 import vn.com.viettel.repositories.jpa.*;
 import vn.com.viettel.services.AttachmentService;
 import vn.com.viettel.services.RecommendationService;
@@ -25,6 +23,7 @@ import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -88,7 +87,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
 
         if (dto.getAssignedUsers() != null && !dto.getAssignedUsers().isEmpty()) {
-            List<RecommendationAssignment> recommendationAssignmentList = recommendationMapper.mapToRecommendationAssignment(dto.getAssignedUsers(), entity.getId());
+            List<RecommendationAssignment> recommendationAssignmentList = recommendationMapper.mapToRecommendationAssignment(List.of(dto.getCurrentProcessUser()), entity.getId());
             recommendationAssignmentRepository.saveAll(recommendationAssignmentList);
         }
 
@@ -105,8 +104,12 @@ public class RecommendationServiceImpl implements RecommendationService {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
         }
         dto.setId(id);
-        Recommendation entity = recommendationRepository.findById(id)
+        Recommendation entity = recommendationRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
+        if (!RecommendationStatusEnum.NEW.name().equals(entity.getStatus())) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.cannot_update", id, entity.getStatus()));
+        }
+        Long currentProcessUserId = entity.getCurrentProcessById() != null ? entity.getCurrentProcessById() : null;
 
         SysUser currentUser = getCurrentUser();
         Long currentUserId = currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID;
@@ -122,7 +125,21 @@ public class RecommendationServiceImpl implements RecommendationService {
         updateWorkItem(dto, id, currentUserId);
 
         // 6. Xử lý Assignment
-        updateAssigment(dto, id, currentUserId);
+        if (!dto.getCurrentProcessUser().getId().equals(currentProcessUserId)) {
+            // Xóa assignment cũ
+            List<RecommendationAssignment> currentAssignments = recommendationAssignmentRepository.findAllByRecommendationIdAndIsDeletedFalse(id);
+            currentAssignments.forEach(assignment -> {
+                assignment.setIsDeleted(true);
+                assignment.setUpdatedBy(currentUserId);
+                assignment.setUpdatedAt(LocalDateTime.now());
+            });
+            recommendationAssignmentRepository.saveAll(currentAssignments);
+            // Thêm assignment mới
+            List<RecommendationAssignment> newAssignments = recommendationMapper.mapToRecommendationAssignment(List.of(dto.getCurrentProcessUser()), id);
+            recommendationAssignmentRepository.saveAll(newAssignments);
+        }
+        // comment logic cũ, vì chỉ có 1 người được giao - chính là currentProcessUser
+//        updateAssigment(dto, id, currentUserId);
 
         // 7. Xử lý file đính kèm mới (nếu có)
         attachmentService.handleAttachment(files, entity.getId(), Constants.RECOMMENDATION_REFERENCE_TYPE, Constants.RECOMMENDATION_REFERENCE_TYPE);
@@ -265,21 +282,6 @@ public class RecommendationServiceImpl implements RecommendationService {
         return null;
     }
 
-    @NotNull
-    private Attachment getAttachment(ObjectFileDTO file, Long entityId, String referenceType, Long userId) {
-        Attachment attachment = new Attachment();
-        attachment.setFileName(file.getFileName());
-        attachment.setFileSize(file.getFileSize());
-        attachment.setFilePath(file.getFilePath());
-        attachment.setFileUrl(file.getLinkUrlPublic()); // Đường dẫn/tên file trên MinIO
-        attachment.setReferenceId(entityId);
-        attachment.setReferenceType(referenceType);
-        attachment.setUploadedAt(LocalDateTime.now());
-        attachment.setUploadedBy(userId);
-        attachment.setIsDeleted(false);
-        return attachment;
-    }
-
     @Override
     public Page<RecommendationDto> searchRecommendations(RecommendationSearchRequestDto request) throws CustomException {
         int page = request.getPage() != null && request.getPage() >= 0 ? request.getPage() : 0;
@@ -348,7 +350,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (id == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
         }
-        Recommendation recommendation = recommendationRepository.findById(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
+        Recommendation recommendation = recommendationRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
         return recommendationMapper.mapToRecommendationWorkItem(List.of(recommendation)).getFirst();
     }
 
@@ -357,7 +359,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (id == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
         }
-        Recommendation recommendation = recommendationRepository.findById(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
+        Recommendation recommendation = recommendationRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
         if (RecommendationStatusEnum.DONE.name().equals(recommendation.getStatus())) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.already_done"));
         }
@@ -377,18 +379,24 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (dto == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.payload.null"));
         }
-        Recommendation recommendation = recommendationRepository.findById(recommendationId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", recommendationId)));
-        if (RecommendationStatusEnum.DONE.name().equals(recommendation.getStatus())) {
+        Recommendation recommendation = recommendationRepository.findByIdAndIsDeletedFalse(recommendationId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", recommendationId)));
+        if (RecommendationStatusEnum.DONE.name().equals(recommendation.getStatus()) || RecommendationStatusEnum.CLOSED.name().equals(recommendation.getStatus())) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.already_done"));
-        }
-        if (dto == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.payload.null"));
         }
         if (StringUtils.isBlank(dto.getResponseContent())) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.response.content.required"));
         }
         if (dto.getResponseContent().trim().length() > 500) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.response.content.length"));
+        }
+        if (Boolean.TRUE.equals(dto.getIsRedirect())) {
+            if (dto.getRedirectToUser() == null || dto.getRedirectToUser().getId() == null) {
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.current_user.required"));
+            }
+            userRepository.findByIdAndIsDeletedFalse(dto.getRedirectToUser().getId()).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("The handler user not found with id {0}", dto.getRedirectToUser().getId())));
+//            if (dto.getDeadline() == null) {
+//                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.response.redirect.deadline.required"));
+//            }
         }
         SysUser currentUser = getCurrentUser();
         RecommendationResponse recommendationResponse = recommendationMapper.mapToRecommendationResponse(dto, recommendationId, currentUser);
@@ -406,7 +414,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (recommendationId == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
         }
-        recommendationRepository.findById(recommendationId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", recommendationId)));
+        recommendationRepository.findByIdAndIsDeletedFalse(recommendationId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", recommendationId)));
         return recommendationMapper.mapToRecommendationResponseDto(recommendationResponseRepository.findAllByRecommendationIdAndIsDeletedFalse(recommendationId));
     }
 
@@ -462,14 +470,14 @@ public class RecommendationServiceImpl implements RecommendationService {
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.item.required"));
             }
 
-            ProjectItem item = projectItemRepo.findById(itemId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.item.notfound", itemId)));
+            ProjectItem item = projectItemRepo.findByIdAndIsDeletedFalse(itemId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.item.notfound", itemId)));
             if (!Objects.equals(item.getProjectId(), projectId)) {
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.item.not_belong_to_project", itemId, projectId));
             }
 
             Long phaseId = dto.getPhase() == null ? null : dto.getPhase().getId();
             if (phaseId != null) {
-                CatProjectPhase phase = phaseRepo.findById(phaseId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.phase.notfound", phaseId)));
+                CatProjectPhase phase = phaseRepo.findByIdAndIsDeletedFalse(phaseId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.phase.notfound", phaseId)));
                 if (!Objects.equals(phase.getProjectId(), projectId)) {
                     throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.phase.not_belong_to_project", phaseId, projectId));
                 }
@@ -481,7 +489,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                     if (wiId == null) {
                         throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.workitem.id_required"));
                     }
-                    WorkItem wi = workItemRepo.findById(wiId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.workitem.notfound", wiId)));
+                    WorkItem wi = workItemRepo.findByIdAndIsDeletedFalse(wiId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.workitem.notfound", wiId)));
                     if (!Objects.equals(wi.getItemId(), itemId)) {
                         throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.workitem.not_belong_to_item", wiId, itemId));
                     }
@@ -489,5 +497,16 @@ public class RecommendationServiceImpl implements RecommendationService {
             }
         }
 
+        if (dto.getDeadline() == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.deadline.required"));
+        }
+        if (dto.getDeadline().isBefore(LocalDate.now())) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.deadline.invalid"));
+        }
+
+        if (dto.getCurrentProcessUser() == null || dto.getCurrentProcessUser().getId() == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.current_user.required"));
+        }
+        userRepository.findByIdAndIsDeletedFalse(dto.getCurrentProcessUser().getId()).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.current_user.notfound", dto.getCurrentProcessUser().getId())));
     }
 }

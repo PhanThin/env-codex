@@ -50,6 +50,7 @@ public class RecommendationMapper {
                         mapper.skip(Recommendation::setPriority);
                         mapper.skip(Recommendation::setCreatedBy);
                         mapper.skip(Recommendation::setCatRecommendationType);
+                        mapper.skip(Recommendation::setCurrentProcessBy);
                     });
         }
         if (modelMapper.getTypeMap(Recommendation.class, RecommendationDto.class) == null) {
@@ -59,6 +60,7 @@ public class RecommendationMapper {
                         mapper.skip(RecommendationDto::setPriority);
                         mapper.skip(RecommendationDto::setCreatedByUser);
                         mapper.skip(RecommendationDto::setRecommendationType);
+                        mapper.skip(RecommendationDto::setCurrentProcessUser);
                     });
         }
     }
@@ -226,6 +228,11 @@ public class RecommendationMapper {
             entity.setRecommendationTypeId(dto.getRecommendationType().getId());
         } else {
             entity.setRecommendationTypeId(null);
+        }
+        if (dto.getCurrentProcessUser() != null) {
+            entity.setCurrentProcessById(dto.getCurrentProcessUser().getId());
+        } else {
+            entity.setCurrentProcessById(null);
         }
     }
 
