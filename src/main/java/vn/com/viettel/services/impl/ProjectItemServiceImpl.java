@@ -2,6 +2,7 @@ package vn.com.viettel.services.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 import lombok.RequiredArgsConstructor;
 import vn.com.viettel.dto.ProjectItemDto;
+import vn.com.viettel.entities.Project;
 import vn.com.viettel.entities.ProjectItem;
 import vn.com.viettel.mapper.ProjectItemMapper;
 import vn.com.viettel.repositories.jpa.ProjectItemRepository;
@@ -44,13 +46,11 @@ public class ProjectItemServiceImpl implements ProjectItemService {
             );
         }
 
-        ProjectItem entity = mapper.toEntity(request);
-        entity.setProjectId(projectId);
-        entity.setIsDeleted(Boolean.FALSE);
+        ProjectItem entity = mapper.toEntity(request, projectId);
         entity.setCreatedAt(LocalDateTime.now());
 
         ProjectItem saved = projectItemRepository.save(entity);
-        return mapper.toDto(saved);
+        return mapper.toDto(saved, null);
     }
 
     @Override
@@ -60,11 +60,11 @@ public class ProjectItemServiceImpl implements ProjectItemService {
 
         ProjectItem entity = getItemOrThrow(projectId, itemId);
 
-        mapper.updateEntity(entity, request);
+        mapper.updateEntity(request, entity);
         entity.setUpdatedAt(LocalDateTime.now());
 
         ProjectItem saved = projectItemRepository.save(entity);
-        return mapper.toDto(saved);
+        return mapper.toDto(saved, null);
     }
 
     @Override
@@ -72,18 +72,43 @@ public class ProjectItemServiceImpl implements ProjectItemService {
     public ProjectItemDto getById(Long projectId, Long itemId) {
         validateProjectExists(projectId);
         ProjectItem entity = getItemOrThrow(projectId, itemId);
-        return mapper.toDto(entity);
+
+        Map<Long, Project> projectMap = projectRepository
+                .findAllById(List.of(projectId))
+                .stream()
+                .collect(Collectors.toMap(Project::getId, p -> p));
+
+        return mapper.toDto(entity, projectMap);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ProjectItemDto> getAll(Long projectId) {
         validateProjectExists(projectId);
-        return projectItemRepository.findAllByProjectIdAndIsDeletedFalse(projectId)
-                .stream()
-                .map(mapper::toDto)
+
+        List<ProjectItem> items =
+                projectItemRepository.findAllByProjectIdAndIsDeletedFalse(projectId);
+
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Project> projectMap =
+                projectRepository.findAllById(
+                                items.stream()
+                                        .map(ProjectItem::getProjectId)
+                                        .distinct()
+                                        .collect(Collectors.toSet())
+                        )
+                        .stream()
+                        .collect(Collectors.toMap(Project::getId, p -> p));
+
+        //  Entity -> DTO
+        return items.stream()
+                .map(item -> mapper.toDto(item, projectMap))
                 .collect(Collectors.toList());
     }
+
 
     @Override
     public void delete(Long projectId, Long itemId) {
