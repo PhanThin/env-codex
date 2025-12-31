@@ -86,10 +86,11 @@ public class RecommendationServiceImpl implements RecommendationService {
             recommendationWorkItemRepository.saveAll(recommendationWorkItemList);
         }
 
-        if (dto.getAssignedUsers() != null && !dto.getAssignedUsers().isEmpty()) {
-            List<RecommendationAssignment> recommendationAssignmentList = recommendationMapper.mapToRecommendationAssignment(List.of(dto.getCurrentProcessUser()), entity.getId());
-            recommendationAssignmentRepository.saveAll(recommendationAssignmentList);
-        }
+//        if (dto.getAssignedUsers() != null && !dto.getAssignedUsers().isEmpty()) {
+//            List<RecommendationAssignment> recommendationAssignmentList = recommendationMapper.mapToRecommendationAssignment(List.of(dto.getCurrentProcessUser()), entity.getId());
+//            recommendationAssignmentRepository.saveAll(recommendationAssignmentList);
+//        }
+
 
         attachmentService.handleAttachment(files, entity.getId(), Constants.RECOMMENDATION_REFERENCE_TYPE, Constants.RECOMMENDATION_REFERENCE_TYPE);
 
@@ -397,6 +398,10 @@ public class RecommendationServiceImpl implements RecommendationService {
 //            if (dto.getDeadline() == null) {
 //                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.response.redirect.deadline.required"));
 //            }
+            recommendation.setStatus(RecommendationStatusEnum.IN_PROGRESS.name());
+            recommendation.setCurrentProcessById(dto.getRedirectToUser().getId());
+        } else {
+            recommendation.setStatus(RecommendationStatusEnum.DONE.name());
         }
         SysUser currentUser = getCurrentUser();
         RecommendationResponse recommendationResponse = recommendationMapper.mapToRecommendationResponse(dto, recommendationId, currentUser);
@@ -405,6 +410,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         String channel = Constants.RECOMMENDATION_REFERENCE_TYPE + "/" + recommendationResponse.getId() + "/" + Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE;
         List<Attachment> attachments = attachmentService.handleAttachment(files, recommendationResponse.getId(), Constants.RECOMMENDATION_RESPONSE_REFERENCE_TYPE, channel);
 
+        recommendationRepository.save(recommendation);
 
         return recommendationMapper.mapToRecommendationResponseDto(recommendationResponse, currentUser, attachments);
     }
@@ -444,7 +450,10 @@ public class RecommendationServiceImpl implements RecommendationService {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.content.length"));
         }
         Long recTypeId = dto.getRecommendationType() == null ? null : dto.getRecommendationType().getId();
-        if (recTypeId == null || !recommendationTypeRepo.existsById(recTypeId)) {
+        if (recTypeId == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.type.required"));
+        }
+        if (!recommendationTypeRepo.existsById(recTypeId)) {
             throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.type.notfound"));
         }
         if (dto.getPriority() == null) {
@@ -458,41 +467,39 @@ public class RecommendationServiceImpl implements RecommendationService {
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.priority.invalid"));
             }
         }
+        if (dto.getProject() == null || dto.getProject().getId() == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.project.required"));
+        }
+        Long projectId = dto.getProject().getId();
+        if (!projectRepo.existsById(projectId)) {
+            throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.project.notfound", projectId));
+        }
 
-        Long projectId = dto.getProject() == null ? null : dto.getProject().getId();
-        if (projectId != null) {
-            if (!projectRepo.existsById(projectId)) {
-                throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.project.notfound", projectId));
-            }
-
-            Long itemId = dto.getProjectItem() == null ? null : dto.getProjectItem().getId();
-            if (itemId == null) {
-                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.item.required"));
-            }
-
+        Long itemId = dto.getProjectItem() == null ? null : dto.getProjectItem().getId();
+        if (itemId != null) {
             ProjectItem item = projectItemRepo.findByIdAndIsDeletedFalse(itemId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.item.notfound", itemId)));
             if (!Objects.equals(item.getProjectId(), projectId)) {
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.item.not_belong_to_project", itemId, projectId));
             }
+        }
 
-            Long phaseId = dto.getPhase() == null ? null : dto.getPhase().getId();
-            if (phaseId != null) {
-                CatProjectPhase phase = phaseRepo.findByIdAndIsDeletedFalse(phaseId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.phase.notfound", phaseId)));
-                if (!Objects.equals(phase.getProjectId(), projectId)) {
-                    throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.phase.not_belong_to_project", phaseId, projectId));
-                }
+        Long phaseId = dto.getPhase() == null ? null : dto.getPhase().getId();
+        if (phaseId != null) {
+            CatProjectPhase phase = phaseRepo.findByIdAndIsDeletedFalse(phaseId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.phase.notfound", phaseId)));
+            if (!Objects.equals(phase.getProjectId(), projectId)) {
+                throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.phase.not_belong_to_project", phaseId, projectId));
             }
+        }
 
-            if (dto.getWorkItems() != null) {
-                for (WorkItemDto wiDto : dto.getWorkItems()) {
-                    Long wiId = wiDto == null ? null : wiDto.getId();
-                    if (wiId == null) {
-                        throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.workitem.id_required"));
-                    }
-                    WorkItem wi = workItemRepo.findByIdAndIsDeletedFalse(wiId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.workitem.notfound", wiId)));
-                    if (!Objects.equals(wi.getItemId(), itemId)) {
-                        throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.workitem.not_belong_to_item", wiId, itemId));
-                    }
+        if (dto.getWorkItems() != null) {
+            for (WorkItemDto wiDto : dto.getWorkItems()) {
+                Long wiId = wiDto == null ? null : wiDto.getId();
+                if (wiId == null) {
+                    throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.workitem.id_required"));
+                }
+                WorkItem wi = workItemRepo.findByIdAndIsDeletedFalse(wiId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.workitem.notfound", wiId)));
+                if (!Objects.equals(wi.getItemId(), itemId)) {
+                    throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.workitem.not_belong_to_item", wiId, itemId));
                 }
             }
         }

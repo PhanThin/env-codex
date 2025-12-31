@@ -40,6 +40,8 @@ public class RecommendationMapper {
     private RecommendationAssignmentRepository recommendationAssignmentRepo;
     @Autowired
     private AttachmentRepository attachmentRepo;
+    @Autowired
+    private SysOrgRepository sysOrgRepo;
 
     @PostConstruct
     private void configure() {
@@ -106,16 +108,17 @@ public class RecommendationMapper {
         } else {
             attachmentMap = null;
         }
+        Map<Long, SysOrg> sysOrgMap = sysOrgRepo.findAllByIsDeletedFalse().stream().collect(Collectors.toMap(SysOrg::getId, Function.identity()));
 
         return recommendations.stream()
-                .map(recommendation -> toDto(recommendation, projectMap, recommendationTypeMap, phaseMap, workItemMap, recommendationWorkItemMap, projectItemMap, sysUserMap, recommendationAssignmentMap, attachmentMap))
+                .map(recommendation -> toDto(recommendation, projectMap, recommendationTypeMap, phaseMap, workItemMap, recommendationWorkItemMap, projectItemMap, sysUserMap, sysOrgMap, recommendationAssignmentMap, attachmentMap))
                 .toList();
     }
 
     public RecommendationDto toDto(Recommendation recommendation, Map<Long, Project> projectMap,
                                    Map<Long, CatRecommendationType> recommendationTypeMap, Map<Long, CatProjectPhase> phaseMap,
                                    Map<Long, WorkItem> workItemMap, Map<Long, List<RecommendationWorkItem>> recommendationWorkItemMap,
-                                   Map<Long, ProjectItem> projectItemMap, Map<Long, SysUser> sysUserMap,
+                                   Map<Long, ProjectItem> projectItemMap, Map<Long, SysUser> sysUserMap, Map<Long, SysOrg> sysOrgMap,
                                    Map<Long, List<RecommendationAssignment>> recommendationAssignmentMap, Map<Long, List<AttachmentDto>> attachmentMap) {
         if (recommendation == null) return null;
 
@@ -160,23 +163,27 @@ public class RecommendationMapper {
                 List<UserDto> assignedUsers = assignments.stream()
                         .map(ra -> sysUserMap.get(ra.getUserId()))
                         .filter(Objects::nonNull)
-                        .map(sysUser -> modelMapper.map(sysUser, UserDto.class))
+                        .map(sysUser -> mapUserDto(sysUser, sysOrgMap))
                         .toList();
                 dto.setAssignedUsers(assignedUsers);
             }
         }
+
         if (projectItemMap != null && recommendation.getItemId() != null && projectItemMap.containsKey(recommendation.getItemId())) {
             dto.setProjectItem(modelMapper.map(projectItemMap.get(recommendation.getItemId()), ProjectItemDto.class));
         }
         if (sysUserMap != null) {
+            if (recommendation.getCurrentProcessById() != null && sysUserMap.containsKey(recommendation.getCurrentProcessById())) {
+                dto.setCurrentProcessUser(mapUserDto(sysUserMap.get(recommendation.getCurrentProcessById()), sysOrgMap));
+            }
             if (recommendation.getCreatedById() != null && sysUserMap.containsKey(recommendation.getCreatedById())) {
-                dto.setCreatedByUser(modelMapper.map(sysUserMap.get(recommendation.getCreatedById()), UserDto.class));
+                dto.setCreatedByUser(mapUserDto(sysUserMap.get(recommendation.getCreatedById()), sysOrgMap));
             }
             if (recommendation.getClosedById() != null && sysUserMap.containsKey(recommendation.getClosedById())) {
-                dto.setClosedByUser(modelMapper.map(sysUserMap.get(recommendation.getClosedById()), UserDto.class));
+                dto.setClosedByUser(mapUserDto(sysUserMap.get(recommendation.getClosedById()), sysOrgMap));
             }
             if (recommendation.getLastUpdateBy() != null && sysUserMap.containsKey(recommendation.getLastUpdateBy())) {
-                dto.setLastUpdateByUser(modelMapper.map(sysUserMap.get(recommendation.getLastUpdateBy()), UserDto.class));
+                dto.setLastUpdateByUser(mapUserDto(sysUserMap.get(recommendation.getLastUpdateBy()), sysOrgMap));
             }
         }
         if (attachmentMap != null) {
@@ -186,6 +193,14 @@ public class RecommendationMapper {
             }
         }
         return dto;
+    }
+
+    private UserDto mapUserDto(SysUser sysUser, Map<Long, SysOrg> sysOrgMap) {
+        UserDto userDto = modelMapper.map(sysUser, UserDto.class);
+        if (sysOrgMap != null && sysUser.getOrgId() != null && sysOrgMap.containsKey(sysUser.getOrgId())) {
+            userDto.setOrg(modelMapper.map(sysOrgMap.get(sysUser.getOrgId()), OrgDto.class));
+        }
+        return userDto;
     }
 
     public Recommendation toEntity(RecommendationDto dto, SysUser user) {
@@ -291,6 +306,11 @@ public class RecommendationMapper {
         response.setRespondedOrgId(user != null ? user.getOrgId() : Constants.DEFAULT_ORG_ID);
         response.setRespondedAt(LocalDateTime.now());
         response.setRecommendationId(recommendationId);
+        if (dto.getRedirectToUser() != null && Boolean.TRUE.equals(dto.getIsRedirect())) {
+            response.setRedirectTo(dto.getRedirectToUser().getId());
+            response.setIsRedirect(true);
+            response.setDeadline(dto.getDeadline());
+        }
         return response;
     }
 
