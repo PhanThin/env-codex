@@ -45,7 +45,8 @@ public class OutstandingAcceptanceDto {
     )
     private LocalDateTime acceptedAt;
 
-    private Boolean isDeleted;
+    @Schema(description = "Xác nhận đóng tồn tại", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private Boolean isClosed;
 
     private UserDto updatedByUser;
 

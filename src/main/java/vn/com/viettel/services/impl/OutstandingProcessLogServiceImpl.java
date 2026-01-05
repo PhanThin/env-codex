@@ -59,7 +59,8 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
     @Override
     @Transactional
     public OutstandingProcessLogDto create(Long outstandingId, OutstandingProcessLogDto request, MultipartFile[] attachments) {
-        validateOutstandingExists(outstandingId);
+        OutstandingItem outstandingItem = outstandingItemRepository.findByIdAndIsDeletedFalse(outstandingId).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("outstandingitem.notFound", outstandingId)));
+
         validateRequest(request);
 
         OutstandingProcessLog entity = mapper.toEntity(request);
@@ -70,6 +71,9 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
         repository.save(entity);
         String channel = Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingId + "/" + Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE;
         attachmentService.handleAttachment(attachments, entity.getId(), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, channel);
+
+        handleOutstandingItemStatus(outstandingItem, request);
+
         return mapper.toDto(entity);
     }
 
@@ -96,20 +100,20 @@ public class OutstandingProcessLogServiceImpl implements OutstandingProcessLogSe
             attachmentService.deleteAttachments(List.of(processId), Constants.OUTSTANDING_PROCESS_REFERENCE_TYPE, getCurrentUserIdOrDefault());
         }
 
-        if (OutstandingProcessActionEnum.SEND_FOR_ACCEPTANCE.equals(request.getActionType())) {
-            outstandingItem.setStatus(OutstandingStatusEnum.DONE.name());
-            outstandingItem.setLastUpdateAt(LocalDateTime.now());
-            outstandingItem.setLastUpdateBy(getCurrentUserIdOrDefault());
-            outstandingItemRepository.save(outstandingItem);
-        } else if (OutstandingProcessActionEnum.SAVE_RESULT.equals(request.getActionType())) {
-            outstandingItem.setStatus(OutstandingStatusEnum.IN_PROGRESS.name());
-            outstandingItem.setLastUpdateAt(LocalDateTime.now());
-            outstandingItem.setLastUpdateBy(getCurrentUserIdOrDefault());
-            outstandingItemRepository.save(outstandingItem);
-        }
+        handleOutstandingItemStatus(outstandingItem, request);
         return mapper.toDto(entity);
     }
 
+    private void handleOutstandingItemStatus(OutstandingItem outstandingItem, OutstandingProcessLogDto request) {
+        if (OutstandingProcessActionEnum.SEND_FOR_ACCEPTANCE.equals(request.getActionType())) {
+            outstandingItem.setStatus(OutstandingStatusEnum.DONE.name());
+        } else if (OutstandingProcessActionEnum.SAVE_RESULT.equals(request.getActionType())) {
+            outstandingItem.setStatus(OutstandingStatusEnum.IN_PROGRESS.name());
+        }
+        outstandingItem.setLastUpdateAt(LocalDateTime.now());
+        outstandingItem.setLastUpdateBy(getCurrentUserIdOrDefault());
+        outstandingItemRepository.save(outstandingItem);
+    }
     @Override
     @Transactional(readOnly = true)
     public OutstandingProcessLogDto getById(Long outstandingId, Long processId) {

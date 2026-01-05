@@ -77,7 +77,11 @@ public class OutstandingAcceptanceServiceImpl implements OutstandingAcceptanceSe
         attachmentService.handleAttachment(files, entity.getId(), Constants.OUTSTANDING_ACCEPTANCE_REFERENCE_TYPE, Constants.OUTSTANDING_REFERENCE_TYPE + "/" + outstandingId + "/" + Constants.OUTSTANDING_ACCEPTANCE_REFERENCE_TYPE);
 
         if (OutstandingAcceptanceResultEnum.ACCEPTED.equals(request.getResult())) {
-            outstandingItem.setStatus(OutstandingStatusEnum.CLOSED.name());
+            if (Boolean.TRUE.equals(request.getIsClosed())) {
+                outstandingItem.setStatus(OutstandingStatusEnum.CLOSED.name());
+            } else {
+                outstandingItem.setStatus(OutstandingStatusEnum.IN_PROGRESS.name());
+            }
             outstandingItem.setLastUpdateAt(LocalDateTime.now());
             outstandingItem.setLastUpdateBy(currentUserId);
             outstandingItemRepository.save(outstandingItem);
