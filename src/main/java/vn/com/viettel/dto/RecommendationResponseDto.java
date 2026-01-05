@@ -25,6 +25,5 @@ public class RecommendationResponseDto implements Serializable {
     String responseContent;
     List<AttachmentDto> attachments;
     UserDto redirectToUser;
-    LocalDate deadline;
     Boolean isRedirect;
 }

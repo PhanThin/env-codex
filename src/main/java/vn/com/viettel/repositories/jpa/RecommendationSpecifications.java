@@ -77,10 +77,10 @@ public final class RecommendationSpecifications {
                         cb.equal(root.get("createdById"), req.getCreatedById()));
             }
 
-            // Người xử lý (closedById)
-            if (req.getClosedById() != null) {
+            // Người xử lý)
+            if (req.getProcessedById() != null) {
                 predicate = cb.and(predicate,
-                        cb.equal(root.get("closedById"), req.getClosedById()));
+                        cb.equal(root.get("currentProcessById"), req.getProcessedById()));
             }
 
             // Thời gian tạo (createdAt) trong khoảng ngày
@@ -149,9 +149,11 @@ public final class RecommendationSpecifications {
                 // Thứ tự ví dụ: NEW -> IN_PROGRESS -> DONE -> CLOSED
                 Expression<Object> statusOrder = cb.selectCase(root.get("status"))
                         .when("NEW", 1)
-                        .when("IN_PROGRESS", 2)
-                        .when("DONE", 3)
-                        .when("CLOSED", 4)
+                        .when("ACCEPTED", 2)
+                        .when("IN_PROGRESS", 3)
+                        .when("DONE", 4)
+                        .when("CLOSED", 5)
+                        .when("REJECTED", 6)
                         .otherwise(99);
 
                 query.orderBy(asc ? cb.asc(statusOrder) : cb.desc(statusOrder));

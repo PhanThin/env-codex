@@ -3,7 +3,6 @@ package vn.com.viettel.services.impl;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -32,9 +31,6 @@ import static vn.com.viettel.repositories.jpa.RecommendationSpecifications.build
 
 @Service
 public class RecommendationServiceImpl implements RecommendationService {
-
-    @Value("${minio.bucketName}")
-    private String bucketName;
 
     @Autowired
     private RecommendationMapper recommendationMapper;
@@ -367,7 +363,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         SysUser currentUser = getCurrentUser();
         recommendation.setClosedById(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
         recommendation.setClosedAt(LocalDateTime.now());
-        recommendation.setStatus(RecommendationStatusEnum.DONE.name());
+        recommendation.setStatus(RecommendationStatusEnum.CLOSED.name());
         recommendationRepository.save(recommendation);
         return recommendationMapper.mapToRecommendationWorkItem(List.of(recommendation)).getFirst();
     }
@@ -390,6 +386,10 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (dto.getResponseContent().trim().length() > 500) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.response.content.length"));
         }
+        SysUser currentUser = getCurrentUser();
+        if (currentUser != null && !currentUser.getId().equals(recommendation.getCurrentProcessById())) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.response.not_current_user"));
+        }
         if (Boolean.TRUE.equals(dto.getIsRedirect())) {
             if (dto.getRedirectToUser() == null || dto.getRedirectToUser().getId() == null) {
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.current_user.required"));
@@ -403,7 +403,6 @@ public class RecommendationServiceImpl implements RecommendationService {
         } else {
             recommendation.setStatus(RecommendationStatusEnum.DONE.name());
         }
-        SysUser currentUser = getCurrentUser();
         RecommendationResponse recommendationResponse = recommendationMapper.mapToRecommendationResponse(dto, recommendationId, currentUser);
         recommendationResponseRepository.save(recommendationResponse);
 
@@ -460,10 +459,8 @@ public class RecommendationServiceImpl implements RecommendationService {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.priority.required"));
         } else {
             try {
-                // Nếu muốn case-insensitive thì có thể dùng toUpperCase() trước
                 PriorityEnum.valueOf(dto.getPriority().getCode().toUpperCase());
             } catch (IllegalArgumentException ex) {
-                // Không khớp với bất kỳ giá trị nào trong PriorityEnum
                 throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.priority.invalid"));
             }
         }
@@ -515,5 +512,41 @@ public class RecommendationServiceImpl implements RecommendationService {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.current_user.required"));
         }
         userRepository.findByIdAndIsDeletedFalse(dto.getCurrentProcessUser().getId()).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.current_user.notfound", dto.getCurrentProcessUser().getId())));
+    }
+
+    @Override
+    public RecommendationDto rejectRecommendation(Long id) {
+        if (id == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
+        }
+        Recommendation recommendation = recommendationRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
+        if (RecommendationStatusEnum.NEW.name().equals(recommendation.getStatus())) {
+            SysUser currentUser = getCurrentUser();
+            recommendation.setClosedById(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
+            recommendation.setClosedAt(LocalDateTime.now());
+            recommendation.setStatus(RecommendationStatusEnum.REJECTED.name());
+            recommendationRepository.save(recommendation);
+            return recommendationMapper.mapToRecommendationWorkItem(List.of(recommendation)).getFirst();
+        } else {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.already_done"));
+        }
+    }
+
+    @Override
+    public RecommendationDto acceptRecommendation(Long id) {
+        if (id == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.id.null"));
+        }
+        Recommendation recommendation = recommendationRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("recommendation.notFound", id)));
+        if (RecommendationStatusEnum.NEW.name().equals(recommendation.getStatus())) {
+            SysUser currentUser = getCurrentUser();
+            recommendation.setClosedById(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
+            recommendation.setClosedAt(LocalDateTime.now());
+            recommendation.setStatus(RecommendationStatusEnum.ACCEPTED.name());
+            recommendationRepository.save(recommendation);
+            return recommendationMapper.mapToRecommendationWorkItem(List.of(recommendation)).getFirst();
+        } else {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("recommendation.already_done"));
+        }
     }
 }

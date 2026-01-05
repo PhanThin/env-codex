@@ -145,7 +145,7 @@ public class RecommendationDto implements Serializable {
     List<UserDto> assignedUsers;
 
     @Schema(
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+            requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Người được giao xử lý hiện tại"
     )
     UserDto currentProcessUser;

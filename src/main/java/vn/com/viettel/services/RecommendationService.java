@@ -30,4 +30,8 @@ public interface RecommendationService {
     RecommendationResponseDto addRecommendationResponse(Long recommendationId, RecommendationResponseDto dto, MultipartFile[] files);
 
     List<RecommendationResponseDto> getRecommendationResponses(Long recommendationId);
+
+    RecommendationDto rejectRecommendation(Long id);
+
+    RecommendationDto acceptRecommendation(Long id);
 }

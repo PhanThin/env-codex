@@ -31,7 +31,7 @@ public class RecommendationSearchRequestDto {
     @Schema(description = "Mức độ quan trọng. Null nếu tìm kiếm toàn bộ", allowableValues = {"HIGH_PRIORITY", "PRIORITY", "LOW_PRIORITY"}, example = "LOW_PRIORITY")
     private String priority;
 
-    @Schema(description = "Trạng thái kiến nghị. Null nếu tìm kiếm toàn bộ", allowableValues = {"NEW", "DONE"}, example = "NEW")
+    @Schema(description = "Trạng thái kiến nghị. Null nếu tìm kiếm toàn bộ", allowableValues = {"NEW", "IN_PROGRESS", "DONE", "CLOSED", "REJECTED", "ACCEPTED"}, example = "NEW")
     private String status;
 
     @Schema(description = "ID đơn vị tạo. Null nếu tìm kiếm toàn bộ")
@@ -40,8 +40,8 @@ public class RecommendationSearchRequestDto {
     @Schema(description = "ID người tạo. Null nếu tìm kiếm toàn bộ")
     private Long createdById;
 
-    @Schema(description = "ID người đóng kiến nghị. Null nếu tìm kiếm toàn bộ")
-    private Long closedById;
+    @Schema(description = "ID người xử lý kiến nghị. Null nếu tìm kiếm toàn bộ")
+    private Long processedById;
 
     @Schema(description = "Tìm từ ngày tạo (dd-MM-yyyy)", example = "20-12-2023")
     @JsonFormat(pattern = "dd-MM-yyyy")

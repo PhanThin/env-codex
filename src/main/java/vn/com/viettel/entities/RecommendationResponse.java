@@ -65,9 +65,6 @@ public class RecommendationResponse {
     @Column(name = "REDIRECT_TO")
     private Long redirectTo;
 
-    @Column(name = "DEADLINE")
-    private LocalDate deadline;
-
     @JdbcTypeCode(java.sql.Types.CHAR)
     @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_REDIRECT")

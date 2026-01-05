@@ -134,4 +134,28 @@ public class RecommendationController {
     ) {
         return ResponseEntity.status(HttpStatus.OK).body(recommendService.addRecommendationResponse(id, responseDto, files));
     }
+
+    @Operation(summary = "Từ chối kiến nghị", description = "Từ chối kiến nghi")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Từ chối kiến nghị thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không đúng"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy kiến nghị"),
+            @ApiResponse(responseCode = "500", description = "Lỗi hệ thống")
+    })
+    @PutMapping(path = "/reject/{id}")
+    public ResponseEntity<?> rejectRecommendation(@Parameter(description = "ID của kiến nghị") @PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(recommendService.rejectRecommendation(id));
+    }
+
+    @Operation(summary = "Tiếp nhận kiến nghị", description = "Tiếp nhận kiến nghi")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Tiếp nhận kiến nghị thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không đúng"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy kiến nghị"),
+            @ApiResponse(responseCode = "500", description = "Lỗi hệ thống")
+    })
+    @PutMapping(path = "/accept/{id}")
+    public ResponseEntity<?> acceptRecommendation(@Parameter(description = "ID của kiến nghị") @PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(recommendService.acceptRecommendation(id));
+    }
 }

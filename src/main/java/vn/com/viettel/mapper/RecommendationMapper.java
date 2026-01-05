@@ -309,7 +309,7 @@ public class RecommendationMapper {
         if (dto.getRedirectToUser() != null && Boolean.TRUE.equals(dto.getIsRedirect())) {
             response.setRedirectTo(dto.getRedirectToUser().getId());
             response.setIsRedirect(true);
-            response.setDeadline(dto.getDeadline());
+//            response.setDeadline(dto.getDeadline());
         }
         return response;
     }
