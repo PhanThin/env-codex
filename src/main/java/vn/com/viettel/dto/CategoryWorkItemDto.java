@@ -1,27 +1,26 @@
 package vn.com.viettel.dto;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@NoArgsConstructor
-public class WorkItemDto {
+public class CategoryWorkItemDto {
     Long id;
-    String workItemName;
-    String workItemCode;
     ProjectItemDto projectItem;
     CatProjectPhaseDto projectPhase;
     CatUnitDto unit;
-    Boolean isActive;
+    String categoryWorkItemCode;
+    String categoryWorkItemName;
     UserDto updatedBy;
     LocalDateTime updatedAt;
     UserDto createdBy;
     LocalDateTime createdAt;
+    Boolean isActive;
     String note;
     ProjectTypeDto projectType;
-    CategoryWorkItemDto categoryWorkItem;
 }

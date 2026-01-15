@@ -11,43 +11,42 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.com.viettel.dto.WorkItemDto;
-import vn.com.viettel.dto.WorkItemSearchRequest;
+import vn.com.viettel.dto.CategoryWorkItemDto;
+import vn.com.viettel.dto.CategoryWorkItemSearchRequest;
 import vn.com.viettel.entities.*;
-import vn.com.viettel.mapper.WorkItemMapper;
+import vn.com.viettel.mapper.CategoryWorkItemMapper;
 import vn.com.viettel.repositories.jpa.*;
-import vn.com.viettel.services.WorkItemService;
+import vn.com.viettel.services.CategoryWorkItemService;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
 
 @Service
-public class WorkItemServiceImpl implements WorkItemService {
+public class CategoryWorkItemServiceImpl implements CategoryWorkItemService {
+
     @Autowired
-    private WorkItemRepository workItemRepository;
-    @Autowired
-    private WorkItemMapper workItemMapper;
-    @Autowired
-    private Translator translator;
-    @Autowired
-    private ProjectItemRepository projectItemRepository;
-    @Autowired
-    private CatProjectPhaseRepository catProjectPhaseRepository;
+    private CategoryWorkItemMapper categoryWorkItemMapper;
     @Autowired
     private CategoryWorkItemRepository categoryWorkItemRepository;
     @Autowired
-    private CatUnitRepository catUnitRepository;
-    @Autowired
     private ProjectTypeRepository projectTypeRepository;
     @Autowired
+    private CatProjectPhaseRepository catProjectPhaseRepository;
+    @Autowired
+    private ProjectItemRepository projectItemRepository;
+    @Autowired
+    private CatUnitRepository catUnitRepository;
+    @Autowired
     private SysUserRepository sysUserRepository;
+    @Autowired
+    private Translator translator;
+    @Autowired
+    private WorkItemRepository workItemRepository;
 
-    private static final Map<String, String> WORK_ITEM_SORT_FIELDS = Map.ofEntries(
+    private static final Map<String, String> CATEGORY_WORK_ITEM_SORT_FIELDS = Map.ofEntries(
             Map.entry("createdAt", "createdAt"),
             Map.entry("categoryWorkItemCode", "categoryWorkItemCode"),
             Map.entry("categoryWorkItemName", "categoryWorkItemName"),
@@ -55,26 +54,25 @@ public class WorkItemServiceImpl implements WorkItemService {
             Map.entry("projectType", "projectType.projectTypeName"),
             Map.entry("projectPhase", "projectPhase.phaseName"),
             Map.entry("projectItem", "projectItem.itemName"),
-            Map.entry("categoryWorkItem", "categoryWorkItem.categoryWorkItemName"),
             Map.entry("unit", "unit.unitName")
     );
 
     @Transactional(readOnly = true)
     @Override
-    public Page<WorkItemDto> search(WorkItemSearchRequest request) {
+    public Page<CategoryWorkItemDto> searchCategoryWorkItem(CategoryWorkItemSearchRequest request) {
         if (request == null) {
-            request = new WorkItemSearchRequest();
+            request = new CategoryWorkItemSearchRequest();
         }
 
         int page = request.getPage() != null && request.getPage() >= 0 ? request.getPage() : 0;
         int size = request.getSize() != null && request.getSize() > 0 ? request.getSize() : 20;
 
         String requestSortBy = StringUtils.defaultIfBlank(request.getSortBy(), "createdAt");
-        String sortProperty = WORK_ITEM_SORT_FIELDS.get(requestSortBy);
+        String sortProperty = CATEGORY_WORK_ITEM_SORT_FIELDS.get(requestSortBy);
         if (sortProperty == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("common.sortType.invalid") + WORK_ITEM_SORT_FIELDS.keySet()
+                    translator.getMessage("common.sortType.invalid") + CATEGORY_WORK_ITEM_SORT_FIELDS.keySet()
             );
         }
 
@@ -91,37 +89,47 @@ public class WorkItemServiceImpl implements WorkItemService {
             );
         }
 
-        var specification = WorkItemSpecifications.buildSpecification(request);
+        var specification = CategoryWorkItemSpecifications.buildSpecification(request);
 
         Sort sort = Sort.by(direction, sortProperty);
         PageRequest pageRequest = PageRequest.of(page, size, sort);
 
-        Page<WorkItem> entityPage = workItemRepository.findAll(specification, pageRequest);
+        Page<CategoryWorkItem> entityPage = categoryWorkItemRepository.findAll(specification, pageRequest);
 
-        List<WorkItemDto> dtoList = workItemMapper.mapToDtos(entityPage.getContent());
+        List<CategoryWorkItemDto> dtoList = categoryWorkItemMapper.mapToDtos(entityPage.getContent());
 
         return new PageImpl<>(dtoList, pageRequest, entityPage.getTotalElements());
     }
 
+    @Transactional
     @Override
-    public WorkItemDto create(WorkItemDto dto) {
+    public CategoryWorkItemDto createCategoryWorkItem(CategoryWorkItemDto dto) {
         validate(dto, false);
 
         SysUser currentUser = getCurrentUser();
 
-        WorkItem entity = workItemMapper.toEntity(dto, currentUser);
-        entity = workItemRepository.save(entity);
+        CategoryWorkItem entity = categoryWorkItemMapper.toEntity(dto, currentUser);
+        entity = categoryWorkItemRepository.save(entity);
 
         ProjectType projectType = projectTypeRepository.findByIdAndIsDeletedFalse(entity.getProjectTypeId()).orElse(null);
         CatProjectPhase phase = catProjectPhaseRepository.findByIdAndIsDeletedFalse(entity.getProjectPhaseId()).orElse(null);
-        ProjectItem projectItem = projectItemRepository.findByIdAndIsDeletedFalse(entity.getItemId()).orElse(null);
+        ProjectItem projectItem = projectItemRepository.findByIdAndIsDeletedFalse(entity.getProjectItemId()).orElse(null);
         CatUnit unit = catUnitRepository.findByIdAndIsDeletedFalse(entity.getUnitId()).orElse(null);
-        CategoryWorkItem categoryWorkItem = categoryWorkItemRepository.findByIdAndIsDeletedFalse(entity.getCatWorkItemId()).orElse(null);
-        return workItemMapper.toDto(entity, projectItem, phase, unit, projectType, categoryWorkItem, currentUser, null);
+
+        return categoryWorkItemMapper.toDto(
+                entity,
+                projectItem,
+                phase,
+                unit,
+                projectType,
+                currentUser,
+                null
+        );
     }
 
+    @Transactional
     @Override
-    public WorkItemDto update(Long id, WorkItemDto dto) {
+    public CategoryWorkItemDto updateCategoryWorkItem(Long id, CategoryWorkItemDto dto) {
         if (id == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
@@ -130,107 +138,44 @@ public class WorkItemServiceImpl implements WorkItemService {
         }
         dto.setId(id);
 
-        WorkItem entity = getOrThrow(id);
+        CategoryWorkItem entity = categoryWorkItemRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new CustomException(
+                        HttpStatus.NOT_FOUND.value(),
+                        translator.getMessage("categoryWorkItem.notFound", id)
+                ));
+
         validate(dto, true);
 
         SysUser currentUser = getCurrentUser();
 
-        workItemMapper.updateEntityFromDto(dto, entity, currentUser);
-        entity = workItemRepository.save(entity);
+        categoryWorkItemMapper.updateEntityFromDto(dto, entity, currentUser);
+        entity = categoryWorkItemRepository.save(entity);
 
         ProjectType projectType = projectTypeRepository.findByIdAndIsDeletedFalse(entity.getProjectTypeId()).orElse(null);
         CatProjectPhase phase = catProjectPhaseRepository.findByIdAndIsDeletedFalse(entity.getProjectPhaseId()).orElse(null);
-        ProjectItem projectItem = projectItemRepository.findByIdAndIsDeletedFalse(entity.getItemId()).orElse(null);
+        ProjectItem projectItem = projectItemRepository.findByIdAndIsDeletedFalse(entity.getProjectItemId()).orElse(null);
         CatUnit unit = catUnitRepository.findByIdAndIsDeletedFalse(entity.getUnitId()).orElse(null);
-        CategoryWorkItem categoryWorkItem = categoryWorkItemRepository.findByIdAndIsDeletedFalse(entity.getCatWorkItemId()).orElse(null);
-        return workItemMapper.toDto(entity, projectItem, phase, unit, projectType, categoryWorkItem,
-                entity.getCreatedByUserId() != null ? sysUserRepository.findByIdAndIsDeletedFalse(entity.getCreatedByUserId()).orElse(null) : null,
-                currentUser);
+
+        return categoryWorkItemMapper.toDto(
+                entity,
+                projectItem,
+                phase,
+                unit,
+                projectType,
+                entity.getCreatedByUserId() != null
+                        ? sysUserRepository.findByIdAndIsDeletedFalse(entity.getCreatedByUserId()).orElse(null)
+                        : null,
+                currentUser
+        );
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public WorkItemDto getById(Long id) {
-        if (id == null) {
-            throw new CustomException(
-                    HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("categoryWorkItem.id.null")
-            );
-        }
-        WorkItem entity = getOrThrow(id);
-        ProjectType projectType = projectTypeRepository.findByIdAndIsDeletedFalse(entity.getProjectTypeId()).orElse(null);
-        CatProjectPhase phase = catProjectPhaseRepository.findByIdAndIsDeletedFalse(entity.getProjectPhaseId()).orElse(null);
-        ProjectItem projectItem = projectItemRepository.findByIdAndIsDeletedFalse(entity.getItemId()).orElse(null);
-        CatUnit unit = catUnitRepository.findByIdAndIsDeletedFalse(entity.getUnitId()).orElse(null);
-        CategoryWorkItem categoryWorkItem = categoryWorkItemRepository.findByIdAndIsDeletedFalse(entity.getCatWorkItemId()).orElse(null);
-
-        return workItemMapper.toDto(entity, projectItem, phase, unit, projectType, categoryWorkItem,
-                entity.getCreatedByUserId() != null ? sysUserRepository.findByIdAndIsDeletedFalse(entity.getCreatedByUserId()).orElse(null) : null,
-                entity.getUpdatedByUserId() != null ? sysUserRepository.findByIdAndIsDeletedFalse(entity.getUpdatedByUserId()).orElse(null) : null);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<WorkItemDto> getAllByItemId(Long itemId) {
-        return workItemRepository.findAllByItemIdAndIsDeletedFalse(itemId)
-                .stream().map(entity -> workItemMapper.toDto(entity, null, null, null, null, null, null, null)).collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional
-    public void delete(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            throw new CustomException(
-                    HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("categoryWorkItem.id.null")
-            );
-        }
-
-        List<WorkItem> entities =
-                workItemRepository.findAllByIdInAndIsDeletedFalse(ids);
-
-        if (entities.isEmpty()) {
-            throw new CustomException(
-                    HttpStatus.NOT_FOUND.value(),
-                    translator.getMessage("categoryWorkItem.notFound", ids)
-            );
-        }
-
-        // Nếu có id không tồn tại (hoặc đã deleted) thì báo riêng
-        if (entities.size() != ids.size()) {
-            java.util.List<Long> notFoundIds = ids.stream()
-                    .filter(id -> entities.stream().noneMatch(e -> e.getId().equals(id)))
-                    .toList();
-            throw new CustomException(
-                    HttpStatus.NOT_FOUND.value(),
-                    translator.getMessage("categoryWorkItem.notFound", notFoundIds)
-            );
-        }
-
-        // 1. Chỉ bản ghi hết hiệu lực (isActive = false) mới được xoá
-        boolean hasActive = entities.stream()
-                .anyMatch(e -> Boolean.TRUE.equals(e.getIsActive()));
-        if (hasActive) {
-            throw new CustomException(
-                    HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("categoryWorkItem.delete.onlyInactive")
-            );
-        }
-
-        SysUser currentUser = getCurrentUser();
-        Long currentUserId = currentUser != null ? currentUser.getId() : null;
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-
-        entities.forEach(e -> {
-            e.setIsDeleted(true);
-            e.setUpdatedByUserId(currentUserId);
-            e.setUpdatedAt(now);
-        });
-
-        workItemRepository.saveAll(entities);
-    }
-
-    private void validate(WorkItemDto dto, boolean isUpdate) {
+    /**
+     * Validate dữ liệu khi tạo / cập nhật CategoryWorkItem.
+     *
+     * @param dto      payload gửi lên
+     * @param isUpdate true nếu là update, false nếu là create
+     */
+    private void validate(CategoryWorkItemDto dto, boolean isUpdate) {
         if (dto == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
@@ -277,19 +222,6 @@ public class WorkItemServiceImpl implements WorkItemService {
                         translator.getMessage("categoryWorkItem.projectItem.notFound", dto.getProjectItem().getId())
                 ));
 
-        //Hạng mục công việc*
-        if (dto.getCategoryWorkItem() == null || dto.getCategoryWorkItem().getId() == null) {
-            throw new CustomException(
-                    HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("categoryWorkItem.categoryWorkItem.required")
-            );
-        }
-        CategoryWorkItem categoryWorkItem = categoryWorkItemRepository.findByIdAndIsDeletedFalse(dto.getCategoryWorkItem().getId())
-                .orElseThrow(() -> new CustomException(
-                        HttpStatus.NOT_FOUND.value(),
-                        translator.getMessage("categoryWorkItem.categoryWorkItem.notFound", dto.getCategoryWorkItem().getId())
-                ));
-
         // Đơn vị tính (không bắt buộc) – nếu gửi ID thì kiểm tra tồn tại
         if (dto.getUnit() != null && dto.getUnit().getId() != null) {
             Optional<CatUnit> unitOpt = catUnitRepository.findByIdAndIsDeletedFalse(dto.getUnit().getId());
@@ -301,9 +233,9 @@ public class WorkItemServiceImpl implements WorkItemService {
             }
         }
 
-        // Mã công việc*
-        String code = dto.getWorkItemCode();
-        if (org.apache.commons.lang3.StringUtils.isBlank(code)) {
+        // Mã hạng mục công việc*
+        String code = dto.getCategoryWorkItemCode();
+        if (StringUtils.isBlank(code)) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("categoryWorkItem.code.required")
@@ -317,13 +249,12 @@ public class WorkItemServiceImpl implements WorkItemService {
             );
         }
 
-        Optional<WorkItem> codeExisting =
-                workItemRepository
-                        .findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCatWorkItemIdAndWorkItemCodeIgnoreCaseAndIsDeletedFalse(
+        Optional<CategoryWorkItem> codeExisting =
+                categoryWorkItemRepository
+                        .findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCategoryWorkItemCodeIgnoreCaseAndIsDeletedFalse(
                                 projectType.getId(),
                                 phase.getId(),
                                 projectItem.getId(),
-                                categoryWorkItem.getId(),
                                 code
                         );
 
@@ -337,8 +268,8 @@ public class WorkItemServiceImpl implements WorkItemService {
         }
 
         // Tên hạng mục công việc*
-        String name = dto.getWorkItemName();
-        if (org.apache.commons.lang3.StringUtils.isBlank(name)) {
+        String name = dto.getCategoryWorkItemName();
+        if (StringUtils.isBlank(name)) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("categoryWorkItem.name.required")
@@ -352,13 +283,12 @@ public class WorkItemServiceImpl implements WorkItemService {
             );
         }
 
-        Optional<WorkItem> nameExisting =
-                workItemRepository
-                        .findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCatWorkItemIdAndWorkItemNameIgnoreCaseAndIsDeletedFalse(
+        Optional<CategoryWorkItem> nameExisting =
+                categoryWorkItemRepository
+                        .findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCategoryWorkItemNameIgnoreCaseAndIsDeletedFalse(
                                 projectType.getId(),
                                 phase.getId(),
                                 projectItem.getId(),
-                                categoryWorkItem.getId(),
                                 name
                         );
 
@@ -388,14 +318,6 @@ public class WorkItemServiceImpl implements WorkItemService {
         }
     }
 
-    private WorkItem getOrThrow(Long id) {
-        return workItemRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new CustomException(
-                        HttpStatus.NOT_FOUND.value(),
-                        translator.getMessage("workitem.notfound", id)
-                ));
-    }
-
     private SysUser getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
@@ -405,5 +327,106 @@ public class WorkItemServiceImpl implements WorkItemService {
             return sysUserRepository.findByUsername(authentication.getName()).orElse(null);
         }
         return null;
+    }
+
+    @Transactional
+    @Override
+    public void deleteCategoryWorkItems(java.util.List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("categoryWorkItem.id.null")
+            );
+        }
+
+        java.util.List<CategoryWorkItem> entities =
+                categoryWorkItemRepository.findAllById(ids).stream()
+                        .filter(e -> Boolean.FALSE.equals(e.getIsDeleted()))
+                        .toList();
+
+        if (entities.isEmpty()) {
+            throw new CustomException(
+                    HttpStatus.NOT_FOUND.value(),
+                    translator.getMessage("categoryWorkItem.notFound", ids)
+            );
+        }
+
+        // Nếu có id không tồn tại (hoặc đã deleted) thì báo riêng
+        if (entities.size() != ids.size()) {
+            java.util.List<Long> notFoundIds = ids.stream()
+                    .filter(id -> entities.stream().noneMatch(e -> e.getId().equals(id)))
+                    .toList();
+            throw new CustomException(
+                    HttpStatus.NOT_FOUND.value(),
+                    translator.getMessage("categoryWorkItem.notFound", notFoundIds)
+            );
+        }
+
+        // 1. Chỉ bản ghi hết hiệu lực (isActive = false) mới được xoá
+        boolean hasActive = entities.stream()
+                .anyMatch(e -> Boolean.TRUE.equals(e.getIsActive()));
+        if (hasActive) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("categoryWorkItem.delete.onlyInactive")
+            );
+        }
+
+        // 2. Chỉ xoá khi tất cả WorkItem trong hạng mục đều hết hiệu lực
+        java.util.List<Long> catIds = entities.stream()
+                .map(CategoryWorkItem::getId)
+                .toList();
+
+        java.util.List<Long> catHasActiveWorkItem = catIds.stream()
+                .filter(catId -> workItemRepository
+                        .existsByCatWorkItemIdAndIsDeletedFalseAndIsActiveTrue(catId))
+                .toList();
+
+        if (!catHasActiveWorkItem.isEmpty()) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("categoryWorkItem.delete.workItem.notInactive")
+            );
+        }
+
+        SysUser currentUser = getCurrentUser();
+        Long currentUserId = currentUser != null ? currentUser.getId() : null;
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        entities.forEach(e -> {
+            e.setIsDeleted(true);
+            e.setUpdatedByUserId(currentUserId);
+            e.setUpdatedAt(now);
+        });
+
+        categoryWorkItemRepository.saveAll(entities);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CategoryWorkItemDto getById(Long id) {
+        CategoryWorkItem categoryWorkItem = categoryWorkItemRepository.findById(id).orElseThrow(() -> new CustomException(
+                HttpStatus.NOT_FOUND.value(),
+                translator.getMessage("categoryWorkItem.notFound")
+        ));
+
+        ProjectType projectType = projectTypeRepository.findByIdAndIsDeletedFalse(categoryWorkItem.getProjectTypeId()).orElse(null);
+        CatProjectPhase phase = catProjectPhaseRepository.findByIdAndIsDeletedFalse(categoryWorkItem.getProjectPhaseId()).orElse(null);
+        ProjectItem projectItem = projectItemRepository.findByIdAndIsDeletedFalse(categoryWorkItem.getProjectItemId()).orElse(null);
+        CatUnit unit = catUnitRepository.findByIdAndIsDeletedFalse(categoryWorkItem.getUnitId()).orElse(null);
+
+        return categoryWorkItemMapper.toDto(
+                categoryWorkItem,
+                projectItem,
+                phase,
+                unit,
+                projectType,
+                categoryWorkItem.getCreatedByUserId() != null
+                        ? sysUserRepository.findByIdAndIsDeletedFalse(categoryWorkItem.getCreatedByUserId()).orElse(null)
+                        : null,
+                categoryWorkItem.getUpdatedByUserId() != null
+                        ? sysUserRepository.findByIdAndIsDeletedFalse(categoryWorkItem.getUpdatedByUserId()).orElse(null)
+                        : null
+        );
     }
 }

@@ -31,17 +31,30 @@ public class WorkItem {
 
     @Size(max = 250)
     @NotNull
+    @Column(name = "WORK_ITEM_CODE", nullable = false, length = 250)
+    private String workItemCode;
+
+    @Size(max = 250)
+    @NotNull
     @Column(name = "WORK_ITEM_NAME", nullable = false, length = 250)
     private String workItemName;
 
+    @Size(max = 500)
+    @Column(name = "NOTE", nullable = false, length = 500)
+    private String note;
+
+    @NotNull
+    @Column(name = "CAT_WORK_ITEM_ID", nullable = false)
+    private Long catWorkItemId;
+
     @Column(name = "UPDATED_BY")
-    private Long updatedBy;
+    private Long updatedByUserId;
 
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
 
     @Column(name = "CREATED_BY")
-    private Long createdBy;
+    private Long createdByUserId;
 
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
@@ -56,5 +69,31 @@ public class WorkItem {
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 
+    @NotNull
+    @Column(name = "PROJECT_PHASE_ID", nullable = false)
+    private Long projectPhaseId;
 
+    @NotNull
+    @Column(name = "UNIT_ID", nullable = false)
+    private Long unitId;
+
+    @NotNull
+    @Column(name = "PROJECT_TYPE_ID", nullable = false)
+    private Long projectTypeId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PROJECT_PHASE_ID", insertable = false, updatable = false)
+    private CatProjectPhase projectPhase;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ITEM_ID", insertable = false, updatable = false)
+    private ProjectItem projectItem;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PROJECT_TYPE_ID", insertable = false, updatable = false)
+    private ProjectType projectType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "UNIT_ID", insertable = false, updatable = false)
+    private CatUnit unit;
 }

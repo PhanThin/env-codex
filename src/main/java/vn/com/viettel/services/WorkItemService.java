@@ -1,19 +1,25 @@
 package vn.com.viettel.services;
 
+import org.springframework.data.domain.Page;
+import org.springframework.transaction.annotation.Transactional;
 import vn.com.viettel.dto.WorkItemDto;
+import vn.com.viettel.dto.WorkItemSearchRequest;
 
 import java.util.List;
 
 
 public interface WorkItemService {
 
-    WorkItemDto create(Long itemId, WorkItemDto request);
+    @Transactional(readOnly = true)
+    Page<WorkItemDto> search(WorkItemSearchRequest request);
 
-    WorkItemDto update(Long itemId, Long workItemId, WorkItemDto request);
+    WorkItemDto create(WorkItemDto dto);
 
-    WorkItemDto getById(Long itemId, Long workItemId);
+    WorkItemDto update(Long workItemId, WorkItemDto dto);
 
-    List<WorkItemDto> getAll(Long itemId);
+    WorkItemDto getById(Long id);
 
-    void delete(Long itemId, Long workItemId);
+    List<WorkItemDto> getAllByItemId(Long itemId);
+
+    void delete(List<Long> ids);
 }
