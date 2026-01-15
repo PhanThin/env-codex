@@ -28,19 +28,18 @@ public class CatRecommendationTypeController {
     private final CatRecommendationTypeService service;
 
     @PostMapping("/search")
-    @Operation(summary = "Search loại kiến nghị (phân trang + lọc)")
+    @Operation(summary = "Tìm kiếm loại kiến nghị (phân trang + lọc)")
     public ResponseEntity<Page<CatRecommendationTypeDto>> search(@RequestBody RecommendationTypeSearchRequestDto request) {
         return ResponseEntity.ok(service.search(request));
     }
-    @Hidden
-    @Operation(summary = "Create CAT_RECOMMENDATION_TYPE")
+
+    @Operation(summary = "Tạo loại kiến nghị")
     @PostMapping
     public ResponseEntity<CatRecommendationTypeDto> create(@Valid @RequestBody CatRecommendationTypeDto request) {
         return ResponseEntity.ok(service.create(request));
     }
 
-    @Hidden
-    @Operation(summary = "Update CAT_RECOMMENDATION_TYPE by id")
+    @Operation(summary = "Cập nhật loại kiến nghị theo id")
     @PutMapping("/{id}")
     public ResponseEntity<CatRecommendationTypeDto> update(
             @PathVariable Long id,
@@ -48,21 +47,19 @@ public class CatRecommendationTypeController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
-    @Hidden
-    @Operation(summary = "Get CAT_RECOMMENDATION_TYPE by id")
+    @Operation(summary = "Lấy loại kiến nghị theo id")
     @GetMapping("/{id}")
     public ResponseEntity<CatRecommendationTypeDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
-    @Operation(summary = "Get all CAT_RECOMMENDATION_TYPE")
+    @Operation(summary = "Lấy tất cả loại kiến nghị")
     @GetMapping
     public ResponseEntity<List<CatRecommendationTypeDto>> getAll() {
         return ResponseEntity.ok(service.getAll());
     }
 
-    @Hidden
-    @Operation(summary = "Soft delete CAT_RECOMMENDATION_TYPE by id")
+    @Operation(summary = "Xoá loại kiến nghị theo id")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
