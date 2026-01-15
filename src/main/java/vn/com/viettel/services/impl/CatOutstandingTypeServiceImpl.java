@@ -1,20 +1,29 @@
 package vn.com.viettel.services.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+
 import java.util.stream.Collectors;
 
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
 
 import lombok.RequiredArgsConstructor;
 import vn.com.viettel.dto.OutstandingTypeDto;
+import vn.com.viettel.dto.OutstandingTypeSearchRequestDto;
 import vn.com.viettel.entities.CatOutstandingType;
 import vn.com.viettel.mapper.CatOutstandingTypeMapper;
 import vn.com.viettel.repositories.jpa.CatOutstandingTypeRepository;
@@ -277,5 +286,150 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
     private Object getProperty(Object bean, String property) {
         BeanWrapper bw = new BeanWrapperImpl(bean);
         return bw.getPropertyValue(property);
+    }
+    private static final Map<String, String> OUTSTANDING_TYPE_ALLOWED_SORT_FIELDS;
+    static {
+        Map<String, String> m = new HashMap<>();
+        m.put("createdAt", "createdAt");
+        m.put("updatedAt", "updatedAt");
+        m.put("typeName", "typeName");
+        m.put("isActive", "isActive");
+        m.put("id", "id");
+        OUTSTANDING_TYPE_ALLOWED_SORT_FIELDS = Collections.unmodifiableMap(m);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OutstandingTypeDto> search(OutstandingTypeSearchRequestDto request) {
+        int page = request.getPage() != null && request.getPage() >= 0 ? request.getPage() : 0;
+        int size = request.getSize() != null && request.getSize() > 0 ? request.getSize() : 20;
+
+        // --- Validate & chuẩn hóa sortBy ---
+        String sortByRaw = defaultIfBlank(request.getSortBy(), "createdAt");
+        String sortProperty = OUTSTANDING_TYPE_ALLOWED_SORT_FIELDS.get(sortByRaw);
+        if (sortProperty == null) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catOutstandingType.search.sortBy.invalid", OUTSTANDING_TYPE_ALLOWED_SORT_FIELDS.keySet())
+            );
+        }
+
+        // --- Validate & chuẩn hóa sortDirection ---
+        String sortDirectionRaw = defaultIfBlank(request.getSortDirection(), "DESC");
+        Sort.Direction direction;
+        if ("ASC".equalsIgnoreCase(sortDirectionRaw)) {
+            direction = Sort.Direction.ASC;
+        } else if ("DESC".equalsIgnoreCase(sortDirectionRaw)) {
+            direction = Sort.Direction.DESC;
+        } else {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catOutstandingType.search.sortDirection.invalid")
+            );
+        }
+
+        // --- Normalize date range: default trong năm hiện tại + tối đa 1 năm ---
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate fromDate = request.getCreatedFrom();
+        LocalDate toDate = request.getCreatedTo();
+
+        // Nếu không truyền -> default: từ đầu năm hiện tại đến hôm nay
+        if (fromDate == null && toDate == null) {
+            fromDate = LocalDate.of(now.getYear(), 1, 1);
+            toDate = now.toLocalDate();
+        }
+
+        // Nếu chỉ truyền 1 đầu -> tự hoàn thiện đầu còn lại
+        if (fromDate != null && toDate == null) {
+            toDate = now.toLocalDate();
+        }
+        if (fromDate == null && toDate != null) {
+            fromDate = toDate.minusYears(1);
+        }
+
+        // Validate from <= to
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catOutstandingType.search.createdTime.range.invalid")
+            );
+        }
+
+        // Validate <= 1 year
+        if (fromDate != null && toDate != null) {
+            long days = ChronoUnit.DAYS.between(fromDate, toDate);
+            if (days > 366) { // cho phép năm nhuận
+                throw new CustomException(
+                        HttpStatus.BAD_REQUEST.value(),
+                        translator.getMessage("catOutstandingType.search.createdTime.range.maxOneYear")
+                );
+            }
+        }
+
+        Specification<CatOutstandingType> specification = buildOutstandingTypeSearchSpecification(request, fromDate, toDate);
+
+        Sort sort = Sort.by(direction, sortProperty);
+        PageRequest pageRequest = PageRequest.of(page, size, sort);
+
+        Page<CatOutstandingType> resultPage = repository.findAll(specification, pageRequest);
+
+        List<OutstandingTypeDto> dtoList = resultPage.getContent()
+                .stream()
+                .map(mapper::toDto)
+                .toList();
+
+        return new PageImpl<>(dtoList, pageRequest, resultPage.getTotalElements());
+    }
+
+    private Specification<CatOutstandingType> buildOutstandingTypeSearchSpecification(
+            OutstandingTypeSearchRequestDto request,
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Always filter isDeleted = false
+            predicates.add(cb.isFalse(root.get("isDeleted")));
+
+            // Keyword: search by TYPE_NAME only (không dùng type_code)
+            String kw = safeTrim(request.getKeyword());
+            if (kw != null) {
+                String like = "%" + kw.toUpperCase(Locale.ROOT) + "%";
+                Expression<String> typeNameExp = cb.upper(cb.trim(root.get("typeName")));
+                predicates.add(cb.like(typeNameExp, like));
+            }
+
+            // Status: ALL/ACTIVE/INACTIVE
+            String status = defaultIfBlank(request.getStatus(), "ALL").toUpperCase(Locale.ROOT);
+            if ("ACTIVE".equals(status)) {
+                predicates.add(cb.isTrue(root.get("isActive")));
+            } else if ("INACTIVE".equals(status)) {
+                predicates.add(cb.isFalse(root.get("isActive")));
+            } else if (!"ALL".equals(status)) {
+                throw new CustomException(
+                        HttpStatus.BAD_REQUEST.value(),
+                        translator.getMessage("catOutstandingType.search.status.invalid")
+                );
+            }
+
+            // CreatedAt range (inclusive)
+            if (fromDate != null && toDate != null) {
+                LocalDateTime from = fromDate.atStartOfDay();
+                LocalDateTime toExclusive = toDate.plusDays(1).atStartOfDay();
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
+                predicates.add(cb.lessThan(root.get("createdAt"), toExclusive));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private String safeTrim(String s) {
+        return StringUtils.hasText(s) ? s.trim() : null;
+    }
+
+    private String defaultIfBlank(String s, String defaultVal) {
+        return StringUtils.hasText(s) ? s.trim() : defaultVal;
     }
 }

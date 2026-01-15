@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import vn.com.viettel.dto.CatOutstandingTypeDto;
 import vn.com.viettel.dto.OutstandingTypeDto;
+import vn.com.viettel.dto.OutstandingTypeSearchRequestDto;
 import vn.com.viettel.services.CatOutstandingTypeService;
 
 /**
@@ -25,6 +27,11 @@ import vn.com.viettel.services.CatOutstandingTypeService;
 public class CatOutstandingTypeController {
 
     private final CatOutstandingTypeService service;
+
+    @PostMapping("/search")
+    public ResponseEntity<Page<OutstandingTypeDto>> search(@RequestBody OutstandingTypeSearchRequestDto request) {
+        return ResponseEntity.ok(service.search(request));
+    }
     @Hidden
     @Operation(summary = "Create CAT_OUTSTANDING_TYPE")
     @PostMapping
