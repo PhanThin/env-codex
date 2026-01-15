@@ -20,20 +20,24 @@ import java.time.LocalDateTime;
         allocationSize = 1
 )
 public class CatOutstandingType {
+
     @Id
     @Column(name = "OUTSTANDING_TYPE_ID", nullable = false)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "outstanding_type_seq_gen")
     private Long id;
 
     @Size(max = 50)
-    @NotNull
-    @Column(name = "TYPE_CODE", nullable = false, length = 50)
+    @Column(name = "TYPE_CODE", length = 50)
     private String typeCode;
 
     @Size(max = 250)
     @NotNull
     @Column(name = "TYPE_NAME", nullable = false, length = 250)
     private String typeName;
+
+    @Size(max = 500)
+    @Column(name = "NOTE", length = 500)
+    private String note;
 
     @Column(name = "CREATED_BY")
     private Long createdBy;
@@ -56,6 +60,5 @@ public class CatOutstandingType {
 
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
-
-
 }
+

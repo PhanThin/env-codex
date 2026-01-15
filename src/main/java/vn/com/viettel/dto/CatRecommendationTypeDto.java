@@ -17,11 +17,12 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class CatRecommendationTypeDto implements Serializable {
     Long id;
-    @NotNull
     @Size(max = 50)
     String typeCode;
     @NotNull
     @Size(max = 250)
     String typeName;
     Boolean isActive;
+    @Size(max = 500)
+    String note;
 }

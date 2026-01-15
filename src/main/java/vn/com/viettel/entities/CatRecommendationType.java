@@ -1,7 +1,6 @@
 package vn.com.viettel.entities;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,14 +25,16 @@ public class CatRecommendationType {
     private Long id;
 
     @Size(max = 50)
-    @NotNull
-    @Column(name = "TYPE_CODE", nullable = false, length = 50)
+    @Column(name = "TYPE_CODE", length = 50, nullable = true)
     private String typeCode;
 
     @Size(max = 250)
-    @NotNull
     @Column(name = "TYPE_NAME", nullable = false, length = 250)
     private String typeName;
+
+    @Size(max = 500)
+    @Column(name = "NOTE", length = 500, nullable = true)
+    private String note;
 
     @Column(name = "UPDATED_BY")
     private Long updatedBy;
@@ -56,6 +57,4 @@ public class CatRecommendationType {
     @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
-
-
 }
