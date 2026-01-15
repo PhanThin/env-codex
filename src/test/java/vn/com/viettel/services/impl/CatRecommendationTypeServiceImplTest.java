@@ -55,6 +55,7 @@ class CatRecommendationTypeServiceImplTest {
             CatRecommendationTypeDto request = new CatRecommendationTypeDto();
             request.setTypeCode("ANY_CODE");
             request.setTypeName("ANY_NAME");
+            request.setIsActive(true);
 
             CatRecommendationType mappedEntity = new CatRecommendationType();
             CatRecommendationType savedEntity = new CatRecommendationType();
@@ -89,7 +90,7 @@ class CatRecommendationTypeServiceImplTest {
         @DisplayName("TC_02: Create fail - request null -> BAD_REQUEST")
         void create_fail_requestNull() {
             // GIVEN
-            when(translator.getMessage("invalid.request"))
+            when(translator.getMessage("catRecommendationType.payload.null"))
                     .thenReturn(MSG_INVALID);
 
             // WHEN
@@ -100,9 +101,10 @@ class CatRecommendationTypeServiceImplTest {
             assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getCodeError());
             assertEquals(MSG_INVALID, ex.getMessage());
 
-            verify(translator).getMessage("invalid.request");
+            verify(translator).getMessage("catRecommendationType.payload.null");
             verifyNoInteractions(repository, mapper);
         }
+
     }
 
     // =========================================================
@@ -121,6 +123,7 @@ class CatRecommendationTypeServiceImplTest {
             CatRecommendationTypeDto request = new CatRecommendationTypeDto();
             request.setTypeCode("ANY_CODE");
             request.setTypeName("ANY_NAME");
+            request.setIsActive(true);
 
             CatRecommendationType existing = new CatRecommendationType();
             existing.setId(id);
