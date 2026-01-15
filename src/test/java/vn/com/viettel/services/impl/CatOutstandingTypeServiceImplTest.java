@@ -70,11 +70,13 @@ class CatOutstandingTypeServiceImplTest {
             OutstandingTypeDto request = OutstandingTypeDto.builder()
                     .typeCode("OT_001")
                     .typeName("Loại nợ 1")
+                    .isActive(true)
                     .build();
 
             CatOutstandingType entityFromMapper = new CatOutstandingType();
             entityFromMapper.setTypeCode("OT_001");
             entityFromMapper.setTypeName("Loại nợ 1");
+            entityFromMapper.setIsActive(true);
 
             when(mapper.toEntity(request)).thenReturn(entityFromMapper);
             // RULE 3: Stubbing chính xác instance, KHÔNG dùng any()
@@ -99,24 +101,61 @@ class CatOutstandingTypeServiceImplTest {
             assertNotNull(result);
             verify(repository, times(1)).save(entityFromMapper);
         }
-
         @Test
-        @DisplayName("TC_02: Tạo mới thất bại - Dữ liệu đầu vào thiếu trường bắt buộc")
-        void create_fail_validation() {
+        @DisplayName("TC_01.1: Tạo mới thành công - TYPE_CODE = null")
+        void create_success_typeCode_null() {
             // GIVEN
             OutstandingTypeDto request = OutstandingTypeDto.builder()
-                    .typeCode("") // Trống
-                    .typeName("Loại nợ")
+                    .typeCode(null)
+                    .isActive(true)
+                    .typeName("Loại nợ không mã")
                     .build();
 
-            when(translator.getMessage("invalid.request")).thenReturn("Yêu cầu không hợp lệ");
+            CatOutstandingType entityFromMapper = new CatOutstandingType();
+            entityFromMapper.setTypeCode(null);
+            entityFromMapper.setTypeName("Loại nợ không mã");
+            entityFromMapper.setIsActive(true);
+
+
+            when(mapper.toEntity(request)).thenReturn(entityFromMapper);
+            when(repository.save(entityFromMapper)).thenReturn(entityFromMapper);
+            when(mapper.toDto(entityFromMapper)).thenReturn(request);
+
+            // WHEN
+            OutstandingTypeDto result = service.create(request);
+
+            // THEN
+            ArgumentCaptor<CatOutstandingType> captor = ArgumentCaptor.forClass(CatOutstandingType.class);
+            verify(repository).save(captor.capture());
+
+            CatOutstandingType saved = captor.getValue();
+            assertNull(saved.getTypeCode(), "TYPE_CODE phải được phép null");
+            assertEquals("Loại nợ không mã", saved.getTypeName());
+
+            assertNotNull(result);
+        }
+
+        @Test
+        @DisplayName("TC_02: Tạo mới thất bại - Thiếu TYPE_NAME (bắt buộc)")
+        void create_fail_missing_typeName() {
+            // GIVEN
+            OutstandingTypeDto request = OutstandingTypeDto.builder()
+                    .typeCode(null) // hợp lệ
+                    .typeName("")   // KHÔNG hợp lệ
+                    .build();
+
+            when(translator.getMessage("catOutstandingType.typeName.required"))
+                    .thenReturn("TYPE_NAME không được để trống");
 
             // WHEN & THEN
             CustomException ex = assertThrows(CustomException.class, () -> service.create(request));
+
             assertEquals(HttpStatus.BAD_REQUEST.value(), ex.getCodeError());
-            assertEquals("Yêu cầu không hợp lệ", ex.getMessage());
+            assertEquals("TYPE_NAME không được để trống", ex.getMessage());
+
             verify(repository, never()).save(any());
         }
+
     }
 
     // =================================================================
@@ -134,11 +173,13 @@ class CatOutstandingTypeServiceImplTest {
             OutstandingTypeDto request = OutstandingTypeDto.builder()
                     .typeCode("CODE_NEW")
                     .typeName("NAME_NEW")
+                    .isActive(true)
                     .build();
 
             CatOutstandingType existingEntity = new CatOutstandingType();
             existingEntity.setId(id);
             existingEntity.setIsDeleted(false);
+            existingEntity.setIsActive(true);
 
             when(repository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(existingEntity));
             when(repository.save(existingEntity)).thenReturn(existingEntity);

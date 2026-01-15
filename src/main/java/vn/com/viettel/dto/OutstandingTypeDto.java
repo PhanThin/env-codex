@@ -16,9 +16,9 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class OutstandingTypeDto implements Serializable {
     Long id;
-    @NotNull
     @Size(max = 50)
     String typeCode;
     String typeName;
     Boolean isActive;
+    String note;
 }
