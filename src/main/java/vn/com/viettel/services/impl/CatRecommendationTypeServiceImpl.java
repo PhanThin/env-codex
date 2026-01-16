@@ -6,23 +6,27 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.time.temporal.ChronoUnit;
 
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.data.domain.*;
-import org.springframework.data.jpa.domain.Specification;
-import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Predicate;
 
 import vn.com.viettel.dto.CatRecommendationTypeDto;
 import vn.com.viettel.dto.RecommendationTypeSearchRequestDto;
 import vn.com.viettel.entities.CatRecommendationType;
+import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.CatRecommendationTypeMapper;
 import vn.com.viettel.repositories.jpa.CatRecommendationTypeRepository;
+import vn.com.viettel.repositories.jpa.SysUserRepository;
 import vn.com.viettel.services.CatRecommendationTypeService;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
@@ -39,6 +43,7 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
     private final CatRecommendationTypeRepository repository;
     private final CatRecommendationTypeMapper mapper;
     private final Translator translator;
+    private final SysUserRepository userRepository;
 
     private static final Map<String, String> ALLOWED_SORT_FIELDS;
     static {
@@ -51,6 +56,44 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
         m.put("id", "id");
         ALLOWED_SORT_FIELDS = Collections.unmodifiableMap(m);
     }
+
+    // -------------------- Current user (same style as RecommendationServiceImpl) --------------------
+
+    /**
+     * Try to resolve current SysUser from Spring Security context.
+     * - If principal is SysUser -> return.
+     * - Else if principal is username (String) -> load from DB.
+     */
+    private SysUser getCurrentUserOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof SysUser user) {
+            return user;
+        }
+
+        String username = authentication.getName();
+        if (!StringUtils.hasText(username)) {
+            return null;
+        }
+        return userRepository.findByUsername(username).orElse(null);
+    }
+
+    private Long getCurrentUserId() {
+        SysUser u = getCurrentUserOrNull();
+        if (u == null || u.getId() == null) {
+            throw new CustomException(
+                    HttpStatus.UNAUTHORIZED.value(),
+                    translator.getMessage("auth.unauthorized")
+            );
+        }
+        return u.getId();
+    }
+
+    // -------------------- Search --------------------
 
     @Override
     @Transactional(readOnly = true)
@@ -82,7 +125,7 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
             );
         }
 
-        // --- Normalize date range (Word: mặc định trong năm hiện tại + tối đa 1 năm) ---
+        // --- Normalize date range (mặc định trong năm hiện tại + tối đa 1 năm) ---
         LocalDateTime now = LocalDateTime.now();
         LocalDate fromDate = request.getCreatedFrom();
         LocalDate toDate = request.getCreatedTo();
@@ -98,7 +141,6 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
             toDate = now.toLocalDate();
         }
         if (fromDate == null && toDate != null) {
-            // Lùi 1 năm (đúng yêu cầu range <= 1 năm)
             fromDate = toDate.minusYears(1);
         }
 
@@ -121,7 +163,6 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
             }
         }
 
-        // Build specification
         Specification<CatRecommendationType> specification = buildSearchSpecification(request, fromDate, toDate);
 
         Sort sort = Sort.by(direction, sortProperty);
@@ -145,10 +186,8 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Always filter IS_DELETED = 'N'  (Boolean false)
             predicates.add(cb.isFalse(root.get("isDeleted")));
 
-            // Keyword -> search by TYPE_NAME only (không dùng TYPE_CODE)
             String kw = safeTrim(request.getKeyword());
             if (kw != null) {
                 String like = "%" + kw.toUpperCase() + "%";
@@ -156,7 +195,6 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
                 predicates.add(cb.like(typeNameExp, like));
             }
 
-            // Status filter: ALL/ACTIVE/INACTIVE
             String status = defaultIfBlank(request.getStatus(), "ALL").toUpperCase();
             if ("ACTIVE".equals(status)) {
                 predicates.add(cb.isTrue(root.get("isActive")));
@@ -169,10 +207,8 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
                 );
             }
 
-            // CreatedAt range (inclusive)
             if (fromDate != null && toDate != null) {
                 LocalDateTime from = fromDate.atStartOfDay();
-                // inclusive end -> dùng < (to + 1 day) để tránh lệch time
                 LocalDateTime toExclusive = toDate.plusDays(1).atStartOfDay();
                 predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
                 predicates.add(cb.lessThan(root.get("createdAt"), toExclusive));
@@ -182,36 +218,40 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
         };
     }
 
+    // -------------------- CRUD --------------------
+
     @Override
     public CatRecommendationTypeDto create(CatRecommendationTypeDto request) {
         validateRequest(request);
 
-        // Validate UNIQUE INDEX:
-        // UX_CAT_REC_TYPE_NAME_ACT: CASE WHEN IS_DELETED='N' THEN UPPER(TRIM(TYPE_NAME)) END
+        // Unique (exclude deleted)
         validateUniqueTypeName(null, request.getTypeName());
 
-        // Sanitize value before save (match index definition TRIM + UPPER for compare)
+        Long userId = getCurrentUserId();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Sanitize
         String typeCode = safeTrim(request.getTypeCode());
         String typeName = safeTrim(request.getTypeName());
 
         CatRecommendationType entity = mapper.toEntity(request);
 
-        // Do NOT allow client to set audit fields (backend owns)
         entity.setTypeCode(typeCode);
         entity.setTypeName(typeName);
 
-        entity.setIsDeleted(Boolean.FALSE);                 // IS_DELETED NOT NULL
-        entity.setIsActive(request.getIsActive());          // IS_ACTIVE NOT NULL
-        entity.setCreatedAt(LocalDateTime.now());           // CREATED_AT NOT NULL
-        entity.setCreatedBy(getCurrentUserIdOrNull());      // backend set (nullable in DB)
-        entity.setUpdatedAt(null);
-        entity.setUpdatedBy(null);
+        entity.setIsDeleted(Boolean.FALSE);
+        entity.setIsActive(request.getIsActive());
+
+        // (1) create: set created_by, updated_by = userId; created_at, updated_at = now
+        entity.setCreatedAt(now);
+        entity.setCreatedBy(userId);
+        entity.setUpdatedAt(now);
+        entity.setUpdatedBy(userId);
 
         try {
             CatRecommendationType saved = repository.save(entity);
             return mapper.toDto(saved);
         } catch (DataIntegrityViolationException ex) {
-            // If race condition happens, still map to friendly message
             throw mapDataIntegrityViolation(ex, request.getTypeName());
         }
     }
@@ -223,27 +263,29 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
                         HttpStatus.NOT_FOUND.value(),
                         translator.getMessage("catRecommendationType.notFound", id)
                 ));
+
         validateRequest(request);
-        // Validate UNIQUE INDEX (exclude current record)
         validateUniqueTypeName(id, request.getTypeName());
+
+        Long userId = getCurrentUserId();
+        LocalDateTime now = LocalDateTime.now();
 
         // Sanitize
         String typeCode = safeTrim(request.getTypeCode());
         String typeName = safeTrim(request.getTypeName());
 
-        // Map allowed fields only (mapper already ignores id/createdAt/createdBy/isDeleted)
+        // Map allowed fields only (mapper ignores id/createdAt/createdBy/isDeleted)
         mapper.updateEntity(entity, request);
 
-        // Enforce audit fields are backend-owned
         entity.setTypeCode(typeCode);
         entity.setTypeName(typeName);
 
-        // Do NOT allow client to flip isDeleted via update
-        entity.setIsDeleted(Boolean.FALSE);                 // keep NOT DELETED
-        entity.setIsActive(request.getIsActive());          // IS_ACTIVE NOT NULL
+        entity.setIsDeleted(Boolean.FALSE);
+        entity.setIsActive(request.getIsActive());
 
-        entity.setUpdatedAt(LocalDateTime.now());
-        entity.setUpdatedBy(getCurrentUserIdOrNull());      // backend set (nullable in DB)
+        // (2) update: set updated_by = userId; updated_at = now
+        entity.setUpdatedAt(now);
+        entity.setUpdatedBy(userId);
 
         try {
             CatRecommendationType saved = repository.save(entity);
@@ -273,21 +315,42 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Soft delete multiple items.
+     */
     @Override
-    public void delete(Long id) {
-        CatRecommendationType entity = repository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new CustomException(
-                        HttpStatus.NOT_FOUND.value(),
-                        translator.getMessage("catRecommendationType.notFound", id)
-                ));
+    public void delete(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catRecommendationType.delete.ids.required")
+            );
+        }
 
-        // Soft delete
-        entity.setIsDeleted(Boolean.TRUE);                  // IS_DELETED NOT NULL
-        entity.setUpdatedAt(LocalDateTime.now());
-        entity.setUpdatedBy(getCurrentUserIdOrNull());
+        Long userId = getCurrentUserId();
+        LocalDateTime now = LocalDateTime.now();
 
-        repository.save(entity);
+        List<CatRecommendationType> entities = ids.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .map(id -> repository.findByIdAndIsDeletedFalse(id)
+                        .orElseThrow(() -> new CustomException(
+                                HttpStatus.NOT_FOUND.value(),
+                                translator.getMessage("catRecommendationType.notFound", id)
+                        )))
+                .collect(Collectors.toList());
+
+        // (3) delete: set updated_by = userId; updated_at = now
+        // (4) delete multiple: ids list
+        for (CatRecommendationType e : entities) {
+            e.setIsDeleted(Boolean.TRUE);
+            e.setUpdatedAt(now);
+            e.setUpdatedBy(userId);
+        }
+        repository.saveAll(entities);
     }
+
+    // -------------------- Validation helpers --------------------
 
     private void validateRequest(CatRecommendationTypeDto request) {
         if (request == null) {
@@ -297,7 +360,6 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
             );
         }
 
-        // TYPE_NAME NOT NULL
         if (!StringUtils.hasText(request.getTypeName())) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
@@ -305,8 +367,6 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
             );
         }
 
-        // IS_ACTIVE NOT NULL (DB constraint SYS_C008677 + CK in ('N','Y'))
-        // In code: Boolean <-> 'Y'/'N', so just ensure not null
         if (request.getIsActive() == null) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
@@ -325,14 +385,12 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
     private void validateUniqueTypeName(Long excludeId, String inputTypeName) {
         String normalized = normalizeTypeName(inputTypeName);
         if (!StringUtils.hasText(normalized)) {
-            // already handled by required validation, but keep safe
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("catRecommendationType.typeName.required")
             );
         }
 
-        // Reuse existing repository method (avoid changing repository now)
         List<CatRecommendationType> existing = repository.findAllByIsDeletedFalse();
 
         boolean duplicated = existing.stream().anyMatch(e -> {
@@ -352,7 +410,6 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
     }
 
     private String normalizeTypeName(String typeName) {
-        // Match DB unique index behavior: UPPER(TRIM(TYPE_NAME))
         String v = safeTrim(typeName);
         return v == null ? null : v.toUpperCase();
     }
@@ -365,8 +422,6 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
     }
 
     private CustomException mapDataIntegrityViolation(DataIntegrityViolationException ex, String typeName) {
-        // In this module we mainly care about UX_CAT_REC_TYPE_NAME_ACT
-        // Return friendly duplicate message (safe even if DB throws for other reasons).
         return new CustomException(
                 HttpStatus.BAD_REQUEST.value(),
                 translator.getMessage("catRecommendationType.typeName.duplicate", safeTrim(typeName))
@@ -375,13 +430,5 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
 
     private String defaultIfBlank(String s, String defaultVal) {
         return StringUtils.hasText(s) ? s.trim() : defaultVal;
-    }
-
-    /**
-     * TODO: Replace by real current user id from SecurityContext or your auth mechanism.
-     * Requirement: client cannot send createdBy/updatedBy -> backend owns these.
-     */
-    private Long getCurrentUserIdOrNull() {
-        return null;
     }
 }

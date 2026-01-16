@@ -12,6 +12,7 @@ import java.util.List;
  */
 public interface CatOutstandingTypeService {
 
+
     Page<OutstandingTypeDto> search(OutstandingTypeSearchRequestDto request);
 
     OutstandingTypeDto create(OutstandingTypeDto request);
@@ -22,5 +23,5 @@ public interface CatOutstandingTypeService {
 
     List<OutstandingTypeDto> getAll();
 
-    void delete(Long id);
+    void delete(List<Long> ids);         // bulk delete
 }

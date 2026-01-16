@@ -28,6 +28,7 @@ public class CatOutstandingTypeController {
 
     private final CatOutstandingTypeService service;
 
+
     @PostMapping("/search")
     public ResponseEntity<Page<OutstandingTypeDto>> search(@RequestBody OutstandingTypeSearchRequestDto request) {
         return ResponseEntity.ok(service.search(request));
@@ -61,9 +62,9 @@ public class CatOutstandingTypeController {
 
     @Hidden
     @Operation(summary = "Soft delete CAT_OUTSTANDING_TYPE by id")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    @DeleteMapping
+    public ResponseEntity<Void> deleteMultiple(@RequestBody List<Long> ids) {
+        service.delete(ids);
         return ResponseEntity.noContent().build();
     }
 }

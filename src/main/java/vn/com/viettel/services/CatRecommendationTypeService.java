@@ -13,6 +13,7 @@ import java.util.List;
  */
 public interface CatRecommendationTypeService {
 
+
     Page<CatRecommendationTypeDto> search(RecommendationTypeSearchRequestDto request);
 
     CatRecommendationTypeDto create(CatRecommendationTypeDto request);
@@ -23,5 +24,5 @@ public interface CatRecommendationTypeService {
 
     List<CatRecommendationTypeDto> getAll();
 
-    void delete(Long id);
+    void delete(List<Long> ids);         // bulk delete
 }
