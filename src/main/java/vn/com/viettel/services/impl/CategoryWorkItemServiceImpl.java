@@ -51,10 +51,10 @@ public class CategoryWorkItemServiceImpl implements CategoryWorkItemService {
             Map.entry("categoryWorkItemCode", "categoryWorkItemCode"),
             Map.entry("categoryWorkItemName", "categoryWorkItemName"),
             Map.entry("isActive", "isActive"),
-            Map.entry("projectType", "projectType.projectTypeName"),
-            Map.entry("projectPhase", "projectPhase.phaseName"),
-            Map.entry("projectItem", "projectItem.itemName"),
-            Map.entry("unit", "unit.unitName")
+            Map.entry("projectType", "catProjectType.projectTypeName"),
+            Map.entry("projectPhase", "catProjectPhase.phaseName"),
+            Map.entry("projectItem", "catProjectItem.itemName"),
+            Map.entry("unit", "catUnit.unitName")
     );
 
     @Transactional(readOnly = true)

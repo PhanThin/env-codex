@@ -60,7 +60,7 @@ public class ProjectItemController {
     }
 
     @Operation(summary = "Lấy danh sách hạng mục dự án theo giai đoạn dự án")
-    @GetMapping("/{phaseId}")
+    @GetMapping("/phase/{phaseId}")
     public ResponseEntity<List<ProjectItemDto>> getAllByPhase(@PathVariable Long phaseId) {
         return ResponseEntity.ok(service.getAllByPhaseId(phaseId));
     }

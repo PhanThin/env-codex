@@ -3,26 +3,9 @@ package vn.com.viettel.mapper;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import vn.com.viettel.dto.CatProjectPhaseDto;
-import vn.com.viettel.dto.CatUnitDto;
-import vn.com.viettel.dto.CategoryWorkItemDto;
-import vn.com.viettel.dto.ProjectItemDto;
-import vn.com.viettel.dto.ProjectTypeDto;
-import vn.com.viettel.dto.UserDto;
-import vn.com.viettel.dto.WorkItemDto;
-import vn.com.viettel.entities.CatProjectPhase;
-import vn.com.viettel.entities.CatUnit;
-import vn.com.viettel.entities.CategoryWorkItem;
-import vn.com.viettel.entities.ProjectItem;
-import vn.com.viettel.entities.ProjectType;
-import vn.com.viettel.entities.SysUser;
-import vn.com.viettel.entities.WorkItem;
-import vn.com.viettel.repositories.jpa.CatProjectPhaseRepository;
-import vn.com.viettel.repositories.jpa.CatUnitRepository;
-import vn.com.viettel.repositories.jpa.CategoryWorkItemRepository;
-import vn.com.viettel.repositories.jpa.ProjectItemRepository;
-import vn.com.viettel.repositories.jpa.ProjectTypeRepository;
-import vn.com.viettel.repositories.jpa.SysUserRepository;
+import vn.com.viettel.dto.*;
+import vn.com.viettel.entities.*;
+import vn.com.viettel.repositories.jpa.*;
 import vn.com.viettel.utils.Constants;
 
 import java.time.LocalDateTime;
@@ -49,6 +32,39 @@ public class WorkItemMapper {
     private CategoryWorkItemRepository categoryWorkItemRepository;
     @Autowired
     private SysUserRepository sysUserRepository;
+
+//    @PostConstruct
+//    private void configure() {
+//        modelMapper.getConfiguration()
+//                .setImplicitMappingEnabled(false);
+//        var dtoToEntity = modelMapper.getTypeMap(WorkItemDto.class, WorkItem.class);
+//        if (dtoToEntity == null) {
+//            dtoToEntity = modelMapper.createTypeMap(WorkItemDto.class, WorkItem.class);
+//
+//        } else {
+//            dtoToEntity.getMappings().clear();
+//        }
+//        dtoToEntity.addMappings(mapper -> {
+//            mapper.skip(WorkItem::setCreatedBy);
+//            mapper.skip(WorkItem::setProjectItem);
+//            mapper.skip(WorkItem::setProjectPhase);
+//            mapper.skip(WorkItem::setProjectType);
+//            mapper.skip(WorkItem::setUnit);
+//        });
+//        var entityToDto = modelMapper.getTypeMap(WorkItem.class, WorkItemDto.class);
+//        if (entityToDto == null) {
+//            entityToDto = modelMapper.createTypeMap(WorkItem.class, WorkItemDto.class);
+//        } else {
+//            entityToDto.getMappings().clear();
+//        }
+//        entityToDto.addMappings(mapper -> {
+//            mapper.skip(WorkItemDto::setCreatedBy);
+//            mapper.skip(WorkItemDto::setProjectItem);
+//            mapper.skip(WorkItemDto::setProjectPhase);
+//            mapper.skip(WorkItemDto::setProjectType);
+//            mapper.skip(WorkItemDto::setUnit);
+//        });
+//    }
 
     /**
      * Map list WorkItem -> list WorkItemDto, enrich data từ các bảng liên quan.

@@ -28,7 +28,7 @@ public interface WorkItemRepository extends JpaRepository<WorkItem, Long>, JpaSp
     boolean existsByCatWorkItemIdAndIsDeletedFalseAndIsActiveTrue(Long catWorkItemId);
 
     Optional<WorkItem>
-    findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCatWorkItemIdAndWorkItemCodeIgnoreCaseAndIsDeletedFalse(
+    findFirstByProjectTypeIdAndProjectPhaseIdAndItemIdAndCatWorkItemIdAndWorkItemCodeIgnoreCaseAndIsDeletedFalse(
             Long projectTypeId,
             Long projectPhaseId,
             Long projectItemId,
@@ -37,7 +37,7 @@ public interface WorkItemRepository extends JpaRepository<WorkItem, Long>, JpaSp
     );
 
     Optional<WorkItem>
-    findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCatWorkItemIdAndWorkItemNameIgnoreCaseAndIsDeletedFalse(
+    findFirstByProjectTypeIdAndProjectPhaseIdAndItemIdAndCatWorkItemIdAndWorkItemNameIgnoreCaseAndIsDeletedFalse(
             Long projectTypeId,
             Long projectPhaseId,
             Long projectItemId,

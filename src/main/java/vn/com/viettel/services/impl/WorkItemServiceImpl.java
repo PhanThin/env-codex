@@ -319,7 +319,7 @@ public class WorkItemServiceImpl implements WorkItemService {
 
         Optional<WorkItem> codeExisting =
                 workItemRepository
-                        .findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCatWorkItemIdAndWorkItemCodeIgnoreCaseAndIsDeletedFalse(
+                        .findFirstByProjectTypeIdAndProjectPhaseIdAndItemIdAndCatWorkItemIdAndWorkItemCodeIgnoreCaseAndIsDeletedFalse(
                                 projectType.getId(),
                                 phase.getId(),
                                 projectItem.getId(),
@@ -354,7 +354,7 @@ public class WorkItemServiceImpl implements WorkItemService {
 
         Optional<WorkItem> nameExisting =
                 workItemRepository
-                        .findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCatWorkItemIdAndWorkItemNameIgnoreCaseAndIsDeletedFalse(
+                        .findFirstByProjectTypeIdAndProjectPhaseIdAndItemIdAndCatWorkItemIdAndWorkItemNameIgnoreCaseAndIsDeletedFalse(
                                 projectType.getId(),
                                 phase.getId(),
                                 projectItem.getId(),

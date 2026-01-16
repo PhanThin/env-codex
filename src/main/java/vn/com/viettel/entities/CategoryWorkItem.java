@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.YesNoConverter;
 
 import java.time.LocalDateTime;
 
@@ -60,11 +62,15 @@ public class CategoryWorkItem {
 
     @NotNull
     @ColumnDefault("'Y'")
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive;
 
     @NotNull
     @ColumnDefault("'N'")
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_DELETED", nullable = false)
     private Boolean isDeleted;
 
@@ -78,17 +84,18 @@ public class CategoryWorkItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PROJECT_PHASE_ID", insertable = false, updatable = false)
-    private CatProjectPhase projectPhase;
+    private CatProjectPhase catProjectPhase;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PROJECT_ITEM_ID", insertable = false, updatable = false)
-    private ProjectItem projectItem;
+    private ProjectItem catProjectItem;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PROJECT_TYPE_ID", insertable = false, updatable = false)
-    private ProjectType projectType;
+    private ProjectType catProjectType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "UNIT_ID", insertable = false, updatable = false)
-    private CatUnit unit;
+    private CatUnit catUnit;
+
 }
