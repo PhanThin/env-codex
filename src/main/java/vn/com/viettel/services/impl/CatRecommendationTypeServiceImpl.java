@@ -1,8 +1,11 @@
 package vn.com.viettel.services.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.time.temporal.ChronoUnit;
+
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -10,8 +13,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
 
 import vn.com.viettel.dto.CatRecommendationTypeDto;
+import vn.com.viettel.dto.RecommendationTypeSearchRequestDto;
 import vn.com.viettel.entities.CatRecommendationType;
 import vn.com.viettel.mapper.CatRecommendationTypeMapper;
 import vn.com.viettel.repositories.jpa.CatRecommendationTypeRepository;
@@ -31,6 +39,148 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
     private final CatRecommendationTypeRepository repository;
     private final CatRecommendationTypeMapper mapper;
     private final Translator translator;
+
+    private static final Map<String, String> ALLOWED_SORT_FIELDS;
+    static {
+        Map<String, String> m = new HashMap<>();
+        // FE sortBy -> entity field
+        m.put("createdAt", "createdAt");
+        m.put("updatedAt", "updatedAt");
+        m.put("typeName", "typeName");
+        m.put("isActive", "isActive");
+        m.put("id", "id");
+        ALLOWED_SORT_FIELDS = Collections.unmodifiableMap(m);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CatRecommendationTypeDto> search(RecommendationTypeSearchRequestDto request) {
+        int page = request.getPage() != null && request.getPage() >= 0 ? request.getPage() : 0;
+        int size = request.getSize() != null && request.getSize() > 0 ? request.getSize() : 20;
+
+        // --- sortBy whitelist ---
+        String sortByRaw = defaultIfBlank(request.getSortBy(), "createdAt");
+        String sortProperty = ALLOWED_SORT_FIELDS.get(sortByRaw);
+        if (sortProperty == null) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catRecommendationType.search.sortBy.invalid", ALLOWED_SORT_FIELDS.keySet())
+            );
+        }
+
+        // --- sortDirection ---
+        String sortDirectionRaw = defaultIfBlank(request.getSortDirection(), "DESC");
+        Sort.Direction direction;
+        if ("ASC".equalsIgnoreCase(sortDirectionRaw)) {
+            direction = Sort.Direction.ASC;
+        } else if ("DESC".equalsIgnoreCase(sortDirectionRaw)) {
+            direction = Sort.Direction.DESC;
+        } else {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catRecommendationType.search.sortDirection.invalid")
+            );
+        }
+
+        // --- Normalize date range (Word: mặc định trong năm hiện tại + tối đa 1 năm) ---
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate fromDate = request.getCreatedFrom();
+        LocalDate toDate = request.getCreatedTo();
+
+        // Nếu không truyền, default = từ đầu năm đến hiện tại
+        if (fromDate == null && toDate == null) {
+            fromDate = LocalDate.of(now.getYear(), 1, 1);
+            toDate = now.toLocalDate();
+        }
+
+        // Nếu chỉ truyền 1 đầu, tự hoàn thiện đầu còn lại theo logic an toàn
+        if (fromDate != null && toDate == null) {
+            toDate = now.toLocalDate();
+        }
+        if (fromDate == null && toDate != null) {
+            // Lùi 1 năm (đúng yêu cầu range <= 1 năm)
+            fromDate = toDate.minusYears(1);
+        }
+
+        // Validate from <= to
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    translator.getMessage("catRecommendationType.search.createdTime.range.invalid")
+            );
+        }
+
+        // Validate <= 1 year
+        if (fromDate != null && toDate != null) {
+            long days = ChronoUnit.DAYS.between(fromDate, toDate);
+            if (days > 366) { // cho phép năm nhuận
+                throw new CustomException(
+                        HttpStatus.BAD_REQUEST.value(),
+                        translator.getMessage("catRecommendationType.search.createdTime.range.maxOneYear")
+                );
+            }
+        }
+
+        // Build specification
+        Specification<CatRecommendationType> specification = buildSearchSpecification(request, fromDate, toDate);
+
+        Sort sort = Sort.by(direction, sortProperty);
+        PageRequest pageRequest = PageRequest.of(page, size, sort);
+
+        Page<CatRecommendationType> resultPage = repository.findAll(specification, pageRequest);
+
+        List<CatRecommendationTypeDto> dtoList = resultPage.getContent()
+                .stream()
+                .map(mapper::toDto)
+                .toList();
+
+        return new PageImpl<>(dtoList, pageRequest, resultPage.getTotalElements());
+    }
+
+    private Specification<CatRecommendationType> buildSearchSpecification(
+            RecommendationTypeSearchRequestDto request,
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Always filter IS_DELETED = 'N'  (Boolean false)
+            predicates.add(cb.isFalse(root.get("isDeleted")));
+
+            // Keyword -> search by TYPE_NAME only (không dùng TYPE_CODE)
+            String kw = safeTrim(request.getKeyword());
+            if (kw != null) {
+                String like = "%" + kw.toUpperCase() + "%";
+                Expression<String> typeNameExp = cb.upper(cb.trim(root.get("typeName")));
+                predicates.add(cb.like(typeNameExp, like));
+            }
+
+            // Status filter: ALL/ACTIVE/INACTIVE
+            String status = defaultIfBlank(request.getStatus(), "ALL").toUpperCase();
+            if ("ACTIVE".equals(status)) {
+                predicates.add(cb.isTrue(root.get("isActive")));
+            } else if ("INACTIVE".equals(status)) {
+                predicates.add(cb.isFalse(root.get("isActive")));
+            } else if (!"ALL".equals(status)) {
+                throw new CustomException(
+                        HttpStatus.BAD_REQUEST.value(),
+                        translator.getMessage("catRecommendationType.search.status.invalid")
+                );
+            }
+
+            // CreatedAt range (inclusive)
+            if (fromDate != null && toDate != null) {
+                LocalDateTime from = fromDate.atStartOfDay();
+                // inclusive end -> dùng < (to + 1 day) để tránh lệch time
+                LocalDateTime toExclusive = toDate.plusDays(1).atStartOfDay();
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
+                predicates.add(cb.lessThan(root.get("createdAt"), toExclusive));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
 
     @Override
     public CatRecommendationTypeDto create(CatRecommendationTypeDto request) {
@@ -221,6 +371,10 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
                 HttpStatus.BAD_REQUEST.value(),
                 translator.getMessage("catRecommendationType.typeName.duplicate", safeTrim(typeName))
         );
+    }
+
+    private String defaultIfBlank(String s, String defaultVal) {
+        return StringUtils.hasText(s) ? s.trim() : defaultVal;
     }
 
     /**

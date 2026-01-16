@@ -1,6 +1,8 @@
 package vn.com.viettel.services;
 
+import org.springframework.data.domain.Page;
 import vn.com.viettel.dto.CatRecommendationTypeDto;
+import vn.com.viettel.dto.RecommendationTypeSearchRequestDto;
 
 import java.util.List;
 
@@ -10,6 +12,8 @@ import java.util.List;
  * Service interface for CAT_RECOMMENDATION_TYPE CRUD operations.
  */
 public interface CatRecommendationTypeService {
+
+    Page<CatRecommendationTypeDto> search(RecommendationTypeSearchRequestDto request);
 
     CatRecommendationTypeDto create(CatRecommendationTypeDto request);
 
