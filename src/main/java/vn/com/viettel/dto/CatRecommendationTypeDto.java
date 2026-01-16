@@ -8,6 +8,7 @@ import lombok.Setter;
 import lombok.Value;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * DTO for {@link vn.com.viettel.entities.CatRecommendationType}
@@ -16,6 +17,7 @@ import java.io.Serializable;
 @Setter
 @NoArgsConstructor
 public class CatRecommendationTypeDto implements Serializable {
+
     Long id;
     @Size(max = 50)
     String typeCode;
@@ -25,4 +27,11 @@ public class CatRecommendationTypeDto implements Serializable {
     Boolean isActive;
     @Size(max = 500)
     String note;
+
+    // === audit fields ===
+    Long createdBy;
+    LocalDateTime createdAt;
+    Long updatedBy;
+    LocalDateTime updatedAt;
 }
+
