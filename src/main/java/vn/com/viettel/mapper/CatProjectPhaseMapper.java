@@ -50,15 +50,18 @@ public class CatProjectPhaseMapper {
 
         CatProjectPhaseDto dto = modelMapper.map(entity, CatProjectPhaseDto.class);
 
+        ProjectDto projectDto;
         if (projectMap != null
                 && entity.getProjectId() != null
                 && projectMap.containsKey(entity.getProjectId())) {
 
-            ProjectDto projectDto =
-                    modelMapper.map(projectMap.get(entity.getProjectId()), ProjectDto.class);
+            projectDto = modelMapper.map(projectMap.get(entity.getProjectId()), ProjectDto.class);
 
-            dto.setProjectDto(projectDto);
+        } else {
+            projectDto = new ProjectDto();
+            projectDto.setId(entity.getProjectId());
         }
+        dto.setProjectDto(projectDto);
 
         return dto;
     }

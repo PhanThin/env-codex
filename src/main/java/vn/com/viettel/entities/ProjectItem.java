@@ -60,4 +60,8 @@ public class ProjectItem {
     @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
+
+    @NotNull
+    @Column(name = "PHASE_ID", nullable = false)
+    private Long phaseId;
 }

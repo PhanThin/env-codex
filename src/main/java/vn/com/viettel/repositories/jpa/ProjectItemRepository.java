@@ -15,4 +15,5 @@ public interface ProjectItemRepository extends JpaRepository<ProjectItem, Long> 
 
     boolean existsByProjectIdAndItemCodeAndIsDeletedFalse(Long projectId, String itemCode);
 
+    List<ProjectItem> findAllByPhaseIdAndIsDeletedFalse(Long projectId);
 }

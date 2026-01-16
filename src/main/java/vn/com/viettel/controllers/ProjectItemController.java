@@ -19,7 +19,7 @@ import vn.com.viettel.services.ProjectItemService;
  */
 @RestController
 @Tag(name = "05. Quản lý hạng mục của dự án", description = "API quản lý hạng mục của dự án")
-@RequestMapping("/api/v1/projects-items/{projectId}")
+@RequestMapping("/api/v1/projects-items")
 @RequiredArgsConstructor
 public class ProjectItemController {
 
@@ -27,7 +27,7 @@ public class ProjectItemController {
 
     @Hidden
     @Operation(summary = "Create project item under a project")
-    @PostMapping
+    @PostMapping("/{projectId}")
     public ResponseEntity<ProjectItemDto> create(
             @PathVariable Long projectId,
             @Valid @RequestBody ProjectItemDto request) {
@@ -36,7 +36,7 @@ public class ProjectItemController {
 
     @Hidden
     @Operation(summary = "Update project item under a project")
-    @PutMapping("/{itemId}")
+    @PutMapping("/{projectId}/{itemId}")
     public ResponseEntity<ProjectItemDto> update(
             @PathVariable Long projectId,
             @PathVariable Long itemId,
@@ -46,22 +46,28 @@ public class ProjectItemController {
 
     @Hidden
     @Operation(summary = "Get project item by id under a project")
-    @GetMapping("/{itemId}")
+    @GetMapping("/{projectId}/{itemId}")
     public ResponseEntity<ProjectItemDto> getById(
             @PathVariable Long projectId,
             @PathVariable Long itemId) {
         return ResponseEntity.ok(service.getById(projectId, itemId));
     }
 
-    @Operation(summary = "Get all items under a project")
-    @GetMapping
+    @Operation(summary = "Lấy danh sách hạng mục dự án theo dự án")
+    @GetMapping("/{projectId}")
     public ResponseEntity<List<ProjectItemDto>> getAll(@PathVariable Long projectId) {
         return ResponseEntity.ok(service.getAll(projectId));
     }
 
+    @Operation(summary = "Lấy danh sách hạng mục dự án theo giai đoạn dự án")
+    @GetMapping("/{phaseId}")
+    public ResponseEntity<List<ProjectItemDto>> getAllByPhase(@PathVariable Long phaseId) {
+        return ResponseEntity.ok(service.getAllByPhaseId(phaseId));
+    }
+
     @Hidden
     @Operation(summary = "Soft delete project item under a project")
-    @DeleteMapping("/{itemId}")
+    @DeleteMapping("/{projectId}/{itemId}")
     public ResponseEntity<Void> delete(
             @PathVariable Long projectId,
             @PathVariable Long itemId) {

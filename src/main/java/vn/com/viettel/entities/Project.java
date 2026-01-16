@@ -57,4 +57,6 @@ public class Project {
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 
+    @Column(name = "PROJECT_TYPE_ID")
+    private Long projectTypeId;
 }
