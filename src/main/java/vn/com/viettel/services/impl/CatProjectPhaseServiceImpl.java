@@ -1,15 +1,10 @@
 package vn.com.viettel.services.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import lombok.RequiredArgsConstructor;
 import vn.com.viettel.dto.CatProjectPhaseDto;
 import vn.com.viettel.entities.CatProjectPhase;
 import vn.com.viettel.entities.Project;
@@ -19,6 +14,10 @@ import vn.com.viettel.repositories.jpa.ProjectRepository;
 import vn.com.viettel.services.CatProjectPhaseService;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -37,8 +36,8 @@ public class CatProjectPhaseServiceImpl implements CatProjectPhaseService {
 
         if (repository.existsByProjectIdAndPhaseCodeAndIsDeletedFalse(projectId, request.getPhaseCode())) {
             throw new CustomException(
-                HttpStatus.CONFLICT.value(),
-                translator.getMessage("project.phase.duplicate", request.getPhaseCode())
+                    HttpStatus.CONFLICT.value(),
+                    translator.getMessage("project.phase.duplicate", request.getPhaseCode())
             );
         }
 
@@ -112,6 +111,16 @@ public class CatProjectPhaseServiceImpl implements CatProjectPhaseService {
     }
 
     @Override
+    public List<CatProjectPhaseDto> getAllByProjectType(Long projectTypeId) {
+        List<CatProjectPhase> phases =
+                repository.findAllByProjectTypeId(projectTypeId);
+
+        return phases.stream()
+                .map(phase -> mapper.toDto(phase, null))
+                .toList();
+    }
+
+    @Override
     public void delete(Long projectId, Long phaseId) {
         validateProject(projectId);
         CatProjectPhase entity = getOrThrow(projectId, phaseId);
@@ -123,8 +132,8 @@ public class CatProjectPhaseServiceImpl implements CatProjectPhaseService {
     private void validateProject(Long projectId) {
         if (!projectRepository.existsByIdAndIsDeletedFalse(projectId)) {
             throw new CustomException(
-                HttpStatus.NOT_FOUND.value(),
-                translator.getMessage("project.notfound", projectId)
+                    HttpStatus.NOT_FOUND.value(),
+                    translator.getMessage("project.notfound", projectId)
             );
         }
     }
@@ -156,14 +165,14 @@ public class CatProjectPhaseServiceImpl implements CatProjectPhaseService {
     private CatProjectPhase getOrThrow(Long projectId, Long phaseId) {
         CatProjectPhase entity = repository.findByIdAndIsDeletedFalse(phaseId)
                 .orElseThrow(() -> new CustomException(
-                    HttpStatus.NOT_FOUND.value(),
-                    translator.getMessage("project.phase.notfound", phaseId)
+                        HttpStatus.NOT_FOUND.value(),
+                        translator.getMessage("project.phase.notfound", phaseId)
                 ));
 
         if (!projectId.equals(entity.getProjectId())) {
             throw new CustomException(
-                HttpStatus.NOT_FOUND.value(),
-                translator.getMessage("project.phase.notfound", phaseId)
+                    HttpStatus.NOT_FOUND.value(),
+                    translator.getMessage("project.phase.notfound", phaseId)
             );
         }
         return entity;

@@ -184,7 +184,7 @@ class ProjectItemServiceImplTest {
                     .thenReturn(saved);
 
             ProjectItemDto dto = new ProjectItemDto();
-            when(mapper.toDto(saved, null)).thenReturn(dto);
+            when(mapper.toDto(saved, null, null)).thenReturn(dto);
 
             try (MockedStatic<LocalDateTime> mocked =
                          mockStatic(LocalDateTime.class)) {
@@ -271,7 +271,7 @@ class ProjectItemServiceImplTest {
             when(projectItemRepository.findByIdAndIsDeletedFalse(ITEM_ID))
                     .thenReturn(Optional.of(entity));
             when(projectItemRepository.save(entity)).thenReturn(entity);
-            when(mapper.toDto(entity, null)).thenReturn(new ProjectItemDto());
+            when(mapper.toDto(entity, null, null)).thenReturn(new ProjectItemDto());
 
             try (MockedStatic<LocalDateTime> mocked =
                          mockStatic(LocalDateTime.class)) {
@@ -316,7 +316,7 @@ class ProjectItemServiceImplTest {
             projectDto.setId(PROJECT_ID);
             dto.setProject(projectDto);
 
-            when(mapper.toDto(entity, Map.of(PROJECT_ID, project)))
+            when(mapper.toDto(entity, Map.of(PROJECT_ID, project), null))
                     .thenReturn(dto);
 
             ProjectItemDto result =

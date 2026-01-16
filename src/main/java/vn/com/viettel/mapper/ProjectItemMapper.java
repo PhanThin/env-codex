@@ -4,8 +4,10 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
+import vn.com.viettel.dto.CatProjectPhaseDto;
 import vn.com.viettel.dto.ProjectDto;
 import vn.com.viettel.dto.ProjectItemDto;
+import vn.com.viettel.entities.CatProjectPhase;
 import vn.com.viettel.entities.Project;
 import vn.com.viettel.entities.ProjectItem;
 
@@ -49,21 +51,35 @@ public class ProjectItemMapper {
      */
     public ProjectItemDto toDto(
             ProjectItem entity,
-            Map<Long, Project> projectMap
+            Map<Long, Project> projectMap,
+            Map<Long, CatProjectPhase> phaseMap
     ) {
         if (entity == null) return null;
 
         ProjectItemDto dto = modelMapper.map(entity, ProjectItemDto.class);
 
+        ProjectDto projectDto;
         if (projectMap != null
                 && entity.getProjectId() != null
                 && projectMap.containsKey(entity.getProjectId())) {
 
-            ProjectDto projectDto =
-                    modelMapper.map(projectMap.get(entity.getProjectId()), ProjectDto.class);
+            projectDto = modelMapper.map(projectMap.get(entity.getProjectId()), ProjectDto.class);
 
-            dto.setProject(projectDto);
+        } else {
+            projectDto = new ProjectDto();
+            projectDto.setId(entity.getProjectId());
         }
+        dto.setProject(projectDto);
+
+        CatProjectPhaseDto phaseDto;
+        if (phaseMap != null && entity.getPhaseId() != null && phaseMap.containsKey(entity.getPhaseId())) {
+            phaseDto = modelMapper.map(phaseMap.get(entity.getPhaseId()), CatProjectPhaseDto.class);
+            dto.setPhase(phaseDto);
+        } else {
+            phaseDto = new CatProjectPhaseDto();
+            phaseDto.setId(entity.getPhaseId());
+        }
+        dto.setPhase(phaseDto);
 
         return dto;
     }

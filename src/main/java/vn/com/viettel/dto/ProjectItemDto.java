@@ -25,4 +25,6 @@ public class ProjectItemDto implements Serializable {
     @NotNull
     @Size(max = 250)
     String itemName;
+
+    CatProjectPhaseDto phase;
 }

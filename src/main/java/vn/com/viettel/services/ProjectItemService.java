@@ -19,5 +19,7 @@ public interface ProjectItemService {
 
     List<ProjectItemDto> getAll(Long projectId);
 
+    List<ProjectItemDto> getAllByPhaseId(Long phaseId);
+
     void delete(Long projectId, Long itemId);
 }

@@ -14,5 +14,7 @@ public interface CatProjectPhaseService {
 
     List<CatProjectPhaseDto> getAll(Long projectId);
 
+    List<CatProjectPhaseDto> getAllByProjectType(Long projectTypeId);
+
     void delete(Long projectId, Long phaseId);
 }

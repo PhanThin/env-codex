@@ -1,16 +1,10 @@
 package vn.com.viettel.services.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import lombok.RequiredArgsConstructor;
 import vn.com.viettel.dto.ProjectItemDto;
 import vn.com.viettel.entities.Project;
 import vn.com.viettel.entities.ProjectItem;
@@ -20,6 +14,11 @@ import vn.com.viettel.repositories.jpa.ProjectRepository;
 import vn.com.viettel.services.ProjectItemService;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Service implementation for PROJECT_ITEM CRUD operations.
@@ -34,6 +33,7 @@ public class ProjectItemServiceImpl implements ProjectItemService {
     private final ProjectRepository projectRepository;
     private final ProjectItemMapper mapper;
     private final Translator translator;
+
     @Override
     public ProjectItemDto create(Long projectId, ProjectItemDto request) {
         validateProjectExists(projectId);
@@ -50,7 +50,7 @@ public class ProjectItemServiceImpl implements ProjectItemService {
         entity.setCreatedAt(LocalDateTime.now());
 
         ProjectItem saved = projectItemRepository.save(entity);
-        return mapper.toDto(saved, null);
+        return mapper.toDto(saved, null, null);
     }
 
     @Override
@@ -64,7 +64,7 @@ public class ProjectItemServiceImpl implements ProjectItemService {
         entity.setUpdatedAt(LocalDateTime.now());
 
         ProjectItem saved = projectItemRepository.save(entity);
-        return mapper.toDto(saved, null);
+        return mapper.toDto(saved, null, null);
     }
 
     @Override
@@ -78,7 +78,7 @@ public class ProjectItemServiceImpl implements ProjectItemService {
                 .stream()
                 .collect(Collectors.toMap(Project::getId, p -> p));
 
-        return mapper.toDto(entity, projectMap);
+        return mapper.toDto(entity, projectMap, null);
     }
 
     @Override
@@ -105,10 +105,24 @@ public class ProjectItemServiceImpl implements ProjectItemService {
 
         //  Entity -> DTO
         return items.stream()
-                .map(item -> mapper.toDto(item, projectMap))
+                .map(item -> mapper.toDto(item, projectMap, null))
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<ProjectItemDto> getAllByPhaseId(Long phaseId) {
+
+        List<ProjectItem> items =
+                projectItemRepository.findAllByPhaseIdAndIsDeletedFalse(phaseId);
+
+        if (items.isEmpty()) {
+            return List.of();
+        }
+        //  Entity -> DTO
+        return items.stream()
+                .map(item -> mapper.toDto(item, null, null))
+                .collect(Collectors.toList());
+    }
 
     @Override
     public void delete(Long projectId, Long itemId) {
