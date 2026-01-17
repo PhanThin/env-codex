@@ -12,18 +12,17 @@ public interface ProjectTypeRepository extends JpaRepository<ProjectType, Long>,
 
     Optional<ProjectType> findByIdAndIsDeletedFalse(Long id);
     List<ProjectType> findAllByIdInAndIsDeletedFalse(List<Long> ids);
-    Optional<ProjectType> findByIdAndIsDeleted(Long id, String isDeleted);
-
-    List<ProjectType> findAllByIdInAndIsDeleted(List<Long> ids, String isDeleted);
 
     @Query("select count(pt.id) > 0 from ProjectType pt " +
-            "where pt.isDeleted = 'N' " +
+            "where pt.isDeleted = false " +
             "and upper(trim(pt.projectTypeName)) = upper(trim(:name))")
     boolean existsDuplicateName(@Param("name") String name);
 
     @Query("select count(pt.id) > 0 from ProjectType pt " +
-            "where pt.isDeleted = 'N' " +
+            "where pt.isDeleted = false " +
             "and upper(trim(pt.projectTypeName)) = upper(trim(:name)) " +
             "and pt.id <> :id")
     boolean existsDuplicateNameExcludeId(@Param("name") String name, @Param("id") Long id);
+
+    List<ProjectType> findAllByIsDeletedIsFalse();
 }

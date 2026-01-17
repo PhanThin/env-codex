@@ -1,15 +1,12 @@
 package vn.com.viettel.mapper;
 
+import jakarta.annotation.PostConstruct;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import vn.com.viettel.dto.*;
 import vn.com.viettel.entities.*;
-import vn.com.viettel.repositories.jpa.CatUnitRepository;
-import vn.com.viettel.repositories.jpa.ProjectTypeRepository;
-import vn.com.viettel.repositories.jpa.CatProjectPhaseRepository;
-import vn.com.viettel.repositories.jpa.ProjectItemRepository;
-import vn.com.viettel.repositories.jpa.SysUserRepository;
+import vn.com.viettel.repositories.jpa.*;
 import vn.com.viettel.utils.Constants;
 
 import java.time.LocalDateTime;
@@ -33,6 +30,27 @@ public class CategoryWorkItemMapper {
     private ProjectTypeRepository projectTypeRepository;
     @Autowired
     private SysUserRepository sysUserRepository;
+
+//    @PostConstruct
+//    private void configure() {
+//        var dtoToEntity = modelMapper.createTypeMap(CategoryWorkItemDto.class, CategoryWorkItem.class);
+//        dtoToEntity.addMappings(mapper -> {
+//            mapper.skip(CategoryWorkItem::setCatProjectItem);
+//            mapper.skip(CategoryWorkItem::setCatProjectPhase);
+//            mapper.skip(CategoryWorkItem::setCatProjectType);
+//            mapper.skip(CategoryWorkItem::setCatUnit);
+//        });
+//
+//        var entityToDto = modelMapper.createTypeMap(CategoryWorkItem.class, CategoryWorkItemDto.class);
+//
+//        entityToDto.addMappings(mapper -> {
+//            mapper.skip(CategoryWorkItemDto::setProjectItem);
+//            mapper.skip(CategoryWorkItemDto::setProjectPhase);
+//            mapper.skip(CategoryWorkItemDto::setProjectType);
+//            mapper.skip(CategoryWorkItemDto::setUnit);
+//        });
+//
+//    }
 
     public List<CategoryWorkItemDto> mapToDtos(List<CategoryWorkItem> entities) {
         Map<Long, ProjectType> projectTypeMap = projectTypeRepository.findAll().stream()

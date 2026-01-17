@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
 import vn.com.viettel.dto.CatUnitDto;
 import vn.com.viettel.dto.CatUnitSearchRequestDto;
 import vn.com.viettel.entities.CatUnit;
@@ -25,7 +24,8 @@ import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 import static vn.com.viettel.repositories.jpa.CatUnitSpecifications.buildSpecification;
 
@@ -65,7 +65,7 @@ public class CatUnitServiceImpl implements CatUnitService {
 
         String unitName = normalize(dto.getUnitName());
         if (StringUtils.isNotBlank(unitName)) {
-            boolean exists = catUnitRepository.existsByUnitNameIgnoreCaseAndIsDeleted(unitName, "N");
+            boolean exists = catUnitRepository.existsByUnitNameIgnoreCaseAndIsDeletedFalse(unitName);
             if (exists) {
                 throw new CustomException(HttpStatus.CONFLICT.value(), translator.getMessage("catUnit.duplicate.unitName", unitName));
             }
@@ -80,8 +80,8 @@ public class CatUnitServiceImpl implements CatUnitService {
         entity.setUpdatedBy(userId);
         entity.setUpdatedAt(now);
 
-        entity.setIsDeleted("N");
-        entity.setIsActive(StringUtils.defaultIfBlank(dto.getIsActive(), "Y"));
+        entity.setIsDeleted(false);
+        entity.setIsActive(Boolean.TRUE.equals(dto.getIsActive()));
 
         CatUnit saved = catUnitRepository.save(entity);
         return catUnitMapper.toDto(saved);
@@ -97,12 +97,12 @@ public class CatUnitServiceImpl implements CatUnitService {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("catUnit.invalidRequest"));
         }
 
-        CatUnit entity = catUnitRepository.findByIdAndIsDeleted(id, "N")
+        CatUnit entity = catUnitRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("catUnit.notFound", id)));
 
         String unitName = normalize(dto.getUnitName());
         if (StringUtils.isNotBlank(unitName)) {
-            boolean exists = catUnitRepository.existsByUnitNameIgnoreCaseAndIdNotAndIsDeleted(unitName, id, "N");
+            boolean exists = catUnitRepository.existsByUnitNameIgnoreCaseAndIdNotAndIsDeletedFalse(unitName, id);
             if (exists) {
                 throw new CustomException(HttpStatus.CONFLICT.value(), translator.getMessage("catUnit.duplicate.unitName", unitName));
             }
@@ -111,7 +111,7 @@ public class CatUnitServiceImpl implements CatUnitService {
         catUnitMapper.updateEntityFromDto(dto, entity);
         entity.setUnitName(unitName);
         entity.setUnitType(normalize(dto.getUnitType()));
-        entity.setIsActive(StringUtils.defaultIfBlank(dto.getIsActive(), entity.getIsActive()));
+        entity.setIsActive(Boolean.TRUE.equals(dto.getIsActive()));
 
         SysUser currentUser = getCurrentUser();
         entity.setUpdatedBy(currentUser != null ? currentUser.getId() : Constants.DEFAULT_USER_ID);
@@ -128,7 +128,7 @@ public class CatUnitServiceImpl implements CatUnitService {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("catUnit.invalidRequest"));
         }
 
-        List<CatUnit> entities = catUnitRepository.findAllByIdInAndIsDeleted(unitIds, "N");
+        List<CatUnit> entities = catUnitRepository.findAllByIdInAndIsDeletedFalse(unitIds);
         if (entities == null || entities.isEmpty()) {
             throw new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("catUnit.notFound", unitIds));
         }
@@ -144,7 +144,7 @@ public class CatUnitServiceImpl implements CatUnitService {
         LocalDateTime now = LocalDateTime.now();
 
         entities.forEach(e -> {
-            e.setIsDeleted("Y");
+            e.setIsDeleted(true);
             e.setUpdatedBy(userId);
             e.setUpdatedAt(now);
         });
@@ -156,7 +156,7 @@ public class CatUnitServiceImpl implements CatUnitService {
         if (id == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), translator.getMessage("catUnit.invalidRequest"));
         }
-        CatUnit entity = catUnitRepository.findByIdAndIsDeleted(id, "N")
+        CatUnit entity = catUnitRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), translator.getMessage("catUnit.notFound", id)));
         return catUnitMapper.toDto(entity);
     }
@@ -213,5 +213,12 @@ public class CatUnitServiceImpl implements CatUnitService {
             return null;
         }
         return StringUtils.trim(value);
+    }
+
+    public List<CatUnitDto> findAllUnitType(String type) throws CustomException {
+        List<CatUnit> entities = catUnitRepository.findAllByUnitTypeAndIsDeletedFalse(type);
+        return entities.stream()
+                .map(catUnitMapper::toDto)
+                .toList();
     }
 }

@@ -18,4 +18,6 @@ public interface ProjectTypeService {
     ProjectTypeDto getDetail(Long id) throws CustomException;
 
     Page<ProjectTypeDto> search(ProjectTypeSearchRequestDto request) throws CustomException;
+
+    List<ProjectTypeDto> getAllProjectType();
 }

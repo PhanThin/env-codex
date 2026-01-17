@@ -9,12 +9,12 @@ import java.util.Optional;
 
 public interface CatUnitRepository extends JpaRepository<CatUnit, Long>, JpaSpecificationExecutor<CatUnit> {
 
-    Optional<CatUnit> findByIdAndIsDeleted(Long id, String isDeleted);
     Optional<CatUnit> findByIdAndIsDeletedFalse(Long id);
     List<CatUnit> findAllByIdInAndIsDeletedFalse(List<Long> ids);
-    List<CatUnit> findAllByIdInAndIsDeleted(List<Long> ids, String isDeleted);
 
-    boolean existsByUnitNameIgnoreCaseAndIsDeleted(String unitName, String isDeleted);
+    boolean existsByUnitNameIgnoreCaseAndIsDeletedFalse(String unitName);
 
-    boolean existsByUnitNameIgnoreCaseAndIdNotAndIsDeleted(String unitName, Long id, String isDeleted);
+    boolean existsByUnitNameIgnoreCaseAndIdNotAndIsDeletedFalse(String unitName, Long id);
+
+    List<CatUnit> findAllByUnitTypeAndIsDeletedFalse(String unitType);
 }

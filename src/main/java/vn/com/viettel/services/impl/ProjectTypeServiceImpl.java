@@ -23,10 +23,12 @@ import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
-import static vn.com.viettel.repositories.jpa.ProjectTypeSpecifications.buildSpecification;
-
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static vn.com.viettel.repositories.jpa.ProjectTypeSpecifications.buildSpecification;
 
 
 @Service
@@ -72,8 +74,8 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
 
-        entity.setIsDeleted("N");
-        entity.setIsActive(StringUtils.defaultIfBlank(dto.getIsActive(), "Y"));
+        entity.setIsDeleted(Boolean.FALSE);
+        entity.setIsActive(Boolean.TRUE.equals(dto.getIsActive()));
 
         // Ensure client cannot override
         entity.setProjectTypeName(dto.getProjectTypeName() != null ? dto.getProjectTypeName().trim() : null);
@@ -90,7 +92,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
         }
         validatePayload(dto);
 
-        ProjectType entity = projectTypeRepository.findByIdAndIsDeleted(id, "N")
+        ProjectType entity = projectTypeRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("projectType.notFound", id)));
 
         String nameNorm = normalizeName(dto.getProjectTypeName());
@@ -105,7 +107,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
         projectTypeMapper.updateEntityFromDto(dto, entity);
 
         entity.setProjectTypeName(dto.getProjectTypeName() != null ? dto.getProjectTypeName().trim() : null);
-        entity.setIsActive(StringUtils.defaultIfBlank(dto.getIsActive(), entity.getIsActive()));
+        entity.setIsActive(Boolean.FALSE.equals(dto.getIsActive()));
 
         entity.setUpdatedBy(userId);
         entity.setUpdatedAt(now);
@@ -121,7 +123,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("projectType.id.list.null"));
         }
 
-        List<ProjectType> entities = projectTypeRepository.findAllByIdInAndIsDeleted(projectTypeIds, "N");
+        List<ProjectType> entities = projectTypeRepository.findAllByIdInAndIsDeletedFalse(projectTypeIds);
         if (entities == null || entities.isEmpty()) {
             throw new CustomException(HttpStatus.NOT_FOUND.value(), msg("projectType.notFound", projectTypeIds));
         }
@@ -136,7 +138,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
         LocalDateTime now = LocalDateTime.now();
 
         entities.forEach(e -> {
-            e.setIsDeleted("Y");
+            e.setIsDeleted(true);
             e.setUpdatedBy(userId);
             e.setUpdatedAt(now);
         });
@@ -149,7 +151,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
         if (id == null) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("projectType.id.null"));
         }
-        ProjectType entity = projectTypeRepository.findByIdAndIsDeleted(id, "N")
+        ProjectType entity = projectTypeRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("projectType.notFound", id)));
         return projectTypeMapper.toDto(entity);
     }
@@ -208,11 +210,7 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
         if (dto.getProjectTypeName().trim().length() > 250) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("projectType.name.length"));
         }
-        if (StringUtils.isNotBlank(dto.getIsActive())
-                && !"Y".equalsIgnoreCase(dto.getIsActive())
-                && !"N".equalsIgnoreCase(dto.getIsActive())) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("projectType.isActive.invalid"));
-        }
+
     }
 
     private String normalizeName(String name) {
@@ -241,5 +239,13 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
 
     private String msg(String key, Object... params) {
         return translator.getMessage(key, params);
+    }
+
+    @Override
+    public List<ProjectTypeDto> getAllProjectType() {
+        List<ProjectType> projectTypes = projectTypeRepository.findAllByIsDeletedIsFalse();
+        return projectTypes.stream()
+                .map(projectTypeMapper::toDto)
+                .toList();
     }
 }

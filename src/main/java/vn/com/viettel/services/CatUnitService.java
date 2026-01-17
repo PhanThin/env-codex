@@ -18,4 +18,6 @@ public interface CatUnitService {
     CatUnitDto getDetail(Long id) throws CustomException;
 
     Page<CatUnitDto> search(CatUnitSearchRequestDto request) throws CustomException;
+
+    List<CatUnitDto> findAllUnitType(String unitType) throws CustomException;
 }

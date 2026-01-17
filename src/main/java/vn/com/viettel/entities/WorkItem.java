@@ -83,17 +83,21 @@ public class WorkItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PROJECT_PHASE_ID", insertable = false, updatable = false)
-    private CatProjectPhase projectPhase;
+    private CatProjectPhase catProjectPhase;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ITEM_ID", insertable = false, updatable = false)
-    private ProjectItem projectItem;
+    private ProjectItem catProjectItem;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PROJECT_TYPE_ID", insertable = false, updatable = false)
-    private ProjectType projectType;
+    private ProjectType catProjectType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "UNIT_ID", insertable = false, updatable = false)
-    private CatUnit unit;
+    private CatUnit catUnit;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CREATED_BY", insertable = false, updatable = false)
+    private SysUser createdByUser;
 }

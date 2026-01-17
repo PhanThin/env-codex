@@ -1,14 +1,10 @@
 package vn.com.viettel.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.YesNoConverter;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -50,9 +46,14 @@ public class ProjectType implements Serializable {
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
 
-    @Column(name = "IS_ACTIVE", length = 1)
-    private String isActive;
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
+    @Column(name = "IS_ACTIVE")
+    private Boolean isActive;
 
-    @Column(name = "IS_DELETED", length = 1)
-    private String isDeleted;
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
+    @Column(name = "IS_DELETED")
+    private Boolean isDeleted;
+
 }

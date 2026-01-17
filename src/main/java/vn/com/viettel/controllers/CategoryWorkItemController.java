@@ -95,7 +95,7 @@ public class CategoryWorkItemController {
             @ApiResponse(responseCode = "404", description = "Dữ liệu đầu vào không tồn tại"),
             @ApiResponse(responseCode = "500", description = "Lỗi hệ thống")
     })
-    @GetMapping("/search")
+    @PostMapping("/search")
     public ResponseEntity<Page<CategoryWorkItemDto>> search(@RequestBody CategoryWorkItemSearchRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(categoryWorkItemService.searchCategoryWorkItem(request));
     }
