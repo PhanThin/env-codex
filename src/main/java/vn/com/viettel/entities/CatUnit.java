@@ -1,57 +1,118 @@
 package vn.com.viettel.entities;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
 @Entity
 @Table(name = "CAT_UNIT")
-@SequenceGenerator(
-        name = "cat_unit_gen",
-        sequenceName = "SEQ_CAT_UNIT",
-        allocationSize = 1
-)
 public class CatUnit {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "CAT_UNIT_SEQ")
+    @SequenceGenerator(name = "CAT_UNIT_SEQ", sequenceName = "CAT_UNIT_SEQ", allocationSize = 1)
     @Column(name = "UNIT_ID", nullable = false)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "cat_unit_gen")
     private Long id;
 
-    @Size(max = 50)
-    @Column(name = "UNIT_NAME", length = 50)
+    @Column(name = "UNIT_NAME")
     private String unitName;
 
-    @Size(max = 50)
-    @Column(name = "UNIT_TYPE", length = 50)
+    @Column(name = "UNIT_TYPE")
     private String unitType;
 
     @Column(name = "CREATED_BY")
-    private Long createdByUserId;
+    private Long createdBy;
 
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
 
-    @NotNull
-    @ColumnDefault("'Y'")
     @Column(name = "IS_ACTIVE", nullable = false)
-    private Boolean isActive;
+    private String isActive;
 
-    @ColumnDefault("'N'")
     @Column(name = "IS_DELETED")
-    private Boolean isDeleted;
+    private String isDeleted;
 
     @Column(name = "UPDATED_BY")
-    private Long updatedByUserId;
+    private Long updatedBy;
 
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
 
+    public Long getId() {
+        return id;
+    }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getUnitName() {
+        return unitName;
+    }
+
+    public void setUnitName(String unitName) {
+        this.unitName = unitName;
+    }
+
+    public String getUnitType() {
+        return unitType;
+    }
+
+    public void setUnitType(String unitType) {
+        this.unitType = unitType;
+    }
+
+    public Long getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(String isActive) {
+        this.isActive = isActive;
+    }
+
+    public String getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(String isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+
+    public Long getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(Long updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }
