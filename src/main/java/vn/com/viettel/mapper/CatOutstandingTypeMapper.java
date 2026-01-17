@@ -5,7 +5,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import vn.com.viettel.dto.CatOutstandingTypeDto;
-import vn.com.viettel.dto.OutstandingTypeDto;
 import vn.com.viettel.entities.CatOutstandingType;
 
 /**
@@ -14,17 +13,18 @@ import vn.com.viettel.entities.CatOutstandingType;
 @Mapper(componentModel = "spring")
 public interface CatOutstandingTypeMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "isDeleted", ignore = true)
-    CatOutstandingType toEntity(OutstandingTypeDto dto);
+    // nếu DTO đã thêm createdByUser/updatedByUser:
+//    @Mapping(target = "createdByUser", ignore = true)
+//    @Mapping(target = "updatedByUser", ignore = true)
+    CatOutstandingType toEntity(CatOutstandingTypeDto dto);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "isDeleted", ignore = true)
-    void updateEntity(@MappingTarget CatOutstandingType entity, OutstandingTypeDto dto);
+//    @Mapping(target = "createdByUser", ignore = true)
+//    @Mapping(target = "updatedByUser", ignore = true)
+    void updateEntity(@MappingTarget CatOutstandingType entity, CatOutstandingTypeDto dto);
 
-    OutstandingTypeDto toDto(CatOutstandingType entity);
+//    @Mapping(target = "createdByUser", ignore = true)
+//    @Mapping(target = "updatedByUser", ignore = true)
+    CatOutstandingTypeDto toDto(CatOutstandingType entity);
 }

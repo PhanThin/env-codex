@@ -164,7 +164,7 @@ public class OutstandingItemMapper {
 
         // outstandingTypeId -> OutstandingTypeDto
         if (entity.getOutstandingTypeId() != null && outstandingTypeMap != null && outstandingTypeMap.containsKey(entity.getOutstandingTypeId())) {
-            OutstandingTypeDto outstandingTypeDto = modelMapper.map(outstandingTypeMap.get(entity.getOutstandingTypeId()), OutstandingTypeDto.class);
+            CatOutstandingTypeDto outstandingTypeDto = modelMapper.map(outstandingTypeMap.get(entity.getOutstandingTypeId()), CatOutstandingTypeDto.class);
             dto.setOutstandingTypeDto(outstandingTypeDto);
         }
 
