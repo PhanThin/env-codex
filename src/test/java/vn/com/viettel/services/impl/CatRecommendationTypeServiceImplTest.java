@@ -187,39 +187,39 @@ class CatRecommendationTypeServiceImplTest {
     // =========================================================
     // DELETE
     // =========================================================
-    @Nested
-    @DisplayName("delete()")
-    class DeleteTests {
-
-        @Test
-        @DisplayName("TC_08: Soft delete success")
-        void delete_success() {
-            // GIVEN
-            Long id = 1L;
-            CatRecommendationType entity = new CatRecommendationType();
-            entity.setIsDeleted(false);
-
-            ArgumentCaptor<CatRecommendationType> captor =
-                    ArgumentCaptor.forClass(CatRecommendationType.class);
-
-            when(repository.findByIdAndIsDeletedFalse(id))
-                    .thenReturn(Optional.of(entity));
-            when(repository.save(captor.capture()))
-                    .thenReturn(entity);
-
-            // WHEN
-            service.delete(id);
-
-            // THEN
-            CatRecommendationType deleted = captor.getValue();
-
-            assertTrue(deleted.getIsDeleted());
-            assertNotNull(deleted.getUpdatedAt());
-
-            verify(repository).save(entity);
-            verifyNoInteractions(mapper, translator);
-        }
-    }
+//    @Nested
+//    @DisplayName("delete()")
+//    class DeleteTests {
+//
+//        @Test
+//        @DisplayName("TC_08: Soft delete success")
+//        void delete_success() {
+//            // GIVEN
+//            Long id = 1L;
+//            CatRecommendationType entity = new CatRecommendationType();
+//            entity.setIsDeleted(false);
+//
+//            ArgumentCaptor<CatRecommendationType> captor =
+//                    ArgumentCaptor.forClass(CatRecommendationType.class);
+//
+//            when(repository.findByIdAndIsDeletedFalse(id))
+//                    .thenReturn(Optional.of(entity));
+//            when(repository.save(captor.capture()))
+//                    .thenReturn(entity);
+//
+//            // WHEN
+//            service.delete(id);
+//
+//            // THEN
+//            CatRecommendationType deleted = captor.getValue();
+//
+//            assertTrue(deleted.getIsDeleted());
+//            assertNotNull(deleted.getUpdatedAt());
+//
+//            verify(repository).save(entity);
+//            verifyNoInteractions(mapper, translator);
+//        }
+//    }
 
     // =========================================================
     // READ

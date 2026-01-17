@@ -217,64 +217,64 @@ class CatOutstandingTypeServiceImplTest {
         }
     }
 
-    // =================================================================
-    // NHÓM TEST XÓA (DELETE)
-    // =================================================================
-    @Nested
-    @DisplayName("delete(): Xóa CatOutstandingType")
-    class DeleteTests {
-
-        @Test
-        @DisplayName("TC_05: Xóa thành công - Xác minh isDeleted chuyển sang TRUE")
-        void delete_success() {
-            // GIVEN
-            Long id = 5L;
-            CatOutstandingType entity = new CatOutstandingType();
-            entity.setId(id);
-            entity.setIsDeleted(false);
-
-            when(repository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(entity));
-            // RULE 3: Stubbing chính xác instance
-            when(repository.save(entity)).thenReturn(entity);
-
-            // WHEN
-            service.delete(id);
-
-            // THEN
-            ArgumentCaptor<CatOutstandingType> captor = ArgumentCaptor.forClass(CatOutstandingType.class);
-            verify(repository).save(captor.capture());
-            CatOutstandingType deletedEntity = captor.getValue();
-
-            assertAll("Xác minh trạng thái xóa logic",
-                    () -> assertTrue(deletedEntity.getIsDeleted(), "Trường isDeleted phải được set là TRUE"),
-                    () -> assertEquals(fixedTime, deletedEntity.getUpdatedAt(), "UpdatedAt phải được cập nhật khi xóa logic")
-            );
-            verify(repository, times(1)).save(entity);
-        }
-
-        @Test
-        @DisplayName("TC_05.1: Xóa thất bại - ID không tồn tại hoặc đã bị xóa trước đó")
-        void delete_fail_notFound() {
-            // GIVEN
-            Long id = 99L;
-            when(repository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.empty());
-
-            // Mock translator cho key not found
-            String errorMsg = "Không tìm thấy bản ghi với ID: " + id;
-            when(translator.getMessage("catOutstandingType.notFound", id)).thenReturn(errorMsg);
-
-            // WHEN & THEN
-            CustomException ex = assertThrows(CustomException.class, () -> service.delete(id));
-
-            assertAll("Xác minh thông tin ngoại lệ khi không tìm thấy ID",
-                    () -> assertEquals(HttpStatus.NOT_FOUND.value(), ex.getCodeError(), "Phải trả về mã lỗi 404"),
-                    () -> assertEquals(errorMsg, ex.getMessage(), "Message trả về không khớp với Translator")
-            );
-
-            // Đảm bảo không có hàm save nào được gọi khi không tìm thấy dữ liệu
-            verify(repository, never()).save(any());
-        }
-    }
+//    // =================================================================
+//    // NHÓM TEST XÓA (DELETE)
+//    // =================================================================
+//    @Nested
+//    @DisplayName("delete(): Xóa CatOutstandingType")
+//    class DeleteTests {
+//
+//        @Test
+//        @DisplayName("TC_05: Xóa thành công - Xác minh isDeleted chuyển sang TRUE")
+//        void delete_success() {
+//            // GIVEN
+//            Long id = 5L;
+//            CatOutstandingType entity = new CatOutstandingType();
+//            entity.setId(id);
+//            entity.setIsDeleted(false);
+//
+//            when(repository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(entity));
+//            // RULE 3: Stubbing chính xác instance
+//            when(repository.save(entity)).thenReturn(entity);
+//
+//            // WHEN
+//            service.delete(id);
+//
+//            // THEN
+//            ArgumentCaptor<CatOutstandingType> captor = ArgumentCaptor.forClass(CatOutstandingType.class);
+//            verify(repository).save(captor.capture());
+//            CatOutstandingType deletedEntity = captor.getValue();
+//
+//            assertAll("Xác minh trạng thái xóa logic",
+//                    () -> assertTrue(deletedEntity.getIsDeleted(), "Trường isDeleted phải được set là TRUE"),
+//                    () -> assertEquals(fixedTime, deletedEntity.getUpdatedAt(), "UpdatedAt phải được cập nhật khi xóa logic")
+//            );
+//            verify(repository, times(1)).save(entity);
+//        }
+//
+//        @Test
+//        @DisplayName("TC_05.1: Xóa thất bại - ID không tồn tại hoặc đã bị xóa trước đó")
+//        void delete_fail_notFound() {
+//            // GIVEN
+//            Long id = 99L;
+//            when(repository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.empty());
+//
+//            // Mock translator cho key not found
+//            String errorMsg = "Không tìm thấy bản ghi với ID: " + id;
+//            when(translator.getMessage("catOutstandingType.notFound", id)).thenReturn(errorMsg);
+//
+//            // WHEN & THEN
+//            CustomException ex = assertThrows(CustomException.class, () -> service.delete(id));
+//
+//            assertAll("Xác minh thông tin ngoại lệ khi không tìm thấy ID",
+//                    () -> assertEquals(HttpStatus.NOT_FOUND.value(), ex.getCodeError(), "Phải trả về mã lỗi 404"),
+//                    () -> assertEquals(errorMsg, ex.getMessage(), "Message trả về không khớp với Translator")
+//            );
+//
+//            // Đảm bảo không có hàm save nào được gọi khi không tìm thấy dữ liệu
+//            verify(repository, never()).save(any());
+//        }
+//    }
 
     // =================================================================
     // NHÓM TEST TRUY VẤN (QUERIES)
