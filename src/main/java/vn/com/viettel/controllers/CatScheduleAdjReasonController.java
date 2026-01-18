@@ -56,7 +56,7 @@ public class CatScheduleAdjReasonController {
     }
 
     @Operation(summary = "Tìm kiếm lý do điều chỉnh tiến độ")
-    @GetMapping("/search")
+    @PostMapping("/search")
     public ResponseEntity<Page<CatScheduleAdjReasonDto>> search(@Parameter(description = "Tiêu chí tìm kiếm") CatScheduleAdjReasonSearchRequestDto request) {
         return ResponseEntity.status(HttpStatus.OK).body(service.search(request));
     }

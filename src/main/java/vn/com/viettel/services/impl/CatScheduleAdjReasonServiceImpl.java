@@ -64,7 +64,7 @@ public class CatScheduleAdjReasonServiceImpl implements CatScheduleAdjReasonServ
         LocalDateTime now = LocalDateTime.now();
 
         normalize(dto);
-        validateReasonCodeFormat(dto.getReasonCode());
+//        validateReasonCodeFormat(dto.getReasonCode());
 
         String reasonCode = dto.getReasonCode();
         String reasonName = dto.getReasonName();
@@ -104,7 +104,7 @@ public class CatScheduleAdjReasonServiceImpl implements CatScheduleAdjReasonServ
         LocalDateTime now = LocalDateTime.now();
 
         normalize(dto);
-        validateReasonCodeFormat(dto.getReasonCode());
+//        validateReasonCodeFormat(dto.getReasonCode());
 
         CatScheduleAdjReason entity = repository.findByReasonIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("catScheduleAdjReason.notFound")));

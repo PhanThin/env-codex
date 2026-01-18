@@ -1,0 +1,388 @@
+{
+	"info": {
+		"_postman_id": "b6a8c1e4-5f7d-4b1a-9c8e-2d3f4a5b6c7d",
+		"name": "CatScheduleAdjReason API",
+		"description": "Collection for testing CatScheduleAdjReasonController APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Happy Path",
+			"item": [
+				{
+					"name": "Create Reason",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reasonCode\": \"TB-TEST001\",\n    \"reasonName\": \"Lý do test 1\",\n    \"note\": \"Ghi chú cho lý do test\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Reason",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reasonCode\": \"TB-TEST001-UPD\",\n    \"reasonName\": \"Lý do test 1 Updated\",\n    \"note\": \"Ghi chú đã cập nhật\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Detail Reason",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Reasons",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason/search?page=0&size=20&reasonCode=&reasonName=&isActive=true&sortBy=createdAt&sortDirection=DESC",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason",
+								"search"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "reasonCode",
+									"value": ""
+								},
+								{
+									"key": "reasonName",
+									"value": ""
+								},
+								{
+									"key": "isActive",
+									"value": "true"
+								},
+								{
+									"key": "sortBy",
+									"value": "createdAt"
+								},
+								{
+									"key": "sortDirection",
+									"value": "DESC"
+								},
+								{
+									"key": "createdAtFrom",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "createdAtTo",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Reasons",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    1,\n    2\n]"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Validation Tests",
+			"item": [
+				{
+					"name": "Create - Empty reasonCode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reasonCode\": \"\",\n    \"reasonName\": \"Valid Name\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create - Invalid reasonCode Prefix (No TB-)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reasonCode\": \"INVALID-001\",\n    \"reasonName\": \"Valid Name\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create - Invalid reasonCode Char (Special Chars)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reasonCode\": \"TB-001@#$\",\n    \"reasonName\": \"Valid Name\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create - reasonCode Too Long (>50)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reasonCode\": \"TB-123456789012345678901234567890123456789012345678\",\n    \"reasonName\": \"Valid Name\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create - Empty reasonName",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reasonCode\": \"TB-VALID01\",\n    \"reasonName\": \"\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create - reasonName Too Long (>250)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reasonCode\": \"TB-VALID01\",\n    \"reasonName\": \"Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec.\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create - Note Too Long (>500)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reasonCode\": \"TB-VALID01\",\n    \"reasonName\": \"Valid Name\",\n    \"note\": \"Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc,\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cat-schedule-adj-reason",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"cat-schedule-adj-reason"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}

@@ -22,8 +22,7 @@ public class CatScheduleAdjReasonDto {
     @Schema(description = "ID lý do", example = "1")
     private Long reasonId;
 
-    @Schema(description = "Mã lý do (TB-xxxxxx)", requiredMode = Schema.RequiredMode.REQUIRED, example = "TB-000001")
-    @NotBlank
+    @Schema(description = "Mã lý do (TB-xxxxxx)", requiredMode = Schema.RequiredMode.NOT_REQUIRED, example = "TB-000001")
     @Size(max = 50)
     @Pattern(regexp = "^TB-[A-Za-z0-9_-]+$")
     private String reasonCode;
