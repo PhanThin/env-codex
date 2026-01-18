@@ -80,7 +80,7 @@ public class OutstandingItemDto implements Serializable {
             requiredMode = Schema.RequiredMode.REQUIRED,
             description = "Loại tồn tại"
     )
-    OutstandingTypeDto outstandingTypeDto;
+    CatOutstandingTypeDto outstandingTypeDto;
 
     @Schema(
             requiredMode = Schema.RequiredMode.REQUIRED,

@@ -1,7 +1,7 @@
 package vn.com.viettel.services;
 
 import org.springframework.data.domain.Page;
-import vn.com.viettel.dto.OutstandingTypeDto;
+import vn.com.viettel.dto.CatOutstandingTypeDto;
 import vn.com.viettel.dto.OutstandingTypeSearchRequestDto;
 
 import java.util.List;
@@ -13,15 +13,15 @@ import java.util.List;
 public interface CatOutstandingTypeService {
 
 
-    Page<OutstandingTypeDto> search(OutstandingTypeSearchRequestDto request);
+    Page<CatOutstandingTypeDto> search(OutstandingTypeSearchRequestDto request);
 
-    OutstandingTypeDto create(OutstandingTypeDto request);
+    CatOutstandingTypeDto create(CatOutstandingTypeDto request);
 
-    OutstandingTypeDto update(Long id, OutstandingTypeDto request);
+    CatOutstandingTypeDto update(Long id, CatOutstandingTypeDto request);
 
-    OutstandingTypeDto getById(Long id);
+    CatOutstandingTypeDto getById(Long id);
 
-    List<OutstandingTypeDto> getAll();
+    List<CatOutstandingTypeDto> getAll();
 
     void delete(List<Long> ids);         // bulk delete
 }

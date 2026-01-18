@@ -21,12 +21,11 @@ public class CatOutstandingTypeDto {
     /**
      * Primary key.
      */
-    private Long outstandingTypeId;
+    private Long id;
 
     /**
      * Type code.
      */
-    @NotBlank
     @Size(max = 50)
     private String typeCode;
 
@@ -37,7 +36,7 @@ public class CatOutstandingTypeDto {
     @Size(max = 250)
     private String typeName;
 
-    private Long createdBy;
+    private UserDto  createdByUser;
     @JsonFormat(
             shape = JsonFormat.Shape.STRING,
             pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
@@ -48,10 +47,12 @@ public class CatOutstandingTypeDto {
 
     private Boolean isDeleted;
 
-    private Long updatedBy;
+    private UserDto  updatedByUser;
     @JsonFormat(
             shape = JsonFormat.Shape.STRING,
             pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
     )
     private LocalDateTime updatedAt;
+    @Size(max = 500)
+    String note;
 }

@@ -29,9 +29,10 @@ public class CatRecommendationTypeDto implements Serializable {
     String note;
 
     // === audit fields ===
-    Long createdBy;
+    private UserDto createdByUser;
+    private UserDto updatedByUser;
+
     LocalDateTime createdAt;
-    Long updatedBy;
     LocalDateTime updatedAt;
 }
 

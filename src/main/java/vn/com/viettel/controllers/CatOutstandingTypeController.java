@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.com.viettel.dto.OutstandingTypeDto;
+import vn.com.viettel.dto.CatOutstandingTypeDto;
 import vn.com.viettel.dto.OutstandingTypeSearchRequestDto;
 import vn.com.viettel.services.CatOutstandingTypeService;
 
@@ -26,33 +26,33 @@ public class CatOutstandingTypeController {
     private final CatOutstandingTypeService service;
 
     @PostMapping("/search")
-    public ResponseEntity<Page<OutstandingTypeDto>> search(@RequestBody OutstandingTypeSearchRequestDto request) {
+    public ResponseEntity<Page<CatOutstandingTypeDto>> search(@RequestBody OutstandingTypeSearchRequestDto request) {
         return ResponseEntity.ok(service.search(request));
     }
 
     @Operation(summary = "Tạo loại tồn tại")
     @PostMapping
-    public ResponseEntity<OutstandingTypeDto> create(@Valid @RequestBody OutstandingTypeDto request) {
+    public ResponseEntity<CatOutstandingTypeDto> create(@Valid @RequestBody CatOutstandingTypeDto request) {
         return ResponseEntity.ok(service.create(request));
     }
 
     @Operation(summary = "Cập nhật loại tồn tại theo id")
     @PutMapping("/{id}")
-    public ResponseEntity<OutstandingTypeDto> update(
+    public ResponseEntity<CatOutstandingTypeDto> update(
             @PathVariable Long id,
-            @Valid @RequestBody OutstandingTypeDto request) {
+            @Valid @RequestBody CatOutstandingTypeDto request) {
         return ResponseEntity.ok(service.update(id, request));
     }
 
     @Operation(summary = "Lấy loại tồn tại theo id")
     @GetMapping("/{id}")
-    public ResponseEntity<OutstandingTypeDto> getById(@PathVariable Long id) {
+    public ResponseEntity<CatOutstandingTypeDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
     @Operation(summary = "Lấy tất cả loại tồn tại")
     @GetMapping
-    public ResponseEntity<List<OutstandingTypeDto>> getAll() {
+    public ResponseEntity<List<CatOutstandingTypeDto>> getAll() {
         return ResponseEntity.ok(service.getAll());
     }
 
