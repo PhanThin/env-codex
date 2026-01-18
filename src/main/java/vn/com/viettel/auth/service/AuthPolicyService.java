@@ -26,12 +26,17 @@ public class AuthPolicyService {
             boolean isExpired = (user.getLastPasswordChange() != null &&
                     user.getLastPasswordChange().plusDays(90).isBefore(LocalDateTime.now()));
 
-            if (isFirstLogin || isExpired) {
+            if (isFirstLogin) {
                 String userId = keycloakService.getUserIdByUsername(username);
                 if (userId != null) {
                     keycloakService.forcePasswordUpdate(userId);
                 }
                 throw new CustomException(AuthErrorCode.PASSWORD_EXPIRED.getCode(), "Bạn cần thay đổi mật khẩu trước khi sử dụng hệ thống.");
+            }
+
+            if (isExpired) {
+                throw new CustomException(AuthErrorCode.PASSWORD_EXPIRED.getCode(), "Mật khẩu đã hết hạn." +
+                        "Bạn cần thay đổi mật khẩu trước khi sử dụng hệ thống.");
             }
         }
     }

@@ -22,13 +22,8 @@ public class UserSyncService {
     public SysUser syncUserFromPayload(String username, String accessToken) throws Exception {
         JsonNode payload = decodeJwtPayload(accessToken);
 
-        SysUser user = userRepository.findByUsernameAndIsDeletedFalse(username)
+        return userRepository.findByUsernameAndIsDeletedFalse(username)
                 .orElseGet(() -> createNewUser(username, payload));
-
-        // hack to pass when api update password is not ready
-        user.setLastPasswordChange(LocalDateTime.now().minusDays(50));
-
-        return user;
     }
 
     private SysUser createNewUser(String username, JsonNode payload) {

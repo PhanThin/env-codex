@@ -3,6 +3,7 @@ package vn.com.viettel.auth.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -18,10 +19,8 @@ import vn.com.viettel.auth.config.ExtendedKeycloakProperties;
 import vn.com.viettel.auth.dto.KeycloakTokenResponse;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -36,17 +35,27 @@ public class KeycloakService {
     // Hàm dùng chung để thực hiện các yêu cầu POST (Khử lặp mã nguồn)
     private KeycloakTokenResponse executePost(List<NameValuePair> params, String url) throws IOException {
         HttpPost httpPost = new HttpPost(url);
-        httpPost.setEntity(new UrlEncodedFormEntity(params, "UTF-8")); // Nên chỉ định rõ bảng mã
+        httpPost.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8)); // Nên chỉ định rõ bảng mã
 
         try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
             int statusCode = response.getStatusLine().getStatusCode();
+            HttpEntity entity = response.getEntity();
 
-            // Sử dụng org.apache.http.util.EntityUtils của HttpClient 4
-            String body = EntityUtils.toString(response.getEntity(), "UTF-8");
+            // Bước 1: Kiểm tra nếu không có nội dung (thường là 204 Logout thành công)
+            if (entity == null || statusCode == 204) {
+                return KeycloakTokenResponse.builder()
+                        .statusCode(statusCode)
+                        .build();
+            }
 
-            // Xử lý trường hợp body trống hoặc không phải JSON
-            if (body == null || body.isEmpty()) {
-                return KeycloakTokenResponse.builder().statusCode(statusCode).build();
+            // Bước 2: Chỉ đọc body khi entity không null
+            String body = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+
+            // Đề phòng trường hợp body rỗng nhưng entity không null
+            if (body == null || body.trim().isEmpty()) {
+                return KeycloakTokenResponse.builder()
+                        .statusCode(statusCode)
+                        .build();
             }
 
             KeycloakTokenResponse tokenResponse = objectMapper.readValue(body, KeycloakTokenResponse.class);
@@ -74,6 +83,19 @@ public class KeycloakService {
                 keycloakProperties.getAuthServerUrl(), keycloakProperties.getRealm());
 
         List<NameValuePair> params = new ArrayList<>();
+        params.add(new BasicNameValuePair("client_id", keycloakProperties.getClientId()));
+        params.add(new BasicNameValuePair("client_secret", keycloakProperties.getClientSecret()));
+        params.add(new BasicNameValuePair("refresh_token", refreshToken));
+
+        return executePost(params, url);
+    }
+
+    public KeycloakTokenResponse refreshToken(String refreshToken) throws IOException {
+        String url = String.format("%s/realms/%s/protocol/openid-connect/token",
+                keycloakProperties.getAuthServerUrl(), keycloakProperties.getRealm());
+
+        List<NameValuePair> params = new ArrayList<>();
+        params.add(new BasicNameValuePair("grant_type", "refresh_token"));
         params.add(new BasicNameValuePair("client_id", keycloakProperties.getClientId()));
         params.add(new BasicNameValuePair("client_secret", keycloakProperties.getClientSecret()));
         params.add(new BasicNameValuePair("refresh_token", refreshToken));

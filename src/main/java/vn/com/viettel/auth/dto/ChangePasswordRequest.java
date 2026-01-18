@@ -4,10 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class ResetPasswordRequest {
-    @NotBlank(message = "Username không được để trống")
-    private String username;
-
+public class ChangePasswordRequest {
     @NotBlank(message = "Mật khẩu cũ không được để trống")
     private String oldPassword;
 

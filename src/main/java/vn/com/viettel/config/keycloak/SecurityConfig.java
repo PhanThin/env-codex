@@ -63,6 +63,7 @@ public class SecurityConfig {
 
             // 5. Cấu hình BFF & Resource Server
             auth.requestMatchers("/api/v1/auth/login").permitAll()
+                    .requestMatchers("/api/v1/auth/change-password").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
                     .anyRequest().authenticated();
         });

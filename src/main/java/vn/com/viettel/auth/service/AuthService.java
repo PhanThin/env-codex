@@ -1,5 +1,6 @@
 package vn.com.viettel.auth.service;
 
+import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,14 +61,14 @@ public class AuthService {
         }
 
         // "Hack" to pass when api reset password not done
-        user.setLastPasswordChange(LocalDateTime.now().minusDays(50));
+//        user.setLastPasswordChange(LocalDateTime.now().minusDays(50));
 
-        // 2. Kiểm tra trạng thái tài khoản
+        // 2. Kiểm tra trạng thái người dùng
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new CustomException(AuthErrorCode.USER_LOCKED.getCode(), "Tài khoản đã bị khóa hoặc không còn hiệu lực. Vui lòng liên hệ quản trị hệ thống");
+            throw new CustomException(AuthErrorCode.USER_LOCKED.getCode(), "Người dùng đã bị khóa hoặc không còn hiệu lực. Vui lòng liên hệ quản trị hệ thống");
         }
 
-        // 3. Chính sách mật khẩu 90 ngày cho tài khoản Type 1
+        // 3. Chính sách mật khẩu 90 ngày cho người dùng Type 1
         policyService.checkPasswordPolicy(user, username);
 
         log.info("Người dùng {} đăng nhập thành công", username);
@@ -77,9 +78,9 @@ public class AuthService {
     private LoginResponse handleLoginError(KeycloakTokenResponse response, String username) {
         String description = response.getErrorDescription() != null ? response.getErrorDescription().toLowerCase() : "";
 
-        // 1. Trường hợp Tài khoản bị Admin vô hiệu hóa (is_active = false trong Keycloak)
+        // 1. Trường hợp Người dùng bị Admin vô hiệu hóa (is_active = false trong Keycloak)
         if (response.getStatusCode() == 400 && description.contains("disabled")) {
-            throw new CustomException(AuthErrorCode.USER_LOCKED.getCode(), "Tài khoản đã bị khóa hoặc không còn hiệu lực. Vui lòng liên hệ quản trị hệ thống");
+            throw new CustomException(AuthErrorCode.USER_LOCKED.getCode(), "Người dùng đã bị khóa hoặc không còn hiệu lực. Vui lòng liên hệ quản trị hệ thống");
         }
 
         // Xử lý thông báo lỗi Brute-force
@@ -94,6 +95,7 @@ public class AuthService {
             }
         }
 
+        log.info(description);
         throw new CustomException(AuthErrorCode.INVALID_CREDENTIALS.getCode(), "Tên đăng nhập hoặc mật khẩu không đúng");
     }
 
@@ -114,35 +116,98 @@ public class AuthService {
         }
     }
 
-    /**
-     * Logic Reset Mật khẩu
-     */
-    public void resetPassword(ResetPasswordRequest request) {
-        // 1. Kiểm tra người dùng có tồn tại trong hệ thống nội bộ không
-        SysUser user = userRepository.findByUsernameAndIsDeletedFalse(request.getUsername())
-                .orElseThrow(() -> new CustomException(AuthErrorCode.USER_NOT_FOUND.getCode(), "Người dùng không tồn tại trên hệ thống"));
+    public LoginResponse refresh(RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+        try {
+            // 1. Gọi Keycloak để lấy bộ Token mới
+            KeycloakTokenResponse response = keycloakService.refreshToken(refreshToken);
 
-        // 2. Lấy userId từ Keycloak
-        String userId = keycloakService.getUserIdByUsername(request.getUsername());
-        if (userId == null) {
-            throw new CustomException(AuthErrorCode.USER_NOT_FOUND.getCode(), "Không tìm thấy người dùng tương ứng trên Keycloak");
+            if (response.getStatusCode() == 200) {
+                // 2. Trích xuất username từ Access Token mới để kiểm tra DB nội bộ
+                // Sử dụng thư viện Nimbus (mặc định của Spring Security) để parse JWT không cần verify (vì Keycloak đã verify rồi)
+                String username = SignedJWT.parse(response.getAccessToken()).getJWTClaimsSet().getStringClaim("preferred_username");
+
+                // 3. Kiểm tra User trong DB Oracle
+                SysUser user = userRepository.findByUsernameAndIsDeletedFalse(username)
+                        .orElseThrow(() -> new CustomException(AuthErrorCode.USER_NOT_FOUND.getCode(),
+                            "Người dùng không tồn tại hoặc đã bị xóa"));
+
+                if (!Boolean.TRUE.equals(user.getIsActive())) {
+                    // Nếu User bị khóa, chúng ta nên Logout luôn session này trên Keycloak (Tùy chọn)
+                    keycloakService.logout(response.getRefreshToken());
+                    throw new CustomException(AuthErrorCode.USER_LOCKED.getCode(),
+                        "Người dùng đã bị khóa hoặc không còn hiệu lực. Vui lòng liên hệ quản trị hệ thống");
+                }
+
+                // 4. Ghi log làm mới token thành công (Async Event)
+                publishLoginLog(username, true, "Làm mới phiên làm việc thành công");
+
+                return LoginResponse.builder()
+                        .accessToken(response.getAccessToken())
+                        .refreshToken(response.getRefreshToken())
+                        .expiresIn(response.getExpiresIn())
+                        .userType(user.getType())
+                        .message("Duy trì đăng nhập thành công")
+                        .build();
+            } else {
+                publishLoginLog("UNKNOWN", false, "Refresh token không hợp lệ hoặc đã hết hạn");
+                throw new CustomException(AuthErrorCode.INVALID_CREDENTIALS.getCode(), "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại");
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi refresh token: {}", e.getMessage());
+            if (e instanceof CustomException) throw (CustomException) e;
+            throw new RuntimeException("Hệ thống xác thực đang gặp sự cố");
         }
+    }
+
+    public void changePassword(ResetPasswordRequest request) {
+        String username = request.getUsername();
 
         try {
-            // 3. Thực hiện reset mật khẩu trên Keycloak
-            keycloakService.resetPassword(userId, request.getNewPassword());
+            // 1. Xác thực mật khẩu cũ bằng cách thử "Login" ngầm sang Keycloak
+            KeycloakTokenResponse verifyRes = keycloakService.login(username, request.getOldPassword());
 
-            // 4. Mở khóa tài khoản trong DB nếu đang bị khóa tạm thời (nếu cần)
-            if (Boolean.TRUE.equals(user.getIsLockedTemporarily())) {
-                user.setIsLockedTemporarily(false);
-                userRepository.save(user);
-                keycloakService.clearBruteForce(userId); // Xóa vết Brute-force trên Keycloak
+            boolean isOldPasswordCorrect = false;
+            if (verifyRes.getStatusCode() == 200) {
+                isOldPasswordCorrect = true;
+            } else if (verifyRes.getStatusCode() == 400 &&
+                       "Account is not fully set up".equalsIgnoreCase(verifyRes.getErrorDescription())) {
+                // ĐÂY LÀ ĐIỂM MẤU CHỐT: Keycloak xác nhận pass đúng nhưng yêu cầu action bổ sung
+                log.info("Xác minh mật khẩu cũ thành công (Tài khoản đang có Required Action)");
+                isOldPasswordCorrect = true;
             }
 
-            log.info("Mật khẩu của người dùng {} đã được cập nhật thành công", request.getUsername());
-        } catch (Exception e) {
-            log.error("Lỗi khi reset mật khẩu cho {}: {}", request.getUsername(), e.getMessage());
-            throw new RuntimeException("Cập nhật mật khẩu thất bại. Vui lòng thử lại sau");
+            if (!isOldPasswordCorrect) {
+                throw new CustomException(AuthErrorCode.INVALID_CREDENTIALS.getCode(), "Mật khẩu cũ không chính xác");
+            }
+
+            // 2. Tìm userId của người dùng trên Keycloak thông qua username
+            String userId = keycloakService.getUserIdByUsername(username);
+            if (userId == null) {
+                throw new CustomException(AuthErrorCode.USER_NOT_FOUND.getCode(), "Người dùng không tồn tại hoặc đã bị xóa");
+            }
+    
+            // 3. Thực hiện đổi mật khẩu mới bằng quyền Admin
+            keycloakService.resetPassword(userId, request.getNewPassword());
+    
+            // 4. Cập nhật ngày đổi mật khẩu trong DB Oracle để reset chu kỳ 90 ngày
+            SysUser user = userRepository.findByUsernameAndIsDeletedFalse(username)
+                    .orElseThrow(() -> new CustomException(AuthErrorCode.USER_NOT_FOUND.getCode(), "Người dùng không tồn tại hoặc đã bị xóa"));
+
+            if (!Boolean.TRUE.equals(user.getIsActive())) {
+                throw new CustomException(AuthErrorCode.USER_LOCKED.getCode(),
+                        "Người dùng đã bị khóa hoặc không còn hiệu lực. Vui lòng liên hệ quản trị hệ thống");
+            }
+
+            user.setLastPasswordChange(LocalDateTime.now());
+            userRepository.save(user);
+    
+            log.info("Người dùng {} đã reset mật khẩu thành công bằng mật khẩu cũ", username);
+            publishLoginLog(username, true, "Reset mật khẩu thành công");
+    
+        } catch (IOException e) {
+            log.error("Lỗi khi kết nối Keycloak để reset mật khẩu: {}", e.getMessage());
+            throw new RuntimeException("Hệ thống xác thực đang gặp sự cố");
         }
     }
 
