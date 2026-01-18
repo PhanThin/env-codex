@@ -43,7 +43,7 @@ public class CatOutstandingTypeDto {
     )
     private LocalDateTime createdAt;
 
-    private String isActive;
+    private Boolean isActive;
 
     private Boolean isDeleted;
 
