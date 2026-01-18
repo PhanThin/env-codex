@@ -1,5 +1,6 @@
 package vn.com.viettel.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -32,7 +33,15 @@ public class CatRecommendationTypeDto implements Serializable {
     private UserDto createdByUser;
     private UserDto updatedByUser;
 
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
     LocalDateTime createdAt;
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
     LocalDateTime updatedAt;
 }
 
