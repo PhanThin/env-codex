@@ -18,7 +18,7 @@ import java.util.List;
 
 @Tag(name = "17. Lý do điều chỉnh tiến độ", description = "API quản lý danh mục lý do điều chỉnh tiến độ")
 @RestController
-@RequestMapping("/api/cat-schedule-adj-reason")
+@RequestMapping("/api/v1/cat-schedule-adj-reason")
 @Validated
 public class CatScheduleAdjReasonController {
 

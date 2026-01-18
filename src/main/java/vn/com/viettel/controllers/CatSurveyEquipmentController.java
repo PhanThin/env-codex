@@ -1,17 +1,18 @@
 package vn.com.viettel.controllers;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.com.viettel.dto.CatSurveyEquipmentDto;
 import vn.com.viettel.dto.CatSurveyEquipmentSearchRequestDto;
 import vn.com.viettel.services.CatSurveyEquipmentService;
 import vn.com.viettel.utils.exceptions.CustomException;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
+@Tag(name = "17. Danh mục thiết bị", description = "API quản lý danh mục thiết bị")
 @RestController
 @RequestMapping("/api/v1/survey-equipments")
 public class CatSurveyEquipmentController {
@@ -20,46 +21,23 @@ public class CatSurveyEquipmentController {
     private CatSurveyEquipmentService service;
 
     @PostMapping
-    public CatSurveyEquipmentDto create(@RequestBody CatSurveyEquipmentDto dto) throws CustomException {
-        return service.create(dto);
+    public ResponseEntity<CatSurveyEquipmentDto> create(@RequestBody CatSurveyEquipmentDto dto) throws CustomException {
+        return ResponseEntity.ok(service.create(dto));
     }
 
     @PutMapping("/{id}")
-    public CatSurveyEquipmentDto update(@PathVariable("id") Long id, @RequestBody CatSurveyEquipmentDto dto) throws CustomException {
-        return service.update(id, dto);
+    public ResponseEntity<CatSurveyEquipmentDto> update(@PathVariable("id") Long id, @RequestBody CatSurveyEquipmentDto dto) throws CustomException {
+        return ResponseEntity.ok(service.update(id, dto));
     }
 
     @DeleteMapping
-    public void delete(@RequestBody List<Long> equipmentIds) throws CustomException {
+    public ResponseEntity<Void> delete(@RequestBody List<Long> equipmentIds) throws CustomException {
         service.delete(equipmentIds);
+        return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/search")
-    public Page<CatSurveyEquipmentDto> search(
-            @RequestParam(value = "page", required = false) Integer page,
-            @RequestParam(value = "size", required = false) Integer size,
-            @RequestParam(value = "sortBy", required = false) String sortBy,
-            @RequestParam(value = "sortDirection", required = false) String sortDirection,
-            @RequestParam(value = "createdAtFrom", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtFrom,
-            @RequestParam(value = "createdAtTo", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtTo,
-            @RequestParam(value = "equipmentCode", required = false) String equipmentCode,
-            @RequestParam(value = "equipmentName", required = false) String equipmentName,
-            @RequestParam(value = "manageUnitId", required = false) Long manageUnitId,
-            @RequestParam(value = "isActive", required = false) String isActive
-    ) throws CustomException {
-        CatSurveyEquipmentSearchRequestDto req = new CatSurveyEquipmentSearchRequestDto();
-        req.setPage(page);
-        req.setSize(size);
-        req.setSortBy(sortBy);
-        req.setSortDirection(sortDirection);
-        req.setCreatedAtFrom(createdAtFrom);
-        req.setCreatedAtTo(createdAtTo);
-        req.setEquipmentCode(equipmentCode);
-        req.setEquipmentName(equipmentName);
-        req.setManageUnitId(manageUnitId);
-        req.setIsActive(isActive);
-        return service.search(req);
+    @PostMapping("/search")
+    public ResponseEntity<Page<CatSurveyEquipmentDto>> search(@RequestBody CatSurveyEquipmentSearchRequestDto req) throws CustomException {
+        return ResponseEntity.ok(service.search(req));
     }
 }
