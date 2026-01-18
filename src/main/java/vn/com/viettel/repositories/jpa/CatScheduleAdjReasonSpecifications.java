@@ -27,29 +27,27 @@ public final class CatScheduleAdjReasonSpecifications {
             predicates.add(cb.isFalse(root.get("isDeleted")));
 
             // isActive: default Y(true)
-            Boolean isActive = request.getIsActive() != null ? request.getIsActive() : Boolean.TRUE;
-            predicates.add(cb.equal(root.get("isActive"), isActive));
-
-            if (StringUtils.isNotBlank(request.getReasonCode())) {
-                String value = normalizeLike(request.getReasonCode());
-                predicates.add(cb.like(cb.upper(cb.trim(root.get("reasonCode"))), value));
+            if (request.getIsActive() != null) {
+                predicates.add(cb.equal(root.get("isActive"), request.getIsActive()));
             }
 
-            if (StringUtils.isNotBlank(request.getReasonName())) {
-                String value = normalizeLike(request.getReasonName());
-                predicates.add(cb.like(cb.upper(cb.trim(root.get("reasonName"))), value));
+            if (StringUtils.isNotBlank(request.getKeyword())) {
+                String pattern = "%" + request.getKeyword().trim().toLowerCase() + "%";
+                predicates.add(cb.like(cb.lower(root.get("reasonName")), pattern));
             }
 
-            LocalDateTime from = parseDateTime(request.getCreatedAtFrom(), true);
-            LocalDateTime to = parseDateTime(request.getCreatedAtTo(), false);
-
-            if (from != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
+            LocalDate createdFrom = request.getCreatedFrom();
+            LocalDate createdTo = request.getCreatedTo();
+            if (createdFrom != null || createdTo != null) {
+                if (createdFrom != null) {
+                    LocalDateTime fromDateTime = createdFrom.atStartOfDay();
+                    predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), fromDateTime));
+                }
+                if (createdTo != null) {
+                    LocalDateTime toDateTime = createdTo.atTime(LocalTime.MAX);
+                    predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), toDateTime));
+                }
             }
-            if (to != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), to));
-            }
-
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

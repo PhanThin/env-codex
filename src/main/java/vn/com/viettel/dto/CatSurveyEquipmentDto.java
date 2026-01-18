@@ -42,7 +42,7 @@ public class CatSurveyEquipmentDto {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Long updatedBy;
 
-    private String isActive;
+    private Boolean isActive;
 
 
 }
