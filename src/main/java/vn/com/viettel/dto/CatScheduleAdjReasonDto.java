@@ -43,13 +43,13 @@ public class CatScheduleAdjReasonDto {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     private LocalDateTime createdAt;
 
-    @Schema(description = "Người tạo", example = "1")
-    private Long createdBy;
+    @Schema(description = "Người tạo")
+    private UserDto createdByUser;
 
     @Schema(description = "Ngày cập nhật", example = "2026-01-18T10:30:15.123")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     private LocalDateTime updatedAt;
 
-    @Schema(description = "Người cập nhật", example = "1")
-    private Long updatedBy;
+    @Schema(description = "Người cập nhật")
+    private UserDto updatedByUser;
 }
