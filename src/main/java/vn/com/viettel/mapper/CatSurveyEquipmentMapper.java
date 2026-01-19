@@ -11,20 +11,10 @@ public interface CatSurveyEquipmentMapper {
 
     CatSurveyEquipmentDto toDto(CatSurveyEquipment entity);
 
-    @Mapping(target = "equipmentId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "isDeleted", ignore = true)
     CatSurveyEquipment toEntity(CatSurveyEquipmentDto dto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "equipmentId", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "isDeleted", ignore = true)
     void updateEntityFromDto(CatSurveyEquipmentDto dto, @MappingTarget CatSurveyEquipment entity);
 

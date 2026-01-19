@@ -267,10 +267,11 @@ public class ProjectTypeServiceImpl implements ProjectTypeService {
 
     @Override
     public List<ProjectTypeDto> getAllProjectType() {
-        List<ProjectType> projectTypes = projectTypeRepository.findAllByIsDeletedIsFalse();
-        return projectTypes.stream()
-                .map(projectTypeMapper::toDto)
-                .toList();
+        List<ProjectType> entities = projectTypeRepository.findAllByIsDeletedIsFalse();
+        List<ProjectTypeDto> dtos = entities.stream().map(projectTypeMapper::toDto).toList();
+        enrichCreatedUpdatedUsers(entities, dtos);
+        return dtos;
+
     }
     private UserDto mapUserDto(SysUser sysUser, Map<Long, SysOrg> sysOrgMap) {
         if (sysUser == null) return null;

@@ -3,6 +3,7 @@ package vn.com.viettel.services.impl;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,7 +16,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import vn.com.viettel.dto.CatSurveyEquipmentDto;
 import vn.com.viettel.dto.CatSurveyEquipmentSearchRequestDto;
+import vn.com.viettel.dto.OrgDto;
+import vn.com.viettel.dto.UserDto;
 import vn.com.viettel.entities.CatSurveyEquipment;
+import vn.com.viettel.entities.SysOrg;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.CatSurveyEquipmentMapper;
 import vn.com.viettel.repositories.jpa.CatSurveyEquipmentRepository;
@@ -27,10 +31,12 @@ import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+
 public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService {
 
     @Autowired
@@ -44,6 +50,9 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
 
     @Autowired
     private Translator translator;
+
+    private final org.modelmapper.ModelMapper modelMapper;
+    private final vn.com.viettel.repositories.jpa.SysOrgRepository sysOrgRepo;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -80,9 +89,14 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         entity.setUpdatedBy(userId);
         entity.setIsDeleted("N");
 
+        // default IS_ACTIVE = 'Y' nếu client không gửi
+        entity.setIsActive(StringUtils.defaultIfBlank(dto.getIsActive(), "Y").trim().toUpperCase());
 
-        repository.save(entity);
-        return mapper.toDto(entity);
+        CatSurveyEquipment saved = repository.save(entity);
+        CatSurveyEquipmentDto dto2 = mapper.toDto(saved);
+        enrichCreatedUpdatedUsers(List.of(saved), List.of(dto2));
+        return dto2;
+
     }
 
     @Override
@@ -109,9 +123,16 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         entity.setUpdatedAt(now);
         entity.setUpdatedBy(userId);
 
+        // isActive: nếu null thì giữ nguyên
+        if (dto.getIsActive() != null) {
+            entity.setIsActive(dto.getIsActive().trim().toUpperCase());
+        }
 
-        repository.save(entity);
-        return mapper.toDto(entity);
+        CatSurveyEquipment saved = repository.save(entity);
+        CatSurveyEquipmentDto dto2 = mapper.toDto(saved);
+        enrichCreatedUpdatedUsers(List.of(saved), List.of(dto2));
+        return dto2;
+
     }
 
     @Override
@@ -158,7 +179,10 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         String sortBy = StringUtils.defaultIfBlank(request.getSortBy(), "createdAt");
         String sortProperty = ALLOWED_SORT_FIELDS.get(sortBy);
         if (sortProperty == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.search.sortBy.invalid", ALLOWED_SORT_FIELDS.keySet()));
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    msg("surveyEquipment.search.sortBy.invalid", ALLOWED_SORT_FIELDS.keySet())
+            );
         }
 
         // sortDirection
@@ -169,18 +193,41 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         } else if ("DESC".equalsIgnoreCase(sortDirectionRaw)) {
             direction = Sort.Direction.DESC;
         } else {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.search.sortDirection.invalid"));
+            throw new CustomException(
+                    HttpStatus.BAD_REQUEST.value(),
+                    msg("surveyEquipment.search.sortDirection.invalid")
+            );
         }
 
-        Sort sort = Sort.by(direction, sortProperty);
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
+        // validate isActive
+        Boolean isActive = request.getIsActive();
+
+        if (isActive == null) {
+            isActive = Boolean.TRUE; // default = true
+        }
+
+        request.setIsActive(isActive);
+
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(direction, sortProperty));
 
         var spec = CatSurveyEquipmentSpecifications.buildSpecification(request);
-        Page<CatSurveyEquipment> result = repository.findAll(spec, pageRequest);
 
-        List<CatSurveyEquipmentDto> dtoList = result.getContent().stream().map(mapper::toDto).toList();
-        return new PageImpl<>(dtoList, pageRequest, result.getTotalElements());
+        // 1) Query Page<Entity>
+        Page<CatSurveyEquipment> resultPage = repository.findAll(spec, pageRequest);
+
+        // 2) Convert -> DTO list
+        List<CatSurveyEquipment> entities = resultPage.getContent();
+        List<CatSurveyEquipmentDto> dtoList = entities.stream()
+                .map(mapper::toDto)
+                .toList();
+
+        // 3) Enrich user info (created/updated) trước khi trả ra
+        enrichCreatedUpdatedUsers(entities, dtoList);
+
+        // 4) Wrap lại Page<DTO>
+        return new PageImpl<>(dtoList, pageRequest, resultPage.getTotalElements());
     }
+
 
     private void validate(CatSurveyEquipmentDto dto, Long idForUpdate) throws CustomException {
         // REQUIRED: code/name/model/manageUnitId
@@ -210,8 +257,9 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         }
 
         // CHECK: isActive
-        if (dto.getIsActive() == null) {
-            throw  new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.isActive.required"));
+        String isActive = StringUtils.defaultIfBlank(dto.getIsActive(), "Y").trim().toUpperCase();
+        if (!"Y".equals(isActive) && !"N".equals(isActive)) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.isActive.invalid"));
         }
 
         // optional lengths
@@ -323,4 +371,54 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         }
         return null;
     }
+    private UserDto mapUserDto(SysUser sysUser, Map<Long, SysOrg> sysOrgMap) {
+        if (sysUser == null) return null;
+        UserDto userDto = modelMapper.map(sysUser, UserDto.class);
+
+        // giống RecommendationMapper: gắn org vào user
+        if (sysOrgMap != null && sysUser.getOrgId() != null && sysOrgMap.containsKey(sysUser.getOrgId())) {
+            userDto.setOrg(modelMapper.map(sysOrgMap.get(sysUser.getOrgId()), OrgDto.class));
+        }
+        return userDto;
+    }
+
+    private void enrichCreatedUpdatedUsers(List<CatSurveyEquipment> entities, List<CatSurveyEquipmentDto> dtos) {
+        if (entities == null || entities.isEmpty() || dtos == null || dtos.isEmpty()) return;
+
+        // lấy danh sách userId cần dùng (tránh N+1)
+        Set<Long> userIds = new HashSet<>();
+        for (CatSurveyEquipment e : entities) {
+            if (e.getCreatedBy() != null) userIds.add(e.getCreatedBy());
+            if (e.getUpdatedBy() != null) userIds.add(e.getUpdatedBy());
+        }
+
+        // load user map
+        Map<Long, SysUser> userMap;
+        if (userIds.isEmpty()) {
+            userMap = Collections.emptyMap();
+        } else {
+            // Nếu repo có findAllByIdInAndIsDeletedFalse thì dùng cái đó là tốt nhất
+            // userMap = userRepository.findAllByIdInAndIsDeletedFalse(new ArrayList<>(userIds))...
+            userMap = userRepository.findAllById(userIds).stream()
+                    .collect(Collectors.toMap(SysUser::getId, u -> u));
+        }
+
+        // load org map (nếu muốn giống Recommendation)
+        Map<Long, SysOrg> orgMap = sysOrgRepo.findAllByIsDeletedFalse().stream()
+                .collect(Collectors.toMap(SysOrg::getId, o -> o));
+
+        // enrich theo đúng index (dtos tạo từ entities theo order)
+        for (int i = 0; i < entities.size(); i++) {
+            CatSurveyEquipment e = entities.get(i);
+            CatSurveyEquipmentDto dto = dtos.get(i);
+
+            if (e.getCreatedBy() != null && userMap.containsKey(e.getCreatedBy())) {
+                dto.setCreatedByUser(mapUserDto(userMap.get(e.getCreatedBy()), orgMap));
+            }
+            if (e.getUpdatedBy() != null && userMap.containsKey(e.getUpdatedBy())) {
+                dto.setUpdatedByUser(mapUserDto(userMap.get(e.getUpdatedBy()), orgMap));
+            }
+        }
+    }
+
 }
