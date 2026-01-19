@@ -5,8 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.com.viettel.dto.CatManufacturerDto;
 import vn.com.viettel.dto.CatSurveyEquipmentDto;
 import vn.com.viettel.dto.CatSurveyEquipmentSearchRequestDto;
+import vn.com.viettel.dto.ProjectTypeDto;
 import vn.com.viettel.services.CatSurveyEquipmentService;
 import vn.com.viettel.utils.exceptions.CustomException;
 
@@ -19,6 +21,7 @@ public class CatSurveyEquipmentController {
 
     @Autowired
     private CatSurveyEquipmentService service;
+
 
     @PostMapping
     public ResponseEntity<CatSurveyEquipmentDto> create(@RequestBody CatSurveyEquipmentDto dto) throws CustomException {
@@ -40,4 +43,14 @@ public class CatSurveyEquipmentController {
     public ResponseEntity<Page<CatSurveyEquipmentDto>> search(@RequestBody CatSurveyEquipmentSearchRequestDto req) throws CustomException {
         return ResponseEntity.ok(service.search(req));
     }
+
+    @GetMapping
+    public ResponseEntity<?> getAll(
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir
+    ) {
+        List<CatSurveyEquipmentDto> data = service.getAll(sortBy, sortDir);
+        return ResponseEntity.ok(data);
+    }
+
 }

@@ -14,14 +14,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import vn.com.viettel.dto.CatSurveyEquipmentDto;
-import vn.com.viettel.dto.CatSurveyEquipmentSearchRequestDto;
-import vn.com.viettel.dto.OrgDto;
-import vn.com.viettel.dto.UserDto;
-import vn.com.viettel.entities.CatSurveyEquipment;
-import vn.com.viettel.entities.SysOrg;
-import vn.com.viettel.entities.SysUser;
+import vn.com.viettel.dto.*;
+import vn.com.viettel.entities.*;
 import vn.com.viettel.mapper.CatSurveyEquipmentMapper;
+import vn.com.viettel.repositories.jpa.CatManufacturerRepository;
 import vn.com.viettel.repositories.jpa.CatSurveyEquipmentRepository;
 import vn.com.viettel.repositories.jpa.CatSurveyEquipmentSpecifications;
 import vn.com.viettel.repositories.jpa.SysUserRepository;
@@ -30,6 +26,7 @@ import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,6 +39,8 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
     @Autowired
     private CatSurveyEquipmentRepository repository;
 
+    @Autowired
+    private CatManufacturerRepository catManufacturerRepository;
     @Autowired
     private CatSurveyEquipmentMapper mapper;
 
@@ -87,11 +86,10 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         entity.setCreatedBy(userId);
         entity.setUpdatedAt(now);
         entity.setUpdatedBy(userId);
-        entity.setIsDeleted("N");
-
-        // default IS_ACTIVE = 'Y' nếu client không gửi
-        entity.setIsActive(StringUtils.defaultIfBlank(dto.getIsActive(), "Y").trim().toUpperCase());
-
+        entity.setIsDeleted(Boolean.FALSE);
+        if (entity.getIsActive() == null) {
+            entity.setIsActive(Boolean.TRUE);
+        }
         CatSurveyEquipment saved = repository.save(entity);
         CatSurveyEquipmentDto dto2 = mapper.toDto(saved);
         enrichCreatedUpdatedUsers(List.of(saved), List.of(dto2));
@@ -124,8 +122,8 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         entity.setUpdatedBy(userId);
 
         // isActive: nếu null thì giữ nguyên
-        if (dto.getIsActive() != null) {
-            entity.setIsActive(dto.getIsActive().trim().toUpperCase());
+        if (entity.getIsActive() == null) {
+            entity.setIsActive(Boolean.TRUE);
         }
 
         CatSurveyEquipment saved = repository.save(entity);
@@ -158,7 +156,7 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         LocalDateTime now = LocalDateTime.now();
 
         entities.forEach(e -> {
-            e.setIsDeleted("Y");
+            e.setIsDeleted(Boolean.TRUE);
             e.setUpdatedAt(now);
             e.setUpdatedBy(userId);
         });
@@ -256,12 +254,6 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manageUnitId.required"));
         }
 
-        // CHECK: isActive
-        String isActive = StringUtils.defaultIfBlank(dto.getIsActive(), "Y").trim().toUpperCase();
-        if (!"Y".equals(isActive) && !"N".equals(isActive)) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.isActive.invalid"));
-        }
-
         // optional lengths
         if (dto.getManufacturerName() != null && dto.getManufacturerName().trim().length() > 1000) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manufacturerName.length"));
@@ -315,29 +307,21 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
     }
 
     private boolean existsManufacturer(Long manufacturerId) {
-        try {
-            Object result = entityManager
-                    .createNativeQuery("SELECT COUNT(1) FROM CAT_MANUFACTURER WHERE MANUFACTURER_ID = :id")
-                    .setParameter("id", manufacturerId)
-                    .getSingleResult();
-            return toLong(result) > 0;
-        } catch (Exception ex) {
-            // Nếu hệ thống đã có entity/repo cho CAT_MANUFACTURER, bạn có thể thay bằng repo.existsById(...)
-            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR.value(), msg("database.error"));
-        }
+        return catManufacturerRepository
+                .findByManufacturerIdAndIsDeletedFalse(manufacturerId)
+                .isPresent();
     }
 
     private boolean existsManageUnit(Long manageUnitId) {
-        try {
-            Object result = entityManager
-                    .createNativeQuery("SELECT COUNT(1) FROM SYS_ORG WHERE ORG_ID = :id")
-                    .setParameter("id", manageUnitId)
-                    .getSingleResult();
-            return toLong(result) > 0;
-        } catch (Exception ex) {
-            throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR.value(), msg("database.error"));
-        }
+        return sysOrgRepo.findById(manageUnitId)
+                .map(org -> {
+                    // tuỳ entity SysOrg của bạn dùng isDeleted = Boolean / Integer / String
+                    try { return org.getIsDeleted() == null || !org.getIsDeleted(); } catch (Exception ignore) {}
+                    return true; // fallback nếu không có field isDeleted
+                })
+                .orElse(false);
     }
+
 
     private long toLong(Object result) {
         if (result == null) {
@@ -419,6 +403,21 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
                 dto.setUpdatedByUser(mapUserDto(userMap.get(e.getUpdatedBy()), orgMap));
             }
         }
+    }
+
+    @Override
+    public List<CatSurveyEquipmentDto> getAll(String sortBy, String sortDir) {
+        String sortField = (sortBy == null || sortBy.trim().isEmpty()) ? "updatedAt" : sortBy.trim();
+        String direction = (sortDir == null || sortDir.trim().isEmpty()) ? "desc" : sortDir.trim();
+
+        Sort sort = "asc".equalsIgnoreCase(direction)
+                ? Sort.by(sortField).ascending()
+                : Sort.by(sortField).descending();
+
+        List<CatSurveyEquipment> entities = repository.findAllByIsDeletedFalse(sort);
+        List<CatSurveyEquipmentDto> dtos = entities.stream().map(mapper::toDto).toList();
+        enrichCreatedUpdatedUsers(entities, dtos);
+        return dtos;
     }
 
 }

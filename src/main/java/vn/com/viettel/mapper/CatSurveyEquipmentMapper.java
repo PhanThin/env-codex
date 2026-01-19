@@ -41,11 +41,6 @@ public interface CatSurveyEquipmentMapper {
         if (entity.getNote() != null) {
             entity.setNote(entity.getNote().trim());
         }
-        if (entity.getIsActive() != null) {
-            entity.setIsActive(entity.getIsActive().trim().toUpperCase());
-        }
-        if (entity.getIsDeleted() != null) {
-            entity.setIsDeleted(entity.getIsDeleted().trim().toUpperCase());
-        }
+
     }
 }
