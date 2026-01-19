@@ -27,17 +27,19 @@ public class CatUnitController {
     @Autowired
     private Translator translator;
 //
-//    @PostMapping
-//    public ResponseEntity<CatUnitDto> create(@RequestBody CatUnitDto dto) throws CustomException {
-//        CatUnitDto result = catUnitService.create(dto);
-//        return ResponseEntity.ok(result);
-//    }
-//
-//    @PutMapping("/{id}")
-//    public ResponseEntity<CatUnitDto> update(@PathVariable("id") Long id, @RequestBody CatUnitDto dto) throws CustomException {
-//        CatUnitDto result = catUnitService.update(id, dto);
-//        return ResponseEntity.ok(result);
-//    }
+    @Operation(summary = "API tạo mới đơn vị")
+    @PostMapping
+    public ResponseEntity<CatUnitDto> create(@RequestBody CatUnitDto dto) throws CustomException {
+        CatUnitDto result = catUnitService.create(dto);
+        return ResponseEntity.ok(result);
+    }
+
+    @Operation(summary = "API cập nhật đơn vị")
+    @PutMapping("/{id}")
+    public ResponseEntity<CatUnitDto> update(@PathVariable("id") Long id, @RequestBody CatUnitDto dto) throws CustomException {
+        CatUnitDto result = catUnitService.update(id, dto);
+        return ResponseEntity.ok(result);
+    }
 //
 //    @DeleteMapping
 //    public ResponseEntity<?> delete(@RequestBody List<Long> unitIds) throws CustomException {

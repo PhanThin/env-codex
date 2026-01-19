@@ -210,18 +210,19 @@ public class CategoryWorkItemServiceImpl implements CategoryWorkItemService {
                 ));
 
         // Hạng mục dự án*
-        if (dto.getProjectItem() == null || dto.getProjectItem().getId() == null) {
-            throw new CustomException(
-                    HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("categoryWorkItem.projectItem.required")
-            );
+//        if (dto.getProjectItem() == null || dto.getProjectItem().getId() == null) {
+//            throw new CustomException(
+//                    HttpStatus.BAD_REQUEST.value(),
+//                    translator.getMessage("categoryWorkItem.projectItem.required")
+//            );
+//        }
+        if (dto.getProjectItem() != null && dto.getProjectItem().getId() != null) {
+            ProjectItem projectItem = projectItemRepository.findByIdAndIsDeletedFalse(dto.getProjectItem().getId())
+                    .orElseThrow(() -> new CustomException(
+                            HttpStatus.NOT_FOUND.value(),
+                            translator.getMessage("categoryWorkItem.projectItem.notFound", dto.getProjectItem().getId())
+                    ));
         }
-        ProjectItem projectItem = projectItemRepository.findByIdAndIsDeletedFalse(dto.getProjectItem().getId())
-                .orElseThrow(() -> new CustomException(
-                        HttpStatus.NOT_FOUND.value(),
-                        translator.getMessage("categoryWorkItem.projectItem.notFound", dto.getProjectItem().getId())
-                ));
-
         // Đơn vị tính (không bắt buộc) – nếu gửi ID thì kiểm tra tồn tại
         if (dto.getUnit() != null && dto.getUnit().getId() != null) {
             Optional<CatUnit> unitOpt = catUnitRepository.findByIdAndIsDeletedFalse(dto.getUnit().getId());
@@ -251,10 +252,9 @@ public class CategoryWorkItemServiceImpl implements CategoryWorkItemService {
 
         Optional<CategoryWorkItem> codeExisting =
                 categoryWorkItemRepository
-                        .findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCategoryWorkItemCodeIgnoreCaseAndIsDeletedFalse(
+                        .findFirstByProjectTypeIdAndProjectPhaseIdAndCategoryWorkItemCodeIgnoreCaseAndIsDeletedFalse(
                                 projectType.getId(),
                                 phase.getId(),
-                                projectItem.getId(),
                                 code
                         );
 
@@ -285,10 +285,9 @@ public class CategoryWorkItemServiceImpl implements CategoryWorkItemService {
 
         Optional<CategoryWorkItem> nameExisting =
                 categoryWorkItemRepository
-                        .findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCategoryWorkItemNameIgnoreCaseAndIsDeletedFalse(
+                        .findFirstByProjectTypeIdAndProjectPhaseIdAndCategoryWorkItemNameIgnoreCaseAndIsDeletedFalse(
                                 projectType.getId(),
                                 phase.getId(),
-                                projectItem.getId(),
                                 name
                         );
 

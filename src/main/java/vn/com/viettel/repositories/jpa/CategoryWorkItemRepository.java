@@ -21,10 +21,24 @@ public interface CategoryWorkItemRepository extends JpaRepository<CategoryWorkIt
     );
 
     Optional<CategoryWorkItem>
+    findFirstByProjectTypeIdAndProjectPhaseIdAndCategoryWorkItemCodeIgnoreCaseAndIsDeletedFalse(
+            Long projectTypeId,
+            Long projectPhaseId,
+            String categoryWorkItemCode
+    );
+
+    Optional<CategoryWorkItem>
     findFirstByProjectTypeIdAndProjectPhaseIdAndProjectItemIdAndCategoryWorkItemNameIgnoreCaseAndIsDeletedFalse(
             Long projectTypeId,
             Long projectPhaseId,
             Long projectItemId,
+            String categoryWorkItemName
+    );
+
+    Optional<CategoryWorkItem>
+    findFirstByProjectTypeIdAndProjectPhaseIdAndCategoryWorkItemNameIgnoreCaseAndIsDeletedFalse(
+            Long projectTypeId,
+            Long projectPhaseId,
             String categoryWorkItemName
     );
 

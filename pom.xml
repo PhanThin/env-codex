@@ -14,6 +14,8 @@
     <name>backend-base</name>
     <description>backend-base</description>
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>21</java.version>
         <backend-core.version>3.0.0-RELEASE</backend-core.version>
         <backend-auth.version>3.0.0-RELEASE</backend-auth.version>
