@@ -18,10 +18,11 @@ public class ProjectTypeDto implements Serializable {
     private Long id;
     private String projectTypeName;
 
-    private Long updatedBy;
     private LocalDateTime updatedAt;
-    private Long createdBy;
     private LocalDateTime createdAt;
+    private UserDto createdByUser;
+    private UserDto updatedByUser;
+
 
     private Boolean isActive;  // 'Y'/'N'
     private Boolean isDeleted; // 'Y'/'N'
