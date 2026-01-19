@@ -1,4 +1,4 @@
-package vn.com.viettel.config.keycloak;
+package vn.com.viettel.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +19,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import vn.com.viettel.auth.config.filter.ApiKeyAuthenticationFilter;
+import vn.com.viettel.config.keycloak.KeycloakRoleConverter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,7 +27,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Order(Ordered.HIGHEST_PRECEDENCE) // Đảm bảo chiếm quyền ưu tiên cao nhất
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -44,31 +45,23 @@ public class SecurityConfig {
 
     @Bean("customSecurityFilterChain")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // 1. CORS & CSRF
         http.securityMatcher("/**")
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable);
 
-        // 2. Tích hợp API Key Filter từ thư viện nội bộ
         if (!"null-api-key".equals(this.apiKey)) {
             http.addFilterBefore(new ApiKeyAuthenticationFilter(this.apiKey), UsernamePasswordAuthenticationFilter.class);
         }
 
         http.authorizeHttpRequests(auth -> {
-            // 3. Xử lý Ignore URL (Bypass Auth) từ thư viện
             handleIgnoreUrls(auth);
-
-            // 4. Xử lý IP Restricted từ thư viện
             handleIpRestrictions(auth);
-
-            // 5. Cấu hình BFF & Resource Server
             auth.requestMatchers("/api/v1/auth/login").permitAll()
                     .requestMatchers("/api/v1/auth/change-password").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
                     .anyRequest().authenticated();
         });
 
-        // 6. JWT Resource Server xác thực JWT của Keycloak gửi từ FE
         http.oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakRoleConverter()))
         );

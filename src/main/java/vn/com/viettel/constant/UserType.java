@@ -1,4 +1,4 @@
-package vn.com.viettel.auth.constant;
+package vn.com.viettel.constant;
 
 public enum UserType {
     IMIS(0), // Tài khoản noi bo, không check chinh sach mat khau

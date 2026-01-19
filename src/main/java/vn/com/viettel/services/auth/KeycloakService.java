@@ -1,4 +1,4 @@
-package vn.com.viettel.auth.service;
+package vn.com.viettel.services.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +15,8 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Service;
-import vn.com.viettel.auth.config.ExtendedKeycloakProperties;
-import vn.com.viettel.auth.dto.KeycloakTokenResponse;
+import vn.com.viettel.config.keycloak.ExtendedKeycloakProperties;
+import vn.com.viettel.dto.auth.KeycloakTokenResponse;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,23 +32,22 @@ public class KeycloakService {
     private final ObjectMapper objectMapper;
     private final Keycloak keycloak;
 
-    // Hàm dùng chung để thực hiện các yêu cầu POST (Khử lặp mã nguồn)
     private KeycloakTokenResponse executePost(List<NameValuePair> params, String url) throws IOException {
         HttpPost httpPost = new HttpPost(url);
-        httpPost.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8)); // Nên chỉ định rõ bảng mã
+        httpPost.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8));
 
         try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
             int statusCode = response.getStatusLine().getStatusCode();
             HttpEntity entity = response.getEntity();
 
-            // Bước 1: Kiểm tra nếu không có nội dung (thường là 204 Logout thành công)
+            // Kiểm tra nếu không có nội dung (thường là 204 Logout thành công)
             if (entity == null || statusCode == 204) {
                 return KeycloakTokenResponse.builder()
                         .statusCode(statusCode)
                         .build();
             }
 
-            // Bước 2: Chỉ đọc body khi entity không null
+            // Chỉ đọc body khi entity không null
             String body = EntityUtils.toString(entity, StandardCharsets.UTF_8);
 
             // Đề phòng trường hợp body rỗng nhưng entity không null

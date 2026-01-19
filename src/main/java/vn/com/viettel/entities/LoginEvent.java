@@ -1,4 +1,4 @@
-package vn.com.viettel.auth.entity;
+package vn.com.viettel.entities;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
