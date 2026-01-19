@@ -1,5 +1,6 @@
 package vn.com.viettel.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,15 +35,23 @@ public class CatSurveyEquipmentDto {
     private String note;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
     private LocalDateTime createdAt;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private Long createdBy;
+    private UserDto createdByUser;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
     private LocalDateTime updatedAt;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private Long updatedBy;
+    private UserDto updatedByUser;
 
-    private Boolean isActive;
+    private String isActive;
 
 
 }
