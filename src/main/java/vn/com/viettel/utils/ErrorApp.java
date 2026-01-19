@@ -8,7 +8,11 @@ public enum ErrorApp {
     UNAUTHORIZED(401, "msg.unauthorized"),
     FORBIDDEN(403, "msg.access.denied"),
     CONFLICT(409, "msg.conflict"),
-    INTERNAL_SERVER(500, "msg.internal.server");
+    INTERNAL_SERVER(500, "msg.internal.server"),
+    PASSWORD_EXPIRED(40301, "msg.auth.password.expired"),
+    ACCOUNT_LOCKED(423, "msg.auth.account.locked"),
+    ACCOUNT_DISABLED(40302, "msg.auth.account.disabled"),
+    INVALID_CREDENTIALS(40101, "msg.auth.invalid.credentials");
 
     private final int code;
     private final String description;
