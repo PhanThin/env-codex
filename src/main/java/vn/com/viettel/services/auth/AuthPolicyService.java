@@ -2,11 +2,12 @@ package vn.com.viettel.services.auth;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import vn.com.viettel.constant.AuthErrorCode;
 import vn.com.viettel.config.auth.AuthProperties;
 import vn.com.viettel.constant.UserType;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.repositories.jpa.SysUserRepository;
+import vn.com.viettel.utils.ErrorApp;
+import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class AuthPolicyService {
     private final KeycloakService keycloakService;
     private final AuthProperties authProperties;
     private final SysUserRepository sysUserRepository;
+    private final Translator translator;
 
     public void checkPasswordPolicy(SysUser user, String username) {
         if (UserType.INTERNAL.getValue().equals(user.getType())) {
@@ -31,12 +33,11 @@ public class AuthPolicyService {
                 if (userId != null) {
                     keycloakService.forcePasswordUpdate(userId);
                 }
-                throw new CustomException(AuthErrorCode.PASSWORD_EXPIRED.getCode(), "Bạn cần thay đổi mật khẩu trước khi sử dụng hệ thống.");
+                throw new CustomException(ErrorApp.FORBIDDEN.getCode(), translator.getMessage("auth.password.change.required"));
             }
 
             if (isExpired) {
-                throw new CustomException(AuthErrorCode.PASSWORD_EXPIRED.getCode(), "Mật khẩu đã hết hạn." +
-                        "Bạn cần thay đổi mật khẩu trước khi sử dụng hệ thống.");
+                throw new CustomException(ErrorApp.FORBIDDEN.getCode(), translator.getMessage("auth.password.expired"));
             }
         }
     }
@@ -54,12 +55,11 @@ public class AuthPolicyService {
                     user.setIsLockedTemporarily(true);
                     sysUserRepository.save(user);
                     if (numLoginFailures >= authProperties.getBruteForce().getMaxFailures()) {
-                        throw new CustomException(AuthErrorCode.BRUTE_FORCE_LOCKED.getCode(),
-                                "Tài khoản đã tạm thời bị khóa do đăng nhập sai quá số lần cho phép Vui lòng thử lại sau " +
-                                        authProperties.getBruteForce().getLockDurationMinutes() + " phút");
+                        throw new CustomException(ErrorApp.FORBIDDEN.getCode(),
+                                translator.getMessage("auth.login.bruteforce.locked", authProperties.getBruteForce().getLockDurationMinutes()));
                     }
                 }
-                throw new CustomException(AuthErrorCode.BRUTE_FORCE_LOCKED.getCode(), "Tài khoản đang bị tạm khóa. Vui lòng thử lại sau khi hết thời gian khóa");
+                throw new CustomException(ErrorApp.FORBIDDEN.getCode(), translator.getMessage("auth.login.temporarily-locked"));
             }
         } else if (UserType.IMIS.getValue().equals(user.getType())) {
             keycloakService.clearBruteForce(userId);
