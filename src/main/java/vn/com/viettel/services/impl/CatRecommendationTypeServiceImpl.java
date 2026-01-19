@@ -135,23 +135,8 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
         }
 
         // --- Normalize date range (mặc định trong năm hiện tại + tối đa 1 năm) ---
-        LocalDateTime now = LocalDateTime.now();
         LocalDate fromDate = request.getCreatedFrom();
         LocalDate toDate = request.getCreatedTo();
-
-        // Nếu không truyền, default = từ đầu năm đến hiện tại
-        if (fromDate == null && toDate == null) {
-            fromDate = LocalDate.of(now.getYear(), 1, 1);
-            toDate = now.toLocalDate();
-        }
-
-        // Nếu chỉ truyền 1 đầu, tự hoàn thiện đầu còn lại theo logic an toàn
-        if (fromDate != null && toDate == null) {
-            toDate = now.toLocalDate();
-        }
-        if (fromDate == null && toDate != null) {
-            fromDate = toDate.minusYears(1);
-        }
 
         // Validate from <= to
         if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
@@ -159,17 +144,6 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("catRecommendationType.search.createdTime.range.invalid")
             );
-        }
-
-        // Validate <= 1 year
-        if (fromDate != null && toDate != null) {
-            long days = ChronoUnit.DAYS.between(fromDate, toDate);
-            if (days > 366) { // cho phép năm nhuận
-                throw new CustomException(
-                        HttpStatus.BAD_REQUEST.value(),
-                        translator.getMessage("catRecommendationType.search.createdTime.range.maxOneYear")
-                );
-            }
         }
 
         Specification<CatRecommendationType> specification = buildSearchSpecification(request, fromDate, toDate);
@@ -207,22 +181,26 @@ public class CatRecommendationTypeServiceImpl implements CatRecommendationTypeSe
                 predicates.add(cb.like(typeNameExp, like));
             }
 
-            String status = defaultIfBlank(request.getStatus(), "ALL").toUpperCase();
-            if ("ACTIVE".equals(status)) {
-                predicates.add(cb.isTrue(root.get("isActive")));
-            } else if ("INACTIVE".equals(status)) {
-                predicates.add(cb.isFalse(root.get("isActive")));
-            } else if (!"ALL".equals(status)) {
-                throw new CustomException(
-                        HttpStatus.BAD_REQUEST.value(),
-                        translator.getMessage("catRecommendationType.search.status.invalid")
-                );
+//            String status = defaultIfBlank(request.getStatus(), "ALL").toUpperCase();
+//            if ("ACTIVE".equals(status)) {
+//                predicates.add(cb.isTrue(root.get("isActive")));
+//            } else if ("INACTIVE".equals(status)) {
+//                predicates.add(cb.isFalse(root.get("isActive")));
+//            } else if (!"ALL".equals(status)) {
+//                throw new CustomException(
+//                        HttpStatus.BAD_REQUEST.value(),
+//                        translator.getMessage("catRecommendationType.search.status.invalid")
+//                );
+//            }
+            if (request.getIsActive() != null) {
+                predicates.add(cb.equal(root.get("isActive"), request.getIsActive()));
             }
-
-            if (fromDate != null && toDate != null) {
+            if (fromDate != null) {
                 LocalDateTime from = fromDate.atStartOfDay();
-                LocalDateTime toExclusive = toDate.plusDays(1).atStartOfDay();
                 predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
+            }
+            if (toDate != null) {
+                LocalDateTime toExclusive = toDate.atTime(23, 59, 59);
                 predicates.add(cb.lessThan(root.get("createdAt"), toExclusive));
             }
 

@@ -1,14 +1,9 @@
 package vn.com.viettel.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.type.YesNoConverter;
 
 import java.time.LocalDateTime;
 @Getter
@@ -68,9 +63,11 @@ public class CatSurveyEquipment {
     @Column(name = "UPDATED_BY")
     private Long updatedBy;
 
-    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
-    private String isActive;
-
     @Column(name = "IS_DELETED", nullable = false, length = 1)
-    private String isDeleted;
+    @Convert(converter = YesNoConverter.class)
+    private Boolean isDeleted;
+
+    @Column(name = "IS_ACTIVE", nullable = false, length = 1)
+    @Convert(converter = YesNoConverter.class)
+    private Boolean isActive;
 }

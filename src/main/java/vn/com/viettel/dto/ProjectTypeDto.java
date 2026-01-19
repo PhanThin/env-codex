@@ -1,5 +1,6 @@
 package vn.com.viettel.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,7 +19,15 @@ public class ProjectTypeDto implements Serializable {
     private Long id;
     private String projectTypeName;
 
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
     private LocalDateTime updatedAt;
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+    )
     private LocalDateTime createdAt;
     private UserDto createdByUser;
     private UserDto updatedByUser;

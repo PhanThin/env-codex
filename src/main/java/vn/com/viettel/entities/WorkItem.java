@@ -26,7 +26,7 @@ public class WorkItem {
     private Long id;
 
     @NotNull
-    @Column(name = "ITEM_ID", nullable = false)
+    @Column(name = "ITEM_ID")
     private Long itemId;
 
     @Size(max = 250)

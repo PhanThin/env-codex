@@ -37,10 +37,26 @@ public interface WorkItemRepository extends JpaRepository<WorkItem, Long>, JpaSp
     );
 
     Optional<WorkItem>
+    findFirstByProjectTypeIdAndProjectPhaseIdAndCatWorkItemIdAndWorkItemCodeIgnoreCaseAndIsDeletedFalse(
+            Long projectTypeId,
+            Long projectPhaseId,
+            Long catWorkItemId,
+            String workItemCode
+    );
+
+    Optional<WorkItem>
     findFirstByProjectTypeIdAndProjectPhaseIdAndItemIdAndCatWorkItemIdAndWorkItemNameIgnoreCaseAndIsDeletedFalse(
             Long projectTypeId,
             Long projectPhaseId,
             Long projectItemId,
+            Long catWorkItemId,
+            String workItemName
+    );
+
+    Optional<WorkItem>
+    findFirstByProjectTypeIdAndProjectPhaseIdAndCatWorkItemIdAndWorkItemNameIgnoreCaseAndIsDeletedFalse(
+            Long projectTypeId,
+            Long projectPhaseId,
             Long catWorkItemId,
             String workItemName
     );

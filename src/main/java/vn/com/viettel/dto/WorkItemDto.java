@@ -45,9 +45,9 @@ public class WorkItemDto {
     )
     ProjectTypeDto projectType;
 
-    @NotNull(message = "Hạng mục dự án là bắt buộc")
+//    @NotNull(message = "Hạng mục dự án là bắt buộc")
     @Schema(
-            requiredMode = Schema.RequiredMode.REQUIRED,
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED,
             description = "Hạng mục dự án"
     )
     ProjectItemDto projectItem;

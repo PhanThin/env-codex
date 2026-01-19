@@ -27,7 +27,7 @@ public class CategoryWorkItem {
     private Long id;
 
     @NotNull
-    @Column(name = "PROJECT_ITEM_ID", nullable = false)
+    @Column(name = "PROJECT_ITEM_ID")
     private Long projectItemId;
 
     @NotNull
