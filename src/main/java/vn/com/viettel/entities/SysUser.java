@@ -8,7 +8,6 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.YesNoConverter;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Getter
@@ -65,5 +64,14 @@ public class SysUser {
     @Column(name = "IS_DELETED")
     private Boolean isDeleted;
 
+    @Column(name = "TYPE")
+    private Integer type; // 0: IMIS, 1: Nội bộ
 
+    @Column(name = "LAST_PASSWORD_CHANGE")
+    private LocalDateTime lastPasswordChange;
+
+    @JdbcTypeCode(java.sql.Types.CHAR)
+    @Convert(converter = YesNoConverter.class)
+    @Column(name = "IS_LOCKED_TEMPORARILY")
+    private Boolean isLockedTemporarily;
 }

@@ -1,4 +1,4 @@
-package vn.com.viettel.config;
+package vn.com.viettel.config.keycloak;
 
 import org.jetbrains.annotations.NotNull;
 import org.keycloak.KeycloakPrincipal;

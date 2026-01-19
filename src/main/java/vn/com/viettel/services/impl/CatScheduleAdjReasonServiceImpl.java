@@ -1,8 +1,10 @@
 package vn.com.viettel.services.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -12,7 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.com.viettel.dto.CatScheduleAdjReasonDto;
 import vn.com.viettel.dto.CatScheduleAdjReasonSearchRequestDto;
+import vn.com.viettel.dto.OrgDto;
+import vn.com.viettel.dto.UserDto;
 import vn.com.viettel.entities.CatScheduleAdjReason;
+import vn.com.viettel.entities.SysOrg;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.mapper.CatScheduleAdjReasonMapper;
 import vn.com.viettel.repositories.jpa.CatScheduleAdjReasonRepository;
@@ -24,17 +29,20 @@ import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class CatScheduleAdjReasonServiceImpl implements CatScheduleAdjReasonService {
 
     private static final Pattern REASON_CODE_PATTERN = Pattern.compile("^TB-[A-Za-z0-9_-]+$");
 
     private static final Map<String, String> ALLOWED_SORT_FIELDS = new HashMap<>();
+
+
 
     static {
         ALLOWED_SORT_FIELDS.put("reasonCode", "reasonCode");
@@ -55,6 +63,9 @@ public class CatScheduleAdjReasonServiceImpl implements CatScheduleAdjReasonServ
 
     @Autowired
     private Translator translator;
+
+    private final org.modelmapper.ModelMapper modelMapper;
+    private final vn.com.viettel.repositories.jpa.SysOrgRepository sysOrgRepo;
 
     @Override
     @Transactional
@@ -89,7 +100,10 @@ public class CatScheduleAdjReasonServiceImpl implements CatScheduleAdjReasonServ
         entity.setUpdatedAt(now);
 
         CatScheduleAdjReason saved = repository.save(entity);
-        return mapper.toDto(saved);
+        CatScheduleAdjReasonDto dto2 = mapper.toDto(saved);
+        enrichCreatedUpdatedUsers(List.of(saved), List.of(dto2));
+        return dto2;
+
     }
 
     @Override
@@ -130,7 +144,10 @@ public class CatScheduleAdjReasonServiceImpl implements CatScheduleAdjReasonServ
         entity.setUpdatedAt(now);
 
         CatScheduleAdjReason saved = repository.save(entity);
-        return mapper.toDto(saved);
+        CatScheduleAdjReasonDto dto2 = mapper.toDto(saved);
+        enrichCreatedUpdatedUsers(List.of(saved), List.of(dto2));
+        return dto2;
+
     }
 
     @Override
@@ -161,7 +178,10 @@ public class CatScheduleAdjReasonServiceImpl implements CatScheduleAdjReasonServ
     public CatScheduleAdjReasonDto getDetail(Long id) throws CustomException {
         CatScheduleAdjReason entity = repository.findByReasonIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("catScheduleAdjReason.notFound")));
-        return mapper.toDto(entity);
+        CatScheduleAdjReasonDto dto = mapper.toDto(entity);
+        enrichCreatedUpdatedUsers(List.of(entity), List.of(dto));
+        return dto;
+
     }
 
     @Override
@@ -186,7 +206,21 @@ public class CatScheduleAdjReasonServiceImpl implements CatScheduleAdjReasonServ
 
         var specification = CatScheduleAdjReasonSpecifications.buildSpecification(request);
 
-        return repository.findAll(specification, pageable).map(mapper::toDto);
+
+        // 1) Query ra Page<Entity>
+        Page<CatScheduleAdjReason> resultPage = repository.findAll(specification, pageable);
+
+        // 2) Convert sang DTO list
+        List<CatScheduleAdjReason> entities = resultPage.getContent();
+        List<CatScheduleAdjReasonDto> dtoList = entities.stream()
+                .map(mapper::toDto)
+                .toList();
+
+        // 3) Enrich user (createdBy/updatedBy...) dựa vào entities + dtoList
+        enrichCreatedUpdatedUsers(entities, dtoList);
+
+        // 4) Bọc lại thành Page<DTO>
+        return new PageImpl<>(dtoList, pageable, resultPage.getTotalElements());
     }
 
     private void normalize(CatScheduleAdjReasonDto dto) {
@@ -227,4 +261,54 @@ public class CatScheduleAdjReasonServiceImpl implements CatScheduleAdjReasonServ
     private String msg(String key, Object... params) {
         return translator.getMessage(key, params);
     }
+    private UserDto mapUserDto(SysUser sysUser, Map<Long, SysOrg> sysOrgMap) {
+        if (sysUser == null) return null;
+        UserDto userDto = modelMapper.map(sysUser, UserDto.class);
+
+        // giống RecommendationMapper: gắn org vào user
+        if (sysOrgMap != null && sysUser.getOrgId() != null && sysOrgMap.containsKey(sysUser.getOrgId())) {
+            userDto.setOrg(modelMapper.map(sysOrgMap.get(sysUser.getOrgId()), OrgDto.class));
+        }
+        return userDto;
+    }
+
+    private void enrichCreatedUpdatedUsers(List<CatScheduleAdjReason> entities, List<CatScheduleAdjReasonDto> dtos) {
+        if (entities == null || entities.isEmpty() || dtos == null || dtos.isEmpty()) return;
+
+        // lấy danh sách userId cần dùng (tránh N+1)
+        Set<Long> userIds = new HashSet<>();
+        for (CatScheduleAdjReason e : entities) {
+            if (e.getCreatedBy() != null) userIds.add(e.getCreatedBy());
+            if (e.getUpdatedBy() != null) userIds.add(e.getUpdatedBy());
+        }
+
+        // load user map
+        Map<Long, SysUser> userMap;
+        if (userIds.isEmpty()) {
+            userMap = Collections.emptyMap();
+        } else {
+            // Nếu repo có findAllByIdInAndIsDeletedFalse thì dùng cái đó là tốt nhất
+            // userMap = userRepository.findAllByIdInAndIsDeletedFalse(new ArrayList<>(userIds))...
+            userMap = userRepository.findAllById(userIds).stream()
+                    .collect(Collectors.toMap(SysUser::getId, u -> u));
+        }
+
+        // load org map (nếu muốn giống Recommendation)
+        Map<Long, SysOrg> orgMap = sysOrgRepo.findAllByIsDeletedFalse().stream()
+                .collect(Collectors.toMap(SysOrg::getId, o -> o));
+
+        // enrich theo đúng index (dtos tạo từ entities theo order)
+        for (int i = 0; i < entities.size(); i++) {
+            CatScheduleAdjReason e = entities.get(i);
+            CatScheduleAdjReasonDto dto = dtos.get(i);
+
+            if (e.getCreatedBy() != null && userMap.containsKey(e.getCreatedBy())) {
+                dto.setCreatedByUser(mapUserDto(userMap.get(e.getCreatedBy()), orgMap));
+            }
+            if (e.getUpdatedBy() != null && userMap.containsKey(e.getUpdatedBy())) {
+                dto.setUpdatedByUser(mapUserDto(userMap.get(e.getUpdatedBy()), orgMap));
+            }
+        }
+    }
+
 }
