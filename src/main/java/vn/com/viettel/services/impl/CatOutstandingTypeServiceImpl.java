@@ -1,14 +1,7 @@
 package vn.com.viettel.services.impl;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
@@ -23,7 +16,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
 import vn.com.viettel.dto.CatOutstandingTypeDto;
 import vn.com.viettel.dto.OrgDto;
 import vn.com.viettel.dto.OutstandingTypeSearchRequestDto;
@@ -38,6 +30,11 @@ import vn.com.viettel.services.CatOutstandingTypeService;
 import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
 import vn.com.viettel.utils.exceptions.CustomException;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -353,6 +350,7 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
     // -------------------- Search --------------------
 
     private static final Map<String, String> OUTSTANDING_TYPE_ALLOWED_SORT_FIELDS;
+
     static {
         Map<String, String> m = new HashMap<>();
         m.put("createdAt", "createdAt");
@@ -395,32 +393,13 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
         LocalDate fromDate = request.getCreatedFrom();
         LocalDate toDate = request.getCreatedTo();
 
-        if (fromDate == null && toDate == null) {
-            fromDate = LocalDate.of(now.getYear(), 1, 1);
-            toDate = now.toLocalDate();
-        }
-
-        if (fromDate != null && toDate == null) {
-            toDate = now.toLocalDate();
-        }
-        if (fromDate == null) {
-            fromDate = toDate.minusYears(1);
-        }
-
-        if (fromDate.isAfter(toDate)) {
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
             throw new CustomException(
                     HttpStatus.BAD_REQUEST.value(),
                     translator.getMessage("catOutstandingType.search.createdTime.range.invalid")
             );
         }
 
-        long days = ChronoUnit.DAYS.between(fromDate, toDate);
-        if (days > 366) {
-            throw new CustomException(
-                    HttpStatus.BAD_REQUEST.value(),
-                    translator.getMessage("catOutstandingType.search.createdTime.range.maxOneYear")
-            );
-        }
 
         Specification<CatOutstandingType> specification = buildOutstandingTypeSearchSpecification(request, fromDate, toDate);
 
@@ -458,23 +437,29 @@ public class CatOutstandingTypeServiceImpl implements CatOutstandingTypeService 
                 predicates.add(cb.like(typeNameExp, like));
             }
 
-            String status = defaultIfBlank(request.getStatus(), "ALL").toUpperCase(Locale.ROOT);
-            if ("ACTIVE".equals(status)) {
-                predicates.add(cb.isTrue(root.get("isActive")));
-            } else if ("INACTIVE".equals(status)) {
-                predicates.add(cb.isFalse(root.get("isActive")));
-            } else if (!"ALL".equals(status)) {
-                throw new CustomException(
-                        HttpStatus.BAD_REQUEST.value(),
-                        translator.getMessage("catOutstandingType.search.status.invalid")
-                );
+//            String status = defaultIfBlank(request.getStatus(), "ALL").toUpperCase(Locale.ROOT);
+//            if ("ACTIVE".equals(status)) {
+//                predicates.add(cb.isTrue(root.get("isActive")));
+//            } else if ("INACTIVE".equals(status)) {
+//                predicates.add(cb.isFalse(root.get("isActive")));
+//            } else if (!"ALL".equals(status)) {
+//                throw new CustomException(
+//                        HttpStatus.BAD_REQUEST.value(),
+//                        translator.getMessage("catOutstandingType.search.status.invalid")
+//                );
+//            }
+            if (request.getIsActive() != null) {
+                predicates.add(cb.equal(root.get("isActive"), request.getIsActive()));
             }
 
-            LocalDateTime from = fromDate.atStartOfDay();
-            LocalDateTime toExclusive = toDate.plusDays(1).atStartOfDay();
-            predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
-            predicates.add(cb.lessThan(root.get("createdAt"), toExclusive));
-
+            if (fromDate != null) {
+                LocalDateTime from = fromDate.atStartOfDay();
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));
+            }
+            if (toDate != null) {
+                LocalDateTime toExclusive = toDate.atTime(23, 59, 59);
+                predicates.add(cb.lessThan(root.get("createdAt"), toExclusive));
+            }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
