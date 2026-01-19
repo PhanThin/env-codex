@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-import static vn.com.viettel.repositories.jpa.specs.CatManufacturerSpecifications.buildSpecification;
+import static vn.com.viettel.repositories.jpa.CatManufacturerSpecifications.buildSpecification;
 
 @Service
 @RequiredArgsConstructor
