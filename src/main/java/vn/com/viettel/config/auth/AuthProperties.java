@@ -1,4 +1,4 @@
-package vn.com.viettel.auth.config;
+package vn.com.viettel.config.auth;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

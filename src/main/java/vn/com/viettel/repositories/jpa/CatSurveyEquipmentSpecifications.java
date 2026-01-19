@@ -1,12 +1,14 @@
 package vn.com.viettel.repositories.jpa;
 
+import jakarta.persistence.criteria.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
 import vn.com.viettel.dto.CatSurveyEquipmentSearchRequestDto;
 import vn.com.viettel.entities.CatSurveyEquipment;
 
-import jakarta.persistence.criteria.Predicate;
-
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,23 +25,25 @@ public final class CatSurveyEquipmentSpecifications {
             predicates.add(cb.equal(root.get("isDeleted"), "N"));
 
             // isActive default 'Y'
-            String isActive = StringUtils.defaultIfBlank(request.getIsActive(), "Y").trim().toUpperCase();
-            predicates.add(cb.equal(root.get("isActive"), isActive));
-
-            if (request.getCreatedAtFrom() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), request.getCreatedAtFrom()));
-            }
-            if (request.getCreatedAtTo() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), request.getCreatedAtTo()));
+            if (request.getIsActive() != null) {
+                predicates.add(cb.equal(root.get("isActive"), request.getIsActive()));
             }
 
-            if (StringUtils.isNotBlank(request.getEquipmentCode())) {
-                String keyword = normalizeLike(request.getEquipmentCode());
-                predicates.add(cb.like(cb.upper(cb.trim(root.get("equipmentCode"))), keyword));
+            LocalDate createdFrom = request.getCreatedFrom();
+            LocalDate createdTo = request.getCreatedTo();
+            if (createdFrom != null || createdTo != null) {
+                if (createdFrom != null) {
+                    LocalDateTime fromDateTime = createdFrom.atStartOfDay();
+                    predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), fromDateTime));
+                }
+                if (createdTo != null) {
+                    LocalDateTime toDateTime = createdTo.atTime(LocalTime.MAX);
+                    predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), toDateTime));
+                }
             }
 
-            if (StringUtils.isNotBlank(request.getEquipmentName())) {
-                String keyword = normalizeLike(request.getEquipmentName());
+            if (StringUtils.isNotBlank(request.getKeyword())) {
+                String keyword = normalizeLike(request.getKeyword());
                 predicates.add(cb.like(cb.upper(cb.trim(root.get("equipmentName"))), keyword));
             }
 

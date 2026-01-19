@@ -1,12 +1,12 @@
-package vn.com.viettel.auth.service;
+package vn.com.viettel.services.auth;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import vn.com.viettel.auth.entity.LoginEvent;
-import vn.com.viettel.auth.repositories.SysLoginLogRepository;
+import vn.com.viettel.entities.LoginEvent;
+import vn.com.viettel.repositories.jpa.SysLoginLogRepository;
 import vn.com.viettel.entities.SysLoginLog;
 
 import java.time.LocalDateTime;

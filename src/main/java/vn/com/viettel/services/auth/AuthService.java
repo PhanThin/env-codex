@@ -1,4 +1,4 @@
-package vn.com.viettel.auth.service;
+package vn.com.viettel.services.auth;
 
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.HttpServletRequest;
@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import vn.com.viettel.auth.constant.AuthErrorCode;
-import vn.com.viettel.auth.dto.*;
-import vn.com.viettel.auth.entity.LoginEvent;
+import vn.com.viettel.constant.AuthErrorCode;
+import vn.com.viettel.dto.auth.*;
+import vn.com.viettel.entities.LoginEvent;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.repositories.jpa.SysUserRepository;
 import vn.com.viettel.utils.exceptions.CustomException;
@@ -31,7 +31,6 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) throws Exception {
         String username = request.getUsername();
         try {
-            // KeycloakService giờ trả về Object đã parse sẵn
             KeycloakTokenResponse response = keycloakService.login(request.getUsername(), request.getPassword());
 
             if (response.getStatusCode() == 200) {
@@ -124,7 +123,6 @@ public class AuthService {
 
             if (response.getStatusCode() == 200) {
                 // 2. Trích xuất username từ Access Token mới để kiểm tra DB nội bộ
-                // Sử dụng thư viện Nimbus (mặc định của Spring Security) để parse JWT không cần verify (vì Keycloak đã verify rồi)
                 String username = SignedJWT.parse(response.getAccessToken()).getJWTClaimsSet().getStringClaim("preferred_username");
 
                 // 3. Kiểm tra User trong DB Oracle
@@ -133,7 +131,7 @@ public class AuthService {
                             "Người dùng không tồn tại hoặc đã bị xóa"));
 
                 if (!Boolean.TRUE.equals(user.getIsActive())) {
-                    // Nếu User bị khóa, chúng ta nên Logout luôn session này trên Keycloak (Tùy chọn)
+                    // Nếu User bị khóa, chúng ta nên Logout luôn session này trên Keycloak
                     keycloakService.logout(response.getRefreshToken());
                     throw new CustomException(AuthErrorCode.USER_LOCKED.getCode(),
                         "Người dùng đã bị khóa hoặc không còn hiệu lực. Vui lòng liên hệ quản trị hệ thống");
@@ -172,7 +170,6 @@ public class AuthService {
                 isOldPasswordCorrect = true;
             } else if (verifyRes.getStatusCode() == 400 &&
                        "Account is not fully set up".equalsIgnoreCase(verifyRes.getErrorDescription())) {
-                // ĐÂY LÀ ĐIỂM MẤU CHỐT: Keycloak xác nhận pass đúng nhưng yêu cầu action bổ sung
                 log.info("Xác minh mật khẩu cũ thành công (Tài khoản đang có Required Action)");
                 isOldPasswordCorrect = true;
             }

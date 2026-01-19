@@ -80,8 +80,6 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         entity.setUpdatedBy(userId);
         entity.setIsDeleted("N");
 
-        // default IS_ACTIVE = 'Y' nếu client không gửi
-        entity.setIsActive(StringUtils.defaultIfBlank(dto.getIsActive(), "Y").trim().toUpperCase());
 
         repository.save(entity);
         return mapper.toDto(entity);
@@ -111,10 +109,6 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         entity.setUpdatedAt(now);
         entity.setUpdatedBy(userId);
 
-        // isActive: nếu null thì giữ nguyên
-        if (dto.getIsActive() != null) {
-            entity.setIsActive(dto.getIsActive().trim().toUpperCase());
-        }
 
         repository.save(entity);
         return mapper.toDto(entity);
@@ -178,13 +172,6 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.search.sortDirection.invalid"));
         }
 
-        // validate isActive
-        String isActive = StringUtils.defaultIfBlank(request.getIsActive(), "Y").trim().toUpperCase();
-        if (!"Y".equals(isActive) && !"N".equals(isActive)) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.isActive.invalid"));
-        }
-        request.setIsActive(isActive);
-
         Sort sort = Sort.by(direction, sortProperty);
         PageRequest pageRequest = PageRequest.of(page, size, sort);
 
@@ -223,9 +210,8 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         }
 
         // CHECK: isActive
-        String isActive = StringUtils.defaultIfBlank(dto.getIsActive(), "Y").trim().toUpperCase();
-        if (!"Y".equals(isActive) && !"N".equals(isActive)) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.isActive.invalid"));
+        if (dto.getIsActive() == null) {
+            throw  new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.isActive.required"));
         }
 
         // optional lengths

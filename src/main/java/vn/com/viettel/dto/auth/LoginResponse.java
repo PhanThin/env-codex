@@ -1,4 +1,4 @@
-package vn.com.viettel.auth.dto;
+package vn.com.viettel.dto.auth;
 
 import lombok.Builder;
 import lombok.Data;

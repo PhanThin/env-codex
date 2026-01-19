@@ -1,11 +1,11 @@
-package vn.com.viettel.auth.service;
+package vn.com.viettel.services.auth;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import vn.com.viettel.auth.constant.UserType;
+import vn.com.viettel.constant.UserType;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.repositories.jpa.SysUserRepository;
 

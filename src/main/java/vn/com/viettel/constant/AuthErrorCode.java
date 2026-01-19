@@ -1,4 +1,4 @@
-package vn.com.viettel.auth.constant;
+package vn.com.viettel.constant;
 
 import lombok.Getter;
 

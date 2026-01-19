@@ -1,10 +1,10 @@
-package vn.com.viettel.auth.service;
+package vn.com.viettel.services.auth;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import vn.com.viettel.auth.constant.AuthErrorCode;
-import vn.com.viettel.auth.config.AuthProperties;
-import vn.com.viettel.auth.constant.UserType;
+import vn.com.viettel.constant.AuthErrorCode;
+import vn.com.viettel.config.auth.AuthProperties;
+import vn.com.viettel.constant.UserType;
 import vn.com.viettel.entities.SysUser;
 import vn.com.viettel.repositories.jpa.SysUserRepository;
 import vn.com.viettel.utils.exceptions.CustomException;
