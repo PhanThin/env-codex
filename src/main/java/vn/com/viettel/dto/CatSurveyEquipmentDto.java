@@ -51,7 +51,7 @@ public class CatSurveyEquipmentDto {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private UserDto updatedByUser;
 
-    private String isActive;
+    private Boolean isActive;
 
 
 }
