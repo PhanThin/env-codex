@@ -107,7 +107,7 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.payload.null"));
         }
 
-        CatSurveyEquipment entity = repository.findByEquipmentIdAndIsDeleted(id, "N")
+        CatSurveyEquipment entity = repository.findByEquipmentIdAndIsDeleted(id, false)
                 .orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND.value(), msg("surveyEquipment.notFound", id)));
 
         SysUser currentUser = getCurrentUser();
@@ -232,7 +232,7 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.id.null"));
         }
 
-        CatSurveyEquipment entity = repository.findByEquipmentIdAndIsDeleted(id, "N")
+        CatSurveyEquipment entity = repository.findByEquipmentIdAndIsDeleted(id, false)
                 .orElseThrow(() ->
                         new CustomException(HttpStatus.NOT_FOUND.value(), msg("surveyEquipment.notFound", id)));
 

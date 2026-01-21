@@ -15,7 +15,7 @@ public interface CatSurveyEquipmentRepository extends JpaRepository<CatSurveyEqu
 
     List<CatSurveyEquipment> findAllByIsDeletedFalse(Sort sort);
 
-    Optional<CatSurveyEquipment> findByEquipmentIdAndIsDeleted(Long equipmentId, String isDeleted);
+    Optional<CatSurveyEquipment> findByEquipmentIdAndIsDeleted(Long equipmentId, Boolean isDeleted);
 
     List<CatSurveyEquipment> findAllByEquipmentIdInAndIsDeleted(List<Long> equipmentIds, String isDeleted);
 
