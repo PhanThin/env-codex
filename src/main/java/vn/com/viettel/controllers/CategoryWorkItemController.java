@@ -28,10 +28,10 @@ public class CategoryWorkItemController {
     @Autowired
     private CategoryWorkItemService categoryWorkItemService;
 
-    @GetMapping
-    public Page<CategoryWorkItemDto> searchCategoryWorkItem(CategoryWorkItemSearchRequest request) {
-        return categoryWorkItemService.searchCategoryWorkItem(request);
-    }
+//    @GetMapping
+//    public Page<CategoryWorkItemDto> searchCategoryWorkItem(CategoryWorkItemSearchRequest request) {
+//        return categoryWorkItemService.searchCategoryWorkItem(request);
+//    }
 
     @Operation(summary = "Tạo mới hạng mục công việc")
     @ApiResponses(value = {

@@ -9,13 +9,18 @@ import java.time.LocalDateTime;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CatSurveyEquipmentMapper {
 
+    @Mapping(target = "unit", ignore = true)
     CatSurveyEquipmentDto toDto(CatSurveyEquipment entity);
 
     @Mapping(target = "isDeleted", ignore = true)
+    @Mapping(target = "uomId", ignore = true)
+    @Mapping(target = "uomName", ignore = true)
     CatSurveyEquipment toEntity(CatSurveyEquipmentDto dto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "isDeleted", ignore = true)
+    @Mapping(target = "uomId", ignore = true)
+    @Mapping(target = "uomName", ignore = true)
     void updateEntityFromDto(CatSurveyEquipmentDto dto, @MappingTarget CatSurveyEquipment entity);
 
     @AfterMapping

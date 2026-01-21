@@ -17,10 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import vn.com.viettel.dto.*;
 import vn.com.viettel.entities.*;
 import vn.com.viettel.mapper.CatSurveyEquipmentMapper;
-import vn.com.viettel.repositories.jpa.CatManufacturerRepository;
-import vn.com.viettel.repositories.jpa.CatSurveyEquipmentRepository;
-import vn.com.viettel.repositories.jpa.CatSurveyEquipmentSpecifications;
-import vn.com.viettel.repositories.jpa.SysUserRepository;
+import vn.com.viettel.repositories.jpa.*;
 import vn.com.viettel.services.CatSurveyEquipmentService;
 import vn.com.viettel.utils.Constants;
 import vn.com.viettel.utils.Translator;
@@ -46,6 +43,9 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
 
     @Autowired
     private SysUserRepository userRepository;
+
+    @Autowired
+    private CatUnitRepository catUnitRepository;
 
     @Autowired
     private Translator translator;
@@ -90,8 +90,14 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         if (entity.getIsActive() == null) {
             entity.setIsActive(Boolean.TRUE);
         }
+        entity.setUomId(dto.getUnit().getId());
+        entity.setUomName(dto.getUnit().getUnitName());
         CatSurveyEquipment saved = repository.save(entity);
         CatSurveyEquipmentDto dto2 = mapper.toDto(saved);
+        CatUnitDto unitDto = new CatUnitDto();
+        unitDto.setId(saved.getUomId());
+        unitDto.setUnitName(saved.getUomName());
+        dto2.setUnit(unitDto);
         enrichCreatedUpdatedUsers(List.of(saved), List.of(dto2));
         return dto2;
 
@@ -115,6 +121,8 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         LocalDateTime now = LocalDateTime.now();
 
         validate(dto, id);
+        entity.setUomId(dto.getUnit().getId());
+        entity.setUomName(dto.getUnit().getUnitName());
 
         mapper.updateEntityFromDto(dto, entity);
 
@@ -128,6 +136,10 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
 
         CatSurveyEquipment saved = repository.save(entity);
         CatSurveyEquipmentDto dto2 = mapper.toDto(saved);
+        CatUnitDto unitDto = new CatUnitDto();
+        unitDto.setId(saved.getUomId());
+        unitDto.setUnitName(saved.getUomName());
+        dto2.setUnit(unitDto);
         enrichCreatedUpdatedUsers(List.of(saved), List.of(dto2));
         return dto2;
 
@@ -216,7 +228,14 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         // 2) Convert -> DTO list
         List<CatSurveyEquipment> entities = resultPage.getContent();
         List<CatSurveyEquipmentDto> dtoList = entities.stream()
-                .map(mapper::toDto)
+                .map(entity -> {
+                    CatSurveyEquipmentDto dto = mapper.toDto(entity);
+                    CatUnitDto unitDto = new CatUnitDto();
+                    unitDto.setId(entity.getUomId());
+                    unitDto.setUnitName(entity.getUomName());
+                    dto.setUnit(unitDto);
+                    return dto;
+                })
                 .toList();
 
         // 3) Enrich user info (created/updated) trước khi trả ra
@@ -237,6 +256,10 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
                         new CustomException(HttpStatus.NOT_FOUND.value(), msg("surveyEquipment.notFound", id)));
 
         CatSurveyEquipmentDto dto = mapper.toDto(entity);
+        CatUnitDto unitDto = new CatUnitDto();
+        unitDto.setId(entity.getUomId());
+        unitDto.setUnitName(entity.getUomName());
+        dto.setUnit(unitDto);
 
         // vì method enrich hiện đang nhận list
         enrichCreatedUpdatedUsers(List.of(entity), List.of(dto));
@@ -269,30 +292,38 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.model.length"));
         }
 
-        if (dto.getManageUnitId() == null) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manageUnitId.required"));
+        if (dto.getUnit() == null || dto.getUnit().getId() == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.uomId.required"));
         }
 
-        // optional lengths
-        if (dto.getManufacturerName() != null && dto.getManufacturerName().trim().length() > 1000) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manufacturerName.length"));
+        CatUnit catUnit = catUnitRepository.findByIdAndIsDeletedFalse(dto.getUnit().getId()).orElse(null);
+        if (catUnit == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.uomId.notFound", dto.getUnit().getId()));
         }
-        if (dto.getUomName() != null && dto.getUomName().trim().length() > 200) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.uomName.length"));
-        }
-        if (dto.getManageUnitName() != null && dto.getManageUnitName().trim().length() > 1000) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manageUnitName.length"));
-        }
+//        if (dto.getManageUnitId() == null) {
+//            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manageUnitId.required"));
+//        }
+//
+//        // optional lengths
+//        if (dto.getManufacturerName() != null && dto.getManufacturerName().trim().length() > 1000) {
+//            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manufacturerName.length"));
+//        }
+//        if (dto.getUomName() != null && dto.getUomName().trim().length() > 200) {
+//            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.uomName.length"));
+//        }
+//        if (dto.getManageUnitName() != null && dto.getManageUnitName().trim().length() > 1000) {
+//            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manageUnitName.length"));
+//        }
         if (dto.getNote() != null && dto.getNote().trim().length() > 2000) {
             throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.note.length"));
         }
 
-        if (dto.getManufactureYear() != null) {
-            int year = dto.getManufactureYear();
-            if (year < 0 || year > 9999) {
-                throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manufactureYear.invalid"));
-            }
-        }
+//        if (dto.getManufactureYear() != null) {
+//            int year = dto.getManufactureYear();
+//            if (year < 0 || year > 9999) {
+//                throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manufactureYear.invalid"));
+//            }
+//        }
 
         // UNIQUE: EQUIPMENT_CODE (UPPER(TRIM))
         String normalizedCode = normalize(dto.getEquipmentCode());
@@ -312,17 +343,17 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
             throw new CustomException(HttpStatus.CONFLICT.value(), msg("surveyEquipment.name.duplicate", dto.getEquipmentName().trim()));
         }
 
-        // FK: MANUFACTURER_ID tồn tại (nếu có)
-        if (dto.getManufacturerId() != null) {
-            if (!existsManufacturer(dto.getManufacturerId())) {
-                throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manufacturerId.notFound", dto.getManufacturerId()));
-            }
-        }
-
-        // FK: MANAGE_UNIT_ID tồn tại
-        if (!existsManageUnit(dto.getManageUnitId())) {
-            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manageUnitId.notFound", dto.getManageUnitId()));
-        }
+//        // FK: MANUFACTURER_ID tồn tại (nếu có)
+//        if (dto.getManufacturerId() != null) {
+//            if (!existsManufacturer(dto.getManufacturerId())) {
+//                throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manufacturerId.notFound", dto.getManufacturerId()));
+//            }
+//        }
+//
+//        // FK: MANAGE_UNIT_ID tồn tại
+//        if (!existsManageUnit(dto.getManageUnitId())) {
+//            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.manageUnitId.notFound", dto.getManageUnitId()));
+//        }
     }
 
     private boolean existsManufacturer(Long manufacturerId) {
@@ -434,7 +465,14 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
                 : Sort.by(sortField).descending();
 
         List<CatSurveyEquipment> entities = repository.findAllByIsDeletedFalse(sort);
-        List<CatSurveyEquipmentDto> dtos = entities.stream().map(mapper::toDto).toList();
+        List<CatSurveyEquipmentDto> dtos = entities.stream().map(entity -> {
+            CatSurveyEquipmentDto dto = mapper.toDto(entity);
+            CatUnitDto unitDto = new CatUnitDto();
+            unitDto.setId(entity.getUomId());
+            unitDto.setUnitName(entity.getUomName());
+            dto.setUnit(unitDto);
+            return dto;
+        }).toList();
         enrichCreatedUpdatedUsers(entities, dtos);
         return dtos;
     }

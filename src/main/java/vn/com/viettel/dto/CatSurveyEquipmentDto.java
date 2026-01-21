@@ -31,26 +31,29 @@ public class CatSurveyEquipmentDto {
     @Schema(description = "Mã model", example = "MODEL-123")
     private String modelCode;
 
-    @Schema(description = "ID hãng sản xuất", example = "10")
-    private Long manufacturerId;
+//    @Schema(description = "ID hãng sản xuất", example = "10")
+//    private Long manufacturerId;
+//
+//    @Schema(description = "Tên hãng sản xuất", example = "Leica")
+//    private String manufacturerName;
 
-    @Schema(description = "Tên hãng sản xuất", example = "Leica")
-    private String manufacturerName;
+//    @Schema(description = "Năm sản xuất", example = "2022")
+//    private Integer manufactureYear;
 
-    @Schema(description = "Năm sản xuất", example = "2022")
-    private Integer manufactureYear;
+    @Schema(description = "Đơn vị tính (UOM)", example = "5")
+    private CatUnitDto unit;
 
-    @Schema(description = "ID đơn vị tính (UOM)", example = "5")
-    private Long uomId;
+//    @Schema(description = "ID đơn vị tính (UOM)", example = "5")
+//    private Long uomId;
+//
+//    @Schema(description = "Tên đơn vị tính", example = "Cái")
+//    private String uomName;
 
-    @Schema(description = "Tên đơn vị tính", example = "Cái")
-    private String uomName;
-
-    @Schema(description = "ID đơn vị quản lý", example = "100")
-    private Long manageUnitId;
-
-    @Schema(description = "Tên đơn vị quản lý", example = "Trung tâm Khảo sát 1")
-    private String manageUnitName;
+//    @Schema(description = "ID đơn vị quản lý", example = "100")
+//    private Long manageUnitId;
+//
+//    @Schema(description = "Tên đơn vị quản lý", example = "Trung tâm Khảo sát 1")
+//    private String manageUnitName;
 
     @Schema(description = "Ghi chú", example = "Thiết bị đang bảo trì định kỳ")
     private String note;
