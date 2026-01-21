@@ -226,6 +226,25 @@ public class CatSurveyEquipmentServiceImpl implements CatSurveyEquipmentService 
         return new PageImpl<>(dtoList, pageRequest, resultPage.getTotalElements());
     }
 
+    @Override
+    public CatSurveyEquipmentDto getDetail(Long id) throws CustomException {
+        if (id == null) {
+            throw new CustomException(HttpStatus.BAD_REQUEST.value(), msg("surveyEquipment.id.null"));
+        }
+
+        CatSurveyEquipment entity = repository.findByEquipmentIdAndIsDeleted(id, "N")
+                .orElseThrow(() ->
+                        new CustomException(HttpStatus.NOT_FOUND.value(), msg("surveyEquipment.notFound", id)));
+
+        CatSurveyEquipmentDto dto = mapper.toDto(entity);
+
+        // vì method enrich hiện đang nhận list
+        enrichCreatedUpdatedUsers(List.of(entity), List.of(dto));
+
+        return dto;
+    }
+
+
 
     private void validate(CatSurveyEquipmentDto dto, Long idForUpdate) throws CustomException {
         // REQUIRED: code/name/model/manageUnitId

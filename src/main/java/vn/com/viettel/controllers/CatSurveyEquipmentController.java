@@ -11,6 +11,11 @@ import vn.com.viettel.dto.CatSurveyEquipmentSearchRequestDto;
 import vn.com.viettel.dto.ProjectTypeDto;
 import vn.com.viettel.services.CatSurveyEquipmentService;
 import vn.com.viettel.utils.exceptions.CustomException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 
 import java.util.List;
 
@@ -51,6 +56,23 @@ public class CatSurveyEquipmentController {
     ) {
         List<CatSurveyEquipmentDto> data = service.getAll(sortBy, sortDir);
         return ResponseEntity.ok(data);
+    }
+
+    @Operation(
+            summary = "Lấy chi tiết thiết bị khảo sát",
+            description = "Trả về thông tin chi tiết của 1 thiết bị theo equipmentId (chỉ lấy bản ghi chưa bị xóa)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Thành công"),
+            @ApiResponse(responseCode = "400", description = "Thiếu/không hợp lệ equipmentId"),
+            @ApiResponse(responseCode = "404", description = "Không tìm thấy thiết bị")
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<CatSurveyEquipmentDto> getDetail(
+            @Parameter(description = "ID thiết bị", required = true, example = "1")
+            @PathVariable("id") Long id
+    ) throws CustomException {
+        return ResponseEntity.ok(service.getDetail(id));
     }
 
 }
