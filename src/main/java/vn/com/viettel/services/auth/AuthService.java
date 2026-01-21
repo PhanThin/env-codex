@@ -40,7 +40,7 @@ public class AuthService {
                 publishLoginLog(username, true, "Đăng nhập thành công");
                 return successResponse;
             } else {
-                return handleLoginError(response, request.getUsername());
+                return handleAuthenticationFailure(response, username);
             }
         } catch (Exception e) {
             String errorMsg = (e instanceof CustomException) ? e.getMessage() : "Lỗi hệ thống xác thực";
@@ -55,46 +55,21 @@ public class AuthService {
         // 1. Xác định User từ DB hoặc đồng bộ mới
         SysUser user = userSyncService.syncUserFromPayload(username, accessToken);
 
-        // Reset trạng thái thông báo khóa khi đăng nhập thành công
+        // 2. Kiểm tra trạng thái người dùng
+        validateUserActive(user);
+
+        // 3. Reset trạng thái thông báo khóa khi đăng nhập thành công
         if (Boolean.TRUE.equals(user.getIsLockedTemporarily())) {
             user.setIsLockedTemporarily(false);
             userRepository.save(user);
         }
 
-        // 2. Kiểm tra trạng thái người dùng
-        if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new CustomException(ErrorApp.FORBIDDEN.getCode(), translator.getMessage("auth.user.inactive-or-locked"));
-        }
-
-        // 3. Chính sách mật khẩu 90 ngày cho người dùng Type 1
+        // 4. Chính sách mật khẩu 90 ngày cho người dùng Type 1
         policyService.checkPasswordPolicy(user, username);
 
         log.info("Người dùng {} đăng nhập thành công", username);
+
         return buildLoginResponse(response, user.getType());
-    }
-
-    private LoginResponse handleLoginError(KeycloakTokenResponse response, String username) {
-        String description = response.getErrorDescription() != null ? response.getErrorDescription().toLowerCase() : "";
-
-        // 1. Trường hợp Người dùng bị Admin vô hiệu hóa (is_active = false trong Keycloak)
-        if (response.getStatusCode() == 400 && description.contains("disabled")) {
-            throw new CustomException(ErrorApp.FORBIDDEN.getCode(), translator.getMessage("auth.user.inactive-or-locked"));
-        }
-
-        // Xử lý thông báo lỗi Brute-force
-        if (response.getStatusCode() == 401 || response.getStatusCode() == 400) {
-            SysUser user = userRepository.findByUsernameAndIsDeletedFalse(username).orElse(null);
-            if (user != null) {
-                String userId = keycloakService.getUserIdByUsername(username);
-
-                if (userId != null) {
-                    policyService.handleBruteForceLogic(user, userId);
-                }
-            }
-        }
-
-        log.error("Lỗi khi thực hiện login: {}", description);
-        throw new CustomException(ErrorApp.UNAUTHORIZED.getCode(), translator.getMessage("auth.login.invalid-credential"));
     }
 
     private void publishLoginLog(String username, boolean success, String message) {
@@ -129,11 +104,12 @@ public class AuthService {
                         .orElseThrow(() -> new CustomException(ErrorApp.BAD_NOT_FOUND.getCode(),
                             translator.getMessage("auth.user.not-found-or-deleted")));
 
-                if (!Boolean.TRUE.equals(user.getIsActive())) {
-                    // Nếu User bị khóa, chúng ta nên Logout luôn session này trên Keycloak
+                // Kiểm tra trạng thái hoạt động của User
+                try {
+                    validateUserActive(user);
+                } catch (CustomException e) {
                     keycloakService.logout(response.getRefreshToken());
-                    throw new CustomException(ErrorApp.FORBIDDEN.getCode(),
-                        translator.getMessage("auth.user.inactive-or-locked"));
+                    throw e;
                 }
 
                 // 4. Ghi log làm mới token thành công (Async Event)
@@ -161,40 +137,29 @@ public class AuthService {
         String username = request.getUsername();
 
         try {
-            // 1. Xác thực mật khẩu cũ bằng cách thử "Login" ngầm sang Keycloak
-            KeycloakTokenResponse verifyRes = keycloakService.login(username, request.getOldPassword());
-
-            boolean isOldPasswordCorrect = false;
-            if (verifyRes.getStatusCode() == 200) {
-                isOldPasswordCorrect = true;
-            } else if (verifyRes.getStatusCode() == 400 &&
-                       "Account is not fully set up".equalsIgnoreCase(verifyRes.getErrorDescription())) {
-                log.info("Xác minh mật khẩu cũ thành công (Tài khoản đang có Required Action)");
-                isOldPasswordCorrect = true;
-            }
-
-            if (!isOldPasswordCorrect) {
-                throw new CustomException(ErrorApp.UNAUTHORIZED.getCode(), translator.getMessage("auth.password.old.invalid"));
-            }
-
-            // 2. Tìm userId của người dùng trên Keycloak thông qua username
+            // 1. Xác thực người dùng tồn tại trên cả keycloak và database
             String userId = keycloakService.getUserIdByUsername(username);
-            if (userId == null) {
+
+            SysUser user = userRepository.findByUsernameAndIsDeletedFalse(username)
+                    .orElse(null);
+
+            if (userId == null || user == null) {
                 throw new CustomException(ErrorApp.BAD_NOT_FOUND.getCode(), translator.getMessage("auth.user.not-found-or-deleted"));
             }
-    
-            // 3. Thực hiện đổi mật khẩu mới bằng quyền Admin
-            keycloakService.resetPassword(userId, request.getNewPassword());
-    
-            // 4. Cập nhật ngày đổi mật khẩu trong DB Oracle để reset chu kỳ 90 ngày
-            SysUser user = userRepository.findByUsernameAndIsDeletedFalse(username)
-                    .orElseThrow(() -> new CustomException(ErrorApp.BAD_NOT_FOUND.getCode(), translator.getMessage("auth.user.not-found-or-deleted")));
 
-            if (!Boolean.TRUE.equals(user.getIsActive())) {
-                throw new CustomException(ErrorApp.FORBIDDEN.getCode(),
-                        translator.getMessage("auth.user.inactive-or-locked"));
+            // 2. Kiểm tra trạng thái User trước khi cho đổi pass
+            validateUserActive(user);
+
+            // 3. Xác thực mật khẩu cũ bằng cách thử "Login" ngầm sang Keycloak
+            KeycloakTokenResponse verifyRes = keycloakService.login(username, request.getOldPassword());
+            if (!isAuthenticationSuccess(verifyRes)) {
+                handleAuthenticationFailure(verifyRes, username);
             }
 
+            // 4. Thực hiện đổi mật khẩu mới bằng quyền Admin
+            keycloakService.resetPassword(userId, request.getNewPassword());
+    
+            // 5. Cập nhật ngày đổi mật khẩu trong DB Oracle để reset chu kỳ 90 ngày
             user.setLastPasswordChange(LocalDateTime.now());
             userRepository.save(user);
     
@@ -205,6 +170,38 @@ public class AuthService {
             log.error("Lỗi khi kết nối Keycloak để reset mật khẩu: {}", e.getMessage());
             throw new RuntimeException(translator.getMessage("auth.system.unavailable"));
         }
+    }
+
+    private void validateUserActive(SysUser user) {
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new CustomException(ErrorApp.FORBIDDEN.getCode(), translator.getMessage("auth.user.inactive-or-locked"));
+        }
+    }
+
+    private boolean isAuthenticationSuccess(KeycloakTokenResponse response) {
+        String description = response.getErrorDescription() != null ? response.getErrorDescription() : "";
+        return response.getStatusCode() == 200 ||
+               (response.getStatusCode() == 400 && "Account is not fully set up".equalsIgnoreCase(description));
+    }
+
+    private LoginResponse handleAuthenticationFailure(KeycloakTokenResponse response, String username) {
+        String description = response.getErrorDescription() != null ? response.getErrorDescription().toLowerCase() : "";
+
+        // Lỗi User bị Admin disable trên Keycloak
+        if (response.getStatusCode() == 400 && description.contains("disabled")) {
+            throw new CustomException(ErrorApp.FORBIDDEN.getCode(), translator.getMessage("auth.user.inactive-or-locked"));
+        }
+
+        // Lỗi sai thông tin hoặc bị brute-force
+        if (response.getStatusCode() == 401 || response.getStatusCode() == 400) {
+            userRepository.findByUsernameAndIsDeletedFalse(username).ifPresent(user -> {
+                String userId = keycloakService.getUserIdByUsername(username);
+                if (userId != null) policyService.handleBruteForceLogic(user, userId);
+            });
+        }
+
+        log.error("Lỗi xác thực cho người dùng {}: {}", username, description);
+        throw new CustomException(ErrorApp.UNAUTHORIZED.getCode(), translator.getMessage("auth.login.invalid-credential"));
     }
 
     /**
