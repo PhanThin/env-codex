@@ -20,4 +20,7 @@ public interface CatSurveyEquipmentService {
     Page<CatSurveyEquipmentDto> search(CatSurveyEquipmentSearchRequestDto request) throws CustomException;
 
     List<CatSurveyEquipmentDto> getAll(String sortBy, String sortDir);
+
+    CatSurveyEquipmentDto getDetail(Long id) throws CustomException;
+
 }
