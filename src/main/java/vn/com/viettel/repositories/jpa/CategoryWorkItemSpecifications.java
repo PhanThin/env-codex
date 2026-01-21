@@ -8,14 +8,16 @@ import vn.com.viettel.entities.CategoryWorkItem;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public class CategoryWorkItemSpecifications {
+public final class CategoryWorkItemSpecifications {
+    private CategoryWorkItemSpecifications() {
+    }
 
     public static Specification<CategoryWorkItem> buildSpecification(CategoryWorkItemSearchRequest request) {
         return (root, query, cb) -> {
             var predicate = cb.conjunction();
 
             // Luôn chỉ lấy bản ghi chưa xóa
-            predicate.getExpressions().add(
+            predicate = cb.and(predicate,
                     cb.isFalse(root.get("isDeleted"))
             );
 
@@ -38,37 +40,37 @@ public class CategoryWorkItemSpecifications {
                         kw
                 );
 
-                predicate.getExpressions().add(
+                predicate = cb.and(predicate,
                         cb.or(idPredicate, codePredicate, namePredicate)
                 );
             }
 
             if (request.getProjectTypeId() != null) {
-                predicate.getExpressions().add(
+                predicate = cb.and(predicate,
                         cb.equal(root.get("projectTypeId"), request.getProjectTypeId())
                 );
             }
 
             if (request.getPhaseId() != null) {
-                predicate.getExpressions().add(
+                predicate = cb.and(predicate,
                         cb.equal(root.get("projectPhaseId"), request.getPhaseId())
                 );
             }
 
             if (request.getProjectItemId() != null) {
-                predicate.getExpressions().add(
+                predicate = cb.and(predicate,
                         cb.equal(root.get("projectItemId"), request.getProjectItemId())
                 );
             }
 
             if (request.getUnitId() != null) {
-                predicate.getExpressions().add(
+                predicate = cb.and(predicate,
                         cb.equal(root.get("unitId"), request.getUnitId())
                 );
             }
 
             if (request.getIsActive() != null) {
-                predicate.getExpressions().add(
+                predicate = cb.and(predicate,
                         cb.equal(root.get("isActive"), request.getIsActive())
                 );
             }
@@ -77,7 +79,7 @@ public class CategoryWorkItemSpecifications {
             LocalDate createdTo = request.getCreatedTo();
 
             if (createdFrom != null) {
-                predicate.getExpressions().add(
+                predicate = cb.and(predicate,
                         cb.greaterThanOrEqualTo(
                                 root.get("createdAt"),
                                 createdFrom.atStartOfDay()
@@ -88,7 +90,7 @@ public class CategoryWorkItemSpecifications {
             if (createdTo != null) {
                 // đến cuối ngày
                 LocalDateTime endOfDay = createdTo.atTime(23, 59, 59);
-                predicate.getExpressions().add(
+                predicate = cb.and(predicate,
                         cb.lessThanOrEqualTo(
                                 root.get("createdAt"),
                                 endOfDay

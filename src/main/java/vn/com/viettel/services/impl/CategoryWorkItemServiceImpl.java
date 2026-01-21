@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -89,7 +90,7 @@ public class CategoryWorkItemServiceImpl implements CategoryWorkItemService {
             );
         }
 
-        var specification = CategoryWorkItemSpecifications.buildSpecification(request);
+        Specification<CategoryWorkItem> specification = CategoryWorkItemSpecifications.buildSpecification(request);
 
         Sort sort = Sort.by(direction, sortProperty);
         PageRequest pageRequest = PageRequest.of(page, size, sort);
@@ -404,7 +405,7 @@ public class CategoryWorkItemServiceImpl implements CategoryWorkItemService {
     @Transactional(readOnly = true)
     @Override
     public CategoryWorkItemDto getById(Long id) {
-        CategoryWorkItem categoryWorkItem = categoryWorkItemRepository.findById(id).orElseThrow(() -> new CustomException(
+        CategoryWorkItem categoryWorkItem = categoryWorkItemRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new CustomException(
                 HttpStatus.NOT_FOUND.value(),
                 translator.getMessage("categoryWorkItem.notFound")
         ));
