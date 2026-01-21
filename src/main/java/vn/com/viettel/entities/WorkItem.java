@@ -25,7 +25,6 @@ public class WorkItem {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "work_item_seq_gen")
     private Long id;
 
-    @NotNull
     @Column(name = "ITEM_ID")
     private Long itemId;
 

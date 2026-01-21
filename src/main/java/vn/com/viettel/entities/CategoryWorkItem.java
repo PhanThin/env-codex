@@ -26,7 +26,6 @@ public class CategoryWorkItem {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "cat_work_item_seq_gen")
     private Long id;
 
-    @NotNull
     @Column(name = "PROJECT_ITEM_ID")
     private Long projectItemId;
 
