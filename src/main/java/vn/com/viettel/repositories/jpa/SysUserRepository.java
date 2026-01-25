@@ -16,6 +16,9 @@ public interface SysUserRepository extends JpaRepository<SysUser, Long> {
     List<SysUser> findAllByIsDeletedFalse();
     Optional<SysUser> findByIdAndIsDeletedFalse(Long userId);
 
+    Optional<SysUser> findByKeycloakId(String keycloakId);
+
+    List<SysUser> findAllByKeycloakIdIsNullAndIsDeletedFalse();
 
     boolean existsByUsernameAndIsDeletedFalse(String username);
 

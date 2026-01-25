@@ -74,4 +74,7 @@ public class SysUser {
     @Convert(converter = YesNoConverter.class)
     @Column(name = "IS_LOCKED_TEMPORARILY")
     private Boolean isLockedTemporarily;
+
+    @Column(name = "keycloak_id", unique = true)
+    private String keycloakId;
 }

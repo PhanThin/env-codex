@@ -21,16 +21,25 @@ public class UserSyncService {
 
     public SysUser syncUserFromPayload(String username, String accessToken) throws Exception {
         JsonNode payload = decodeJwtPayload(accessToken);
+        String keycloakId = payload.get("sub").asText();
 
         return userRepository.findByUsernameAndIsDeletedFalse(username)
-                .orElseGet(() -> createNewUser(username, payload));
+                .map(existingUser -> {
+                    if (existingUser.getKeycloakId() == null) {
+                        existingUser.setKeycloakId(keycloakId);
+                        return userRepository.save(existingUser);
+                    }
+                    return existingUser;
+                })
+                .orElseGet(() -> createNewUser(username, payload, keycloakId));
     }
 
-    private SysUser createNewUser(String username, JsonNode payload) {
+    private SysUser createNewUser(String username, JsonNode payload, String keycloakId) {
         String fullName = payload.has("name") ? payload.get("name").asText() : username;
         Integer jwtUserType = payload.has("user_type") ? payload.get("user_type").asInt() : UserType.INTERNAL.getValue();
 
         SysUser newUser = new SysUser();
+        newUser.setKeycloakId(keycloakId);
         newUser.setUsername(username);
         newUser.setIsActive(true);
         newUser.setFullName(fullName);

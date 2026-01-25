@@ -1,4 +1,4 @@
-package vn.com.viettel.controllers;
+package vn.com.viettel.controllers.auth;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
