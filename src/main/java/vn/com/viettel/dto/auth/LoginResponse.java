@@ -12,5 +12,4 @@ public class LoginResponse {
     private String message;
     private Integer userType;
     private Boolean requirePasswordChange;
-    private Long lockTimeRemaining;
 }

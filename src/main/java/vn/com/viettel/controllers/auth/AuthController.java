@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -65,7 +66,7 @@ public class AuthController {
     }
 
     @Operation(
-            summary = "Đổi mật khẩu (Reset Password)",
+            summary = "Đổi mật khẩu (Forget password)",
             description = "Cho phép đổi mật khẩu bằng cách xác nhận username và mật khẩu cũ."
     )
     @ApiResponses(value = {
@@ -73,9 +74,24 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Mật khẩu cũ không đúng hoặc mật khẩu mới không hợp lệ"),
             @ApiResponse(responseCode = "404", description = "Không tìm thấy người dùng")
     })
-    @PostMapping("/change-password")
-    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    @PostMapping("/forget-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ForgetPasswordRequest request) {
         authService.changePassword(request);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @Operation(
+        summary = "Đổi mật khẩu (Authenticated)",
+        description = "Đổi mật khẩu dựa trên phiên đăng nhập hiện tại. Yêu cầu Access Token hợp lệ."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Đổi mật khẩu thành công"),
+        @ApiResponse(responseCode = "401", description = "Token không hợp lệ hoặc hết hạn"),
+        @ApiResponse(responseCode = "400", description = "Mật khẩu cũ không đúng hoặc mật khẩu mới không hợp lệ")
+    })
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePasswordWithSession(request);
+        return ResponseEntity.ok().build();
     }
 }

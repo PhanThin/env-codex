@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import vn.com.viettel.auth.utils.SecurityContextUtils;
 import vn.com.viettel.dto.auth.*;
 import vn.com.viettel.entities.LoginEvent;
 import vn.com.viettel.entities.SysUser;
@@ -65,11 +66,15 @@ public class AuthService {
         }
 
         // 4. Chính sách mật khẩu 90 ngày cho người dùng Type 1
-        policyService.checkPasswordPolicy(user, username);
+        try {
+            policyService.checkPasswordPolicy(user, username);
+        } catch (CustomException e) {
+            return buildLoginResponse(response, user.getType(), true, e.getMessage());
+        }
 
         log.info("Người dùng {} đăng nhập thành công", username);
 
-        return buildLoginResponse(response, user.getType());
+        return buildLoginResponse(response, user.getType(), false, translator.getMessage("auth.login.success"));
     }
 
     private void publishLoginLog(String username, boolean success, String message) {
@@ -133,7 +138,39 @@ public class AuthService {
         }
     }
 
-    public void changePassword(ResetPasswordRequest request) {
+    public void changePasswordWithSession(ChangePasswordRequest request) {
+        // 1. Trích xuất thông tin từ Session hiện tại thông qua Utility
+        String username = SecurityContextUtils.getUsername();
+        String userId = SecurityContextUtils.getUserId();
+
+        log.info("Bắt đầu quy trình đổi mật khẩu cho người dùng: {}", username);
+
+        try {
+            // 2. Xác thực mật khẩu cũ (Shadow Login)
+            // Đảm bảo dù có Token nhưng vẫn phải biết pass cũ mới được đổi pass mới
+            KeycloakTokenResponse verifyRes = keycloakService.login(username, request.getOldPassword());
+            if (!isAuthenticationSuccess(verifyRes)) {
+                handleAuthenticationFailure(verifyRes, username);
+            }
+
+            // 3. Gọi Keycloak Admin API để cập nhật mật khẩu mới
+            keycloakService.resetPassword(userId, request.getNewPassword());
+
+            // 4. Cập nhật thông tin DB nội bộ để reset chu kỳ 90 ngày
+            userRepository.findByUsernameAndIsDeletedFalse(username).ifPresent(user -> {
+                user.setLastPasswordChange(LocalDateTime.now());
+                userRepository.save(user);
+            });
+
+            log.info("Người dùng {} đã đổi mật khẩu thành công qua Session", username);
+
+        } catch (IOException e) {
+            log.error("Lỗi kết nối Keycloak khi đổi mật khẩu: {}", e.toString());
+            throw new RuntimeException(translator.getMessage("auth.system.unavailable"));
+        }
+    }
+
+    public void changePassword(ForgetPasswordRequest request) {
         String username = request.getUsername();
 
         try {
@@ -207,14 +244,14 @@ public class AuthService {
     /**
      * Xây dựng object phản hồi đăng nhập từ dữ liệu Keycloak và thông tin User trong DB
      */
-    private LoginResponse buildLoginResponse(KeycloakTokenResponse response, Integer userType) {
+    private LoginResponse buildLoginResponse(KeycloakTokenResponse response, Integer userType, boolean requirePasswordChange, String message) {
         return LoginResponse.builder()
                 .accessToken(response.getAccessToken())
                 .refreshToken(response.getRefreshToken())
                 .expiresIn(response.getExpiresIn())
                 .userType(userType)
-                .requirePasswordChange(false)
-                .message("Đăng nhập thành công")
+                .requirePasswordChange(requirePasswordChange)
+                .message(message)
                 .build();
     }
 }

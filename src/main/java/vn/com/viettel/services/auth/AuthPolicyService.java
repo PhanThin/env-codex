@@ -28,8 +28,9 @@ public class AuthPolicyService {
             boolean isExpired = (user.getLastPasswordChange() != null &&
                     user.getLastPasswordChange().plusDays(90).isBefore(LocalDateTime.now()));
 
+            String userId = keycloakService.getUserIdByUsername(username);
+
             if (isFirstLogin) {
-                String userId = keycloakService.getUserIdByUsername(username);
                 if (userId != null) {
                     keycloakService.forcePasswordUpdate(userId);
                 }
@@ -37,6 +38,9 @@ public class AuthPolicyService {
             }
 
             if (isExpired) {
+                if (userId != null) {
+                    keycloakService.forcePasswordUpdate(userId);
+                }
                 throw new CustomException(ErrorApp.FORBIDDEN.getCode(), translator.getMessage("auth.password.expired"));
             }
         }

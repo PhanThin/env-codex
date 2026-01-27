@@ -57,7 +57,7 @@ public class SecurityConfig {
             handleIgnoreUrls(auth);
             handleIpRestrictions(auth);
             auth.requestMatchers("/api/v1/auth/login").permitAll()
-                    .requestMatchers("/api/v1/auth/change-password").permitAll()
+                    .requestMatchers("/api/v1/auth/forget-password").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
                     .anyRequest().authenticated();
         });
