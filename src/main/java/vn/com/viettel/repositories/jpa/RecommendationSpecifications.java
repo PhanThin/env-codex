@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import vn.com.viettel.dto.RecommendationSearchRequestDto;
-import vn.com.viettel.entities.Recommendation;
 import vn.com.viettel.entities.RecommendationWorkItem;
 
 import java.time.LocalDate;
