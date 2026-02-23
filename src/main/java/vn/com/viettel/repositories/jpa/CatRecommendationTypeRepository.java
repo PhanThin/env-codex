@@ -14,4 +14,6 @@ public interface CatRecommendationTypeRepository extends JpaRepository<CatRecomm
 
     List<CatRecommendationType> findAllByIsDeletedFalse();
 
+    boolean existsByIdAndIsDeletedFalse(Long id);
+
 }
